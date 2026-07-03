@@ -1,0 +1,1845 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+
+@media (min-width : 768px) {
+
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Poppins", sans-serif;
+    }
+
+
+    /* ─── Layout principal ─── */
+
+    .desktop {
+        height: 330vh;
+        width: 100vw;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        overflow-y: auto;
+    }
+
+    .mobile {
+        /* styles mobile ici si besoin */
+    }
+
+
+    /* ─── Header ─── */
+
+    .header {
+        height: 5%;
+        display: flex;
+        width: 100%;
+        justify-content: space-evenly;
+        align-items: center;
+        border-style: groove;
+        border-color: rgba(0, 0, 0, 0.135);
+        border-top: none;
+        border-left: none;
+        border-right: none;
+        font-weight: 500;
+        font-size: 13px;
+    }
+
+    .logo {
+        width: 10%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .logo_img {
+        width: 80%;
+        height: 80%;
+        align-items: center;
+    }
+
+    .navigation {
+        width: 40%;
+        display: flex;
+        align-items: center;
+        justify-content: space-evenly;
+    }
+
+    .whatsapp {
+        display: flex;
+        width: 17%;
+        gap: 20px;
+        height: 50%;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .numero {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #1b8522, #4caf50);
+        border-radius: 8px;
+        color: white;
+    }
+
+
+    /* ─── Phrases informatives ─── */
+
+    .phrases_informatives {
+        margin-top: 1%;
+        height: 14%;
+        width: 90%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Anciennement : style={{ color: '#09b50f', fontWeight: '600' }} */
+    .titre_section {
+        color: #09b50f;
+        font-weight: 600;
+    }
+
+    /* Anciennement : style={{ fontSize: '38px', fontWeight: '600' }} */
+    .titre_principal {
+        font-size: 38px;
+        font-weight: 600;
+    }
+
+    .competences {
+        margin-top: 10px;
+        display: flex;
+        gap: 10px;
+    }
+
+    .point {
+        color: green;
+    }
+
+
+    /* ─── Suggestion colis ─── */
+
+    .suggestion_colis {
+        height: 20%;
+        width: 100%;
+        display: flex;
+        justify-content: space-evenly;
+
+    }
+
+    .recuperer_colis {
+        height: 40%;
+        width: 100%;
+        border-style: groove;
+        align-items: center;
+        justify-content: center;
+        display: flex;
+        gap: 20px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #7fb483, #4dc151);
+        border: none;
+        border-width: 2px;
+        display: flex;
+        background: linear-gradient(135deg, #16a34a, #4ade80);
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 14px rgba(22, 163, 74, 0.3);
+    }
+
+    .deposer_colis {
+        width: 100%;
+        align-items: center;
+        justify-content: center;
+        display: flex;
+        border-style: groove;
+        gap: 20px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #7fb483, #4dc151);
+        border-color: #1b852230;
+        border-width: 2px;
+        background: linear-gradient(135deg, #7fb483, #4dc151);
+        border: none;
+        border-width: 2px;
+        display: flex;
+        background: linear-gradient(135deg, #16a34a, #4ade80);
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 14px rgba(22, 163, 74, 0.3);
+        height: 40%;
+    }
+
+    .recuperations {
+        display: flex;
+        flex-direction: column;
+        width: 40%;
+        height: 100%;
+        gap: 20px;
+        align-items: center;
+        justify-self: center;
+    }
+
+    .deposer {
+        display: flex;
+        flex-direction: column;
+        width: 40%;
+        height: 100%;
+        gap: 20px;
+        align-items: center;
+        justify-self: center;
+    }
+
+    .logo_recuperer {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        background-color: white;
+        height: 70px;
+        width: 70px;
+        border-radius: 100px;
+    }
+
+    .logo_deposer {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        background-color: white;
+        height: 70px;
+        width: 70px;
+        border-radius: 100px;
+    }
+
+    /* Anciennement : style={{ color: 'white', fontWeight: '600' }} */
+    .texte_blanc_bold {
+        color: white;
+        font-weight: 600;
+    }
+
+
+    /* ─── Renseignements / Formulaire ─── */
+
+    .renseignements {
+        margin-top: 6%;
+        width: 100%;
+        height: 40%;
+        display: flex;
+        gap: 5px;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .formulaire {
+        width: 60%;
+        height: 100%;
+        border-style: groove;
+        border-color: rgba(0, 0, 0, 0.155);
+        border-radius: 10px;
+        padding-bottom: 5%;
+    }
+
+    /* Anciennement : style={{ marginTop: '20px', marginBottom: '10px' }} */
+    .titre_formulaire {
+        margin-top: 4%;
+        margin-bottom: 3%;
+        margin-left: 20px;
+        font-weight: 700;
+        font-size: 20px;
+    }
+
+    .informations_personnelles {
+        display: flex;
+        gap: 10px;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .informations_colis {
+        display: flex;
+        gap: 10px;
+        width: 100%;
+        justify-content: center;
+        margin-top: 5.5%;
+    }
+
+    .nom_complet,
+    .telephone_et_whatsapp,
+    .email,
+    .type,
+    .taille,
+    .destination {
+        width: 30%;
+    }
+
+    .champs {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        border-radius: 10px;
+        border-color: rgba(0, 0, 0, 0.148);
+        border-style: groove;
+        border-width: 1.5px;
+        padding: 3px;
+        margin-top: 2%;
+
+    }
+
+    .input {
+        height: 100%;
+        width: 100%;
+        border: none;
+        outline: none;
+        padding-left: 10px;
+
+
+    }
+
+    .adresse {
+        margin-top: 6%;
+
+    }
+
+    .champs_adresse_ville,
+    .adresse {
+        margin-left: 4%;
+    }
+
+    .champs_adresse_ville {
+        margin-top: 1%;
+    }
+
+    .input_adresse {
+        width: 95%;
+        border-radius: 5px;
+        height: 9%;
+    }
+
+    .date_recuperation {
+        width: 100%;
+        display: flex;
+        justify-content: space-evenly;
+    }
+
+    .date_de_rendez_vous {
+        margin-left: 4%;
+    }
+
+    .date_de_rendez_vous,
+    .crenaux_horaires {
+        width: 50%;
+        margin-top: 2%;
+
+    }
+
+    .input_rendez_vous,
+    .input_creanau_horaire {
+        width: 90%;
+        height: 100%;
+        border-width: 1.5px;
+        border-radius: 8px;
+        border-style: groove;
+        border-color: rgba(0, 0, 0, 0.135);
+        padding-left: 10px;
+    }
+
+    .notes {
+        margin-top: 5%;
+        width: 70%;
+        height: 15%;
+        margin-left: 4%;
+
+    }
+
+    .bouton {
+        /* ajoute ici tes styles de bouton */
+    }
+
+    .conditions_generales {
+        /* ajoute ici tes styles */
+    }
+
+
+    /* ─── Calendrier ─── */
+
+    .dates {
+        width: 30%;
+        height: 100%;
+    }
+
+    .calendrier {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        border-style: groove;
+        border-color: rgba(0, 0, 0, 0.155);
+        border-radius: 10px;
+        padding-bottom: 5%;
+
+    }
+
+    .choix {
+        width: 80%;
+        display: flex;
+    }
+
+
+    /* ─── Comment ça marche ─── */
+
+    .comment_ca_marche {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .informations_comment_ca_marche {
+        display: flex;
+    }
+
+    .informations_supp {
+        /* styles existants conservés */
+    }
+
+    .libel {
+        /* styles existants conservés */
+    }
+
+    .description {
+        /* styles existants conservés */
+    }
+
+    .champs_notes {
+        height: 60%;
+        border-radius: 10px;
+        border-style: groove;
+        border-width: 1.5px;
+        padding: 2px;
+        margin-top: 0.7%;
+
+    }
+
+    .input_notes {
+        width: 100%;
+        height: 100%;
+        border: none;
+        outline: none;
+        padding-left: 10px;
+    }
+
+    .champs_adresse_ville {
+
+        height: 9%;
+        border-style: groove;
+        border-radius: 7px;
+        border-style: groove;
+        border-width: 1.5px;
+        padding: 2px;
+        width: 85%;
+        border-color: rgba(0, 0, 0, 0.171);
+    }
+
+    .input_adresse {
+        height: 100%;
+        border: none;
+        outline: none;
+        padding-left: 10px;
+    }
+
+    .asterix {
+        color: red;
+    }
+
+
+
+    .input_notes {
+        height: 100%;
+        border: none;
+        outline: none;
+    }
+
+    .bouton {
+        display: flex;
+        height: 8%;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        margin-top: 3%;
+        margin-bottom: 3%;
+    }
+
+    .button {
+        display: flex;
+        height: 100%;
+        width: 60%;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        border-width: 1.5px;
+        border-style: groove;
+        border-color: rgba(0, 0, 0, 0.194);
+        gap: 2%;
+        background: linear-gradient(135deg, #7fb483, #4dc151);
+        color: white;
+    }
+
+    .conditions_generales {
+        width: 100%;
+        margin-top: 2%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+    }
+
+    .conditions {
+        color: green;
+    }
+
+    .choix {
+        margin-top: 6%;
+        font-size: 17px;
+        font-weight: 700;
+    }
+
+    .DayPicker {
+        margin-top: 10%;
+    }
+
+    .titre_comment {
+        font-size: 22px;
+        font-weight: 600;
+        margin-bottom: 30px;
+        text-align: center;
+    }
+
+    .informations_comment_ca_marche {
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        gap: 10px;
+        width: 90%;
+    }
+
+    .etape {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        width: 180px;
+    }
+
+    .icone_cercle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background-color: #e8f5e9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #4caf50;
+        margin-bottom: 8px;
+    }
+
+    .numero_etape {
+        color: #4caf50;
+        font-size: 18px;
+        margin-bottom: 8px;
+    }
+
+    .libel {
+        font-weight: 600;
+        font-size: 14px;
+        margin-bottom: 6px;
+        color: rgba(7, 156, 7, 0.511);
+    }
+
+    .description {
+        font-size: 12px;
+        color: #555;
+        line-height: 1.4;
+    }
+
+    .phrase_comment_ca_marche {
+        margin-top: 5%;
+        margin-bottom: 1%;
+        font-size: 20px;
+        font-weight: 700;
+    }
+
+    .comment_ca_marche {
+        border-style: groove;
+        height: 14%;
+        width: 95%;
+        border-radius: 10px;
+    }
+
+    .description {
+        font-weight: 700;
+    }
+
+    .fleche {
+        font-size: 24px;
+        color: #18a334;
+        margin-top: 5%;
+        margin-left: 2%;
+        margin-right: 2%;
+    }
+}
+
+@media (max-width: 767px) {
+
+    .mobile {
+        min-height: 100vh;
+        width: 100vw;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background-color: #f9fafb;
+        font-family: "Poppins", sans-serif;
+    }
+
+    /* ── Header ── */
+    .header_mobile {
+        width: 100%;
+        height: 54px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 16px;
+        background: #fff;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+
+    .logo_img_mobile {
+        height: 36px;
+        object-fit: contain;
+    }
+
+    .whatsapp_mobile {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: linear-gradient(135deg, #16a34a, #4ade80);
+        padding: 6px 10px;
+        border-radius: 20px;
+    }
+
+    .numero_mobile {
+        color: #fff;
+        font-size: 11px;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    /* ── Hero ── */
+    .hero_mobile {
+        width: 100%;
+        padding: 28px 20px 24px;
+        background: #fff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    .badge_mobile {
+        background: #dcfce7;
+        color: #15803d;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        padding: 4px 12px;
+        border-radius: 20px;
+        margin-bottom: 12px;
+    }
+
+    .titre_hero_mobile {
+        font-size: 22px;
+        font-weight: 700;
+        color: #111827;
+        line-height: 1.3;
+        margin: 0 0 10px;
+    }
+
+    .sous_titre_mobile {
+        font-size: 13px;
+        color: #6b7280;
+        margin: 0 0 16px;
+        line-height: 1.5;
+    }
+
+    .pills_mobile {
+        display: flex;
+        gap: 8px;
+    }
+
+    .pill {
+        background: #f0fdf4;
+        color: #15803d;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 20px;
+        border: 1px solid #bbf7d0;
+    }
+
+    /* ── Choix type colis ── */
+    .choix_type_mobile {
+        width: calc(100% - 32px);
+        margin: 16px 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .option_colis {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: #fff;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 14px 16px;
+    }
+
+    .option_active {
+        border-color: #16a34a;
+        background: #f0fdf4;
+    }
+
+    .icone_option {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #fff;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        border: 1.5px solid #e5e7eb;
+        flex-shrink: 0;
+    }
+
+    .option_active .icone_option {
+        border-color: #16a34a;
+    }
+
+    .option_titre {
+        font-size: 13px;
+        font-weight: 600;
+        color: #111827;
+        margin: 0;
+    }
+
+    .option_sous {
+        font-size: 11px;
+        color: #6b7280;
+        margin: 0;
+    }
+
+    /* ── Formulaire ── */
+    .formulaire_mobile {
+        width: calc(100% - 32px);
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 20px 16px 24px;
+        margin-bottom: 20px;
+    }
+
+    .titre_formulaire_mobile {
+        font-size: 17px;
+        font-weight: 700;
+        color: #111827;
+        margin: 0 0 20px;
+    }
+
+    .section_label {
+        font-size: 11px;
+        font-weight: 700;
+        color: #16a34a;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin: 20px 0 10px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid #f3f4f6;
+    }
+
+    .champ_mobile {
+        margin-top: 12px;
+        width: 100%;
+    }
+
+    .row_double {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-top: 12px;
+    }
+
+    .row_double .champ_mobile {
+        margin-top: 0;
+    }
+
+    .label_mobile {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 5px;
+    }
+
+    .optionnel {
+        font-weight: 400;
+        color: #9ca3af;
+        font-size: 11px;
+    }
+
+    .champs_mobile {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 0 10px;
+        background: #fff;
+        height: 42px;
+        transition: border-color 0.15s;
+    }
+
+    .champs_mobile:focus-within {
+        border-color: #16a34a;
+    }
+
+    .input_mobile {
+        flex: 1;
+        height: 100%;
+        border: none;
+        outline: none;
+        font-size: 13px;
+        color: #111827;
+        background: transparent;
+        font-family: "Poppins", sans-serif;
+    }
+
+    .input_mobile::placeholder {
+        color: #9ca3af;
+    }
+
+    .champs_mobile_textarea {
+        border: 1.5px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 10px;
+        background: #fff;
+        margin-top: 0;
+        transition: border-color 0.15s;
+    }
+
+    .champs_mobile_textarea:focus-within {
+        border-color: #16a34a;
+    }
+
+    .textarea_mobile {
+        width: 100%;
+        border: none;
+        outline: none;
+        font-size: 13px;
+        color: #111827;
+        font-family: "Poppins", sans-serif;
+        resize: none;
+        background: transparent;
+    }
+
+    .textarea_mobile::placeholder {
+        color: #9ca3af;
+    }
+
+    /* ── Calendrier ── */
+    .calendrier_mobile {
+        width: 100%;
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        margin-top: 4px;
+        padding: 16px 12px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .choix_mobile {
+        font-size: 13px;
+        font-weight: 600;
+        color: #374151;
+        margin: 0 0 10px;
+        width: 100%;
+    }
+
+    .creneaux_grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        width: 100%;
+        margin-top: 10px;
+    }
+
+    .creneau_pill {
+        background: #fff;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 8px;
+        text-align: center;
+        padding: 8px 4px;
+        font-size: 12px;
+        font-weight: 500;
+        color: #374151;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+
+    .creneau_pill:hover {
+        border-color: #16a34a;
+        background: #f0fdf4;
+        color: #15803d;
+    }
+
+    /* ── Bouton ── */
+    .button_mobile {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        padding: 14px;
+        border-radius: 12px;
+        border: none;
+        background: linear-gradient(135deg, #16a34a, #4ade80);
+        color: #fff;
+        font-size: 14px;
+        font-weight: 600;
+        font-family: "Poppins", sans-serif;
+        cursor: pointer;
+        margin-top: 22px;
+        box-shadow: 0 4px 14px rgba(22, 163, 74, 0.3);
+    }
+
+    .conditions_mobile {
+        text-align: center;
+        margin-top: 12px;
+        font-size: 11px;
+        color: #6b7280;
+    }
+
+    .conditions {
+        color: #16a34a;
+        font-weight: 600;
+        text-decoration: underline;
+    }
+
+    .asterix {
+        color: #ef4444;
+    }
+
+    /* ── Comment ça marche ── */
+    .phrase_comment_mobile {
+        font-size: 16px;
+        font-weight: 700;
+        color: #111827;
+        margin: 8px 0 12px;
+        width: calc(100% - 32px);
+    }
+
+    .comment_ca_marche_mobile {
+        width: calc(100% - 32px);
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 8px 16px;
+        margin-bottom: 32px;
+    }
+
+    .etape_mobile {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        padding: 16px 0;
+        border-bottom: 1px solid #f3f4f6;
+    }
+
+    .etape_mobile:last-child {
+        border-bottom: none;
+        padding-bottom: 8px;
+    }
+
+    .etape_icone_wrap {
+        position: relative;
+        width: 46px;
+        height: 46px;
+        background: #f0fdf4;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        border: 1.5px solid #bbf7d0;
+    }
+
+    .etape_num {
+        position: absolute;
+        bottom: -4px;
+        right: -4px;
+        background: #fff;
+        border-radius: 50%;
+        display: flex;
+    }
+
+    .etape_texte {
+        flex: 1;
+        padding-top: 4px;
+    }
+
+    .libel_mobile {
+        font-size: 13px;
+        font-weight: 700;
+        color: #15803d;
+        margin: 0 0 3px;
+    }
+
+    .description_mobile {
+        font-size: 12px;
+        color: #6b7280;
+        line-height: 1.5;
+        margin: 0;
+    }
+}
+
+/* ── Créneaux dynamiques (desktop) ── */
+.creneaux_grid_desktop {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    width: 80%;
+    margin-top: 4%;
+    margin-bottom: 4%;
+}
+
+.creneau_pill_desktop {
+    background: #fff;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    text-align: center;
+    padding: 8px 4px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.creneau_pill_desktop:hover {
+    border-color: #16a34a;
+    background: #f0fdf4;
+    color: #15803d;
+}
+
+.creneau_pill_actif {
+    border-color: #16a34a !important;
+    background: #16a34a !important;
+    color: #fff !important;
+}
+
+.sous_texte_creneaux {
+    font-size: 12px;
+    color: #9ca3af;
+    margin-top: 4%;
+    margin-bottom: 4%;
+    width: 80%;
+    text-align: center;
+}
+
+/* ── Créneaux dynamiques (mobile) : état actif pour .creneau_pill déjà existant ── */
+@media (max-width: 767px) {
+    .creneau_pill_actif {
+        border-color: #16a34a !important;
+        background: #16a34a !important;
+        color: #fff !important;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════
+   NOUVEAU DESIGN — Cartes "options de service colis"
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Carte option (commune desktop + mobile) ── */
+.carte_option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    background: #fff;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.08s ease;
+    user-select: none;
+}
+
+@media (min-width: 768px) {
+    .carte_option {
+        min-height: 26vh;
+        padding: 24px;
+        gap: 16px;
+        flex-direction: column;
+        justify-content: center;
+        text-align: center;
+        border-radius: 18px;
+    }
+
+    .carte_icone_cercle {
+        width: 64px;
+        height: 64px;
+    }
+
+    .carte_titre {
+        font-size: 16px;
+    }
+
+    .carte_sous_titre {
+        font-size: 13px;
+    }
+}
+
+.carte_option:hover {
+    border-color: #86efac;
+}
+
+.carte_option:active {
+    transform: scale(0.97);
+}
+
+.carte_option_active {
+    border-color: #16a34a;
+    background: #f0fdf4;
+}
+
+.carte_option_active:active {
+    transform: scale(0.97);
+}
+
+/* ── État "obligatoire non rempli" : contour rouge sur la carte elle-même ── */
+.carte_option_erreur {
+    border-color: #ef4444;
+}
+
+.carte_option_erreur:hover {
+    border-color: #dc2626;
+}
+
+/* ── Icône en cercle (flèche + pictogramme empilés) ── */
+.carte_icone_cercle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: 1.5px solid #e5e7eb;
+    background: #fff;
+    color: #6b7280;
+    flex-shrink: 0;
+    transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+}
+
+.carte_option_active .carte_icone_cercle {
+    border-color: #16a34a;
+    background: #f0fdf4;
+    color: #16a34a;
+}
+
+/* ── Textes ── */
+.carte_textes {
+    flex: 1;
+    min-width: 0;
+}
+
+.carte_titre {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 2px;
+    line-height: 1.3;
+}
+
+.carte_option_active .carte_titre {
+    color: #15803d;
+}
+
+.carte_sous_titre {
+    font-size: 11.5px;
+    color: #6b7280;
+    margin: 0;
+    line-height: 1.3;
+}
+
+/* ── Icônes d'état (check / alerte) ── */
+.carte_check {
+    color: #16a34a;
+    flex-shrink: 0;
+}
+
+.carte_alerte {
+    color: #f59e0b;
+    flex-shrink: 0;
+}
+
+/* ── Conteneur desktop : grille 2x2 ── */
+.grille_options_desktop {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(280px, 1fr));
+    gap: 14px;
+    width: 70%;
+    margin-top: 2%;
+    margin-bottom: 1%;
+    border-radius: 18px;
+    transition: box-shadow 0.2s ease;
+}
+
+/* ── Conteneur mobile : colonne ── */
+.grille_options_mobile {
+    width: calc(100% - 32px);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 16px 0;
+    border-radius: 16px;
+    transition: box-shadow 0.2s ease;
+}
+
+/* ════════════════════════════════════════════════════════════
+   Sélection obligatoire : contour rouge autour du bloc de cartes
+   quand l'utilisateur tente d'envoyer sans avoir choisi d'option
+   ════════════════════════════════════════════════════════════ */
+.grille_options_erreur {
+    box-shadow: 0 0 0 2px #ef4444;
+    padding: 8px;
+    animation: secousse_erreur 0.35s ease;
+}
+
+@keyframes secousse_erreur {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-4px);
+    }
+
+    75% {
+        transform: translateX(4px);
+    }
+}
+
+.option_erreur_texte {
+    color: #dc2626;
+    font-size: 12.5px;
+    font-weight: 600;
+    text-align: center;
+    margin-top: -4px;
+    margin-bottom: 12px;
+    width: 70%;
+}
+
+@media (max-width: 767px) {
+    .option_erreur_texte {
+        width: calc(100% - 32px);
+        margin-top: -8px;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════
+   Message de confirmation / erreur après envoi du formulaire
+   ════════════════════════════════════════════════════════════ */
+.message_envoi {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 60%;
+    margin: 0 auto 2%;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.message_envoi_mobile {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.message_succes {
+    background: #f0fdf4;
+    border: 1.5px solid #bbf7d0;
+    color: #15803d;
+}
+
+.message_erreur {
+    background: #fef2f2;
+    border: 1.5px solid #fecaca;
+    color: #b91c1c;
+}
+
+.button[disabled],
+.button_mobile[disabled] {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+/* ════════════════════════════════════════════════════════════
+   Page de chargement (pendant la vérification du token)
+   ════════════════════════════════════════════════════════════ */
+.page_chargement {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    font-size: 14px;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   PAGE DE SUIVI v2 — Timeline d'étapes + détails de commande
+   Nouveau design de la page de suivi de rendez-vous, inspiré d'un
+   parcours en étapes numérotées (1, 2, 3, 4) reliées par une ligne
+   verticale, avec une carte mise en avant pour l'étape en cours et
+   un récapitulatif détaillé de la commande.
+   ════════════════════════════════════════════════════════════════════ */
+
+.s2_page {
+    width: 100vw;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    background: #f6f8f7;
+    padding: 28px 16px 60px;
+}
+
+.s2_conteneur {
+    width: 100%;
+    max-width: 480px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ── En-tête ── */
+.s2_entete {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+}
+
+.s2_logo {
+    height: 34px;
+    object-fit: contain;
+}
+
+.s2_badge_statut {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1.5px solid;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.s2_titre {
+    font-size: 21px;
+    font-weight: 700;
+    color: #0f1720;
+    margin: 0 0 6px;
+    font-family: "Poppins", sans-serif;
+}
+
+.s2_sous_titre {
+    font-size: 13.5px;
+    color: #6b7280;
+    margin: 0 0 26px;
+    line-height: 1.5;
+}
+
+/* ── Bloc générique (titre de section + contenu) ── */
+.s2_bloc {
+    margin-bottom: 22px;
+}
+
+.s2_bloc_titre {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #16a34a;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 0 0 14px;
+}
+
+/* ── Timeline verticale ── */
+.s2_timeline {
+    background: #fff;
+    border: 1px solid #e9ebee;
+    border-radius: 18px;
+    padding: 22px 20px 20px;
+    box-shadow: 0 8px 24px rgba(15, 23, 32, 0.04);
+}
+
+.s2_timeline_ligne {
+    display: flex;
+    gap: 14px;
+}
+
+.s2_timeline_colonne_gauche {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.s2_pastille {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    border-radius: 50%;
+    background: #f3f4f6;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12.5px;
+    font-weight: 700;
+    border: 2px solid #e5e7eb;
+    transition: all 0.2s ease;
+    z-index: 1;
+}
+
+.s2_pastille_fait {
+    background: #16a34a;
+    border-color: #16a34a;
+    color: #fff;
+}
+
+.s2_pastille_courant {
+    background: #fff;
+    border-color: #16a34a;
+    color: #16a34a;
+    box-shadow: 0 0 0 4px #dcfce7;
+}
+
+.s2_trait {
+    width: 2px;
+    flex: 1;
+    min-height: 28px;
+    background: #e5e7eb;
+    margin: 2px 0;
+}
+
+.s2_trait_fait {
+    background: #16a34a;
+}
+
+.s2_timeline_colonne_droite {
+    flex: 1;
+    padding-bottom: 22px;
+    display: flex;
+    align-items: flex-start;
+}
+
+.s2_timeline_ligne:last-child .s2_timeline_colonne_droite {
+    padding-bottom: 2px;
+}
+
+.s2_etape_titre_simple {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #9ca3af;
+    margin: 4px 0 0;
+}
+
+.s2_etape_titre_fait {
+    color: #111827;
+}
+
+/* ── Carte de l'étape active (mise en avant) ── */
+.s2_carte_etape_active {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+    border: 1.5px solid #bbf7d0;
+    border-radius: 14px;
+    padding: 14px 16px;
+    width: 100%;
+}
+
+.s2_carte_etape_icone {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    border-radius: 10px;
+    background: #16a34a;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(22, 163, 74, 0.25);
+}
+
+.s2_carte_etape_titre {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #15803d;
+    margin: 0 0 3px;
+}
+
+.s2_carte_etape_desc {
+    font-size: 12px;
+    color: #166534;
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* ── Bloc état "annulé" ── */
+.s2_bloc_annule {
+    background: #fff;
+    border: 1.5px solid #fecaca;
+    border-radius: 18px;
+    padding: 26px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 22px;
+}
+
+.s2_icone_annule {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: #fef2f2;
+    color: #dc2626;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+.s2_annule_titre {
+    font-size: 15px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 4px;
+}
+
+.s2_annule_texte {
+    font-size: 12.5px;
+    color: #6b7280;
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* ── Carte "détails de la commande" ── */
+.s2_carte_details {
+    background: #fff;
+    border: 1px solid #e9ebee;
+    border-radius: 18px;
+    padding: 18px 18px 8px;
+    box-shadow: 0 8px 24px rgba(15, 23, 32, 0.04);
+}
+
+.s2_resume_service {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 16px;
+}
+
+.s2_resume_icone {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    border-radius: 12px;
+    background: #f0fdf4;
+    color: #16a34a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.s2_resume_categorie {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 2px;
+}
+
+.s2_resume_date {
+    font-size: 12px;
+    color: #6b7280;
+    margin: 0;
+}
+
+.s2_separateur {
+    height: 1px;
+    background: #f1f2f4;
+    margin: 0 0 14px;
+}
+
+.s2_grille_details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 12px;
+    padding-bottom: 16px;
+}
+
+.s2_ligne_detail {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    min-width: 0;
+}
+
+.s2_detail_icone {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    border-radius: 8px;
+    background: #f9fafb;
+    border: 1px solid #f0f1f3;
+    color: #16a34a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.s2_detail_textes {
+    min-width: 0;
+}
+
+.s2_detail_libelle {
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #9ca3af;
+    margin: 0 0 2px;
+}
+
+.s2_detail_valeur {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+/* ── Actions ── */
+.s2_actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+.s2_bouton_secondaire {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    border: 1.5px solid #fecaca;
+    background: #fef2f2;
+    color: #dc2626;
+    font-size: 13.5px;
+    font-weight: 600;
+    font-family: "Poppins", sans-serif;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.s2_bouton_secondaire:hover {
+    background: #fee2e2;
+}
+
+.s2_bouton_secondaire[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.s2_bouton_principal {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    border: none;
+    background: linear-gradient(135deg, #16a34a, #4ade80);
+    color: #fff;
+    font-size: 13.5px;
+    font-weight: 600;
+    font-family: "Poppins", sans-serif;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(22, 163, 74, 0.3);
+}
+
+.s2_whatsapp {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 12.5px;
+    color: #374151;
+    font-weight: 500;
+}
+
+/* ── Adaptations desktop : carte centrée, un peu plus large ── */
+@media (min-width: 768px) {
+    .s2_page {
+        padding: 56px 16px;
+    }
+
+    .s2_conteneur {
+        max-width: 540px;
+    }
+
+    .s2_titre {
+        font-size: 24px;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   SÉLECTEUR DE PAYS POUR LE TÉLÉPHONE (drapeau + indicatif, cliquable)
+   ════════════════════════════════════════════════════════════════════ */
+
+.selecteur_pays_wrapper {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.selecteur_pays_bouton {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: none;
+    border-right: 1.5px solid #e5e7eb;
+    background: transparent;
+    cursor: pointer;
+    padding: 4px 10px 4px 6px;
+    margin-right: 4px;
+    border-radius: 0;
+    font-family: "Poppins", sans-serif;
+    font-size: 13px;
+    color: #374151;
+    transition: background-color 0.15s ease;
+    height: 100%;
+}
+
+.selecteur_pays_bouton:hover {
+    background: #f9fafb;
+}
+
+.selecteur_pays_drapeau {
+    width: 22px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    display: block;
+}
+
+.selecteur_pays_indicatif {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.selecteur_pays_chevron {
+    color: #9ca3af;
+    margin-left: 1px;
+}
+
+.selecteur_pays_menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(15, 23, 32, 0.14);
+    padding: 6px;
+    min-width: 190px;
+    z-index: 60;
+}
+
+.selecteur_pays_option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12.5px;
+    color: #374151;
+    transition: background-color 0.15s ease;
+}
+
+.selecteur_pays_option:hover {
+    background: #f0fdf4;
+}
+
+.selecteur_pays_option_active {
+    background: #f0fdf4;
+    color: #15803d;
+    font-weight: 600;
+}
+
+.selecteur_pays_option_label {
+    flex: 1;
+}
+
+.selecteur_pays_option_indicatif {
+    color: #9ca3af;
+    font-size: 11.5px;
+}
+
+.selecteur_pays_option_active .selecteur_pays_option_indicatif {
+    color: #15803d;
+}
