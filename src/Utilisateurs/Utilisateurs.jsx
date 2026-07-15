@@ -3,18 +3,19 @@ import { useMediaQuery } from 'react-responsive'
 import { DayPicker } from 'react-day-picker'
 import "react-day-picker/dist/style.css";
 import styles from './Utilisateurs.module.css'
-import logo from '../logo_entreprise.png'
+import logo from '../assets/logo_entreprise.png'
 import {
     FaArrowDown, FaArrowUp, FaCalendarAlt, FaCheckCircle, FaWhatsapp, FaRegCalendarAlt,
     FaArrowRight, FaBicycle, FaMotorcycle, FaExclamationTriangle, FaTimesCircle, FaClock,
     FaBan, FaRedo, FaMapMarkerAlt, FaBoxOpen, FaUser, FaPhoneAlt, FaStickyNote, FaTag,
-    FaRulerCombined, FaCheck, FaHourglassHalf, FaPaperPlane, FaTruck, FaChevronDown
+    FaRulerCombined, FaCheck, FaHourglassHalf, FaPaperPlane, FaTruck, FaChevronDown, FaTimes,
+    FaPen, FaSave, FaSearch, FaArrowLeft, FaClipboardList, FaChevronRight
 } from 'react-icons/fa'
 import { FiPackage } from 'react-icons/fi'
 import { Bs1CircleFill, Bs2CircleFill, Bs3CircleFill, Bs4CircleFill } from "react-icons/bs";
 import { CI, FR } from 'country-flag-icons/react/3x2';
 import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, onValue, push, set, update } from 'firebase/database';
+import { getDatabase, ref, onValue, push, set, update, get, query, orderByChild, equalTo } from 'firebase/database';
 
 // ── Connexion à Firebase ──
 const firebaseConfig = {
@@ -63,6 +64,44 @@ function normaliserTypeCreneau(type) {
     return null;
 }
 
+// ── Conversion d'heure Côte d'Ivoire ↔ France ──
+// L'administrateur indique, pour chaque créneau, s'il a saisi l'heure d'Abidjan
+// (UTC+0 toute l'année) ou l'heure de Paris (UTC+1 l'hiver, UTC+2 l'été).
+// Cette fonction calcule l'heure équivalente dans l'autre pays, en tenant
+// compte automatiquement du changement d'heure d'été / hiver français.
+const formatteurHeureAbidjan = new Intl.DateTimeFormat('fr-FR', {
+    timeZone: 'Africa/Abidjan',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+});
+const formatteurHeureParis = new Intl.DateTimeFormat('fr-FR', {
+    timeZone: 'Europe/Paris',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+});
+
+function heureDansAutrePays(dateISO, heure, paysSource) {
+    if (!dateISO || !heure) return null;
+    const [annee, mois, jour] = dateISO.split('-').map(Number);
+    const [h, m] = heure.split(':').map(Number);
+    if ([annee, mois, jour, h, m].some((n) => Number.isNaN(n))) return null;
+
+    if (paysSource === 'CI') {
+        const instantUTC = new Date(Date.UTC(annee, mois - 1, jour, h, m));
+        return formatteurHeureParis.format(instantUTC);
+    }
+
+    let instantUTC = new Date(Date.UTC(annee, mois - 1, jour, h - 1, m));
+    const rendu = formatteurHeureParis.format(instantUTC);
+    const [hRendu] = rendu.split(':').map(Number);
+    if (hRendu !== h) {
+        instantUTC = new Date(Date.UTC(annee, mois - 1, jour, h - 2, m));
+    }
+    return formatteurHeureAbidjan.format(instantUTC);
+}
+
 // ── Les 4 options de service colis ──
 const OPTIONS_COLIS = [
     {
@@ -73,6 +112,7 @@ const OPTIONS_COLIS = [
         titre: 'GVIP vient récupérer',
         sousTitre: 'Je fais récupérer mon colis',
         alerte: false,
+        note: "Un livreur GVIP se déplace à l'adresse que vous indiquez pour récupérer le colis que vous envoyez. Vous n'avez pas à vous déplacer.",
     },
     {
         id: 'gvip_recupere',
@@ -82,6 +122,7 @@ const OPTIONS_COLIS = [
         titre: 'GVIP vient récupérer pour vous apporter',
         sousTitre: 'Un livreur passe chez vous',
         alerte: true,
+        note: "Un livreur GVIP récupère un colis qui vous est destiné et vous l'apporte directement à votre adresse. Des frais de livraison supplémentaires peuvent s'appliquer.",
     },
     {
         id: 'depot_point',
@@ -91,6 +132,7 @@ const OPTIONS_COLIS = [
         titre: 'Je dépose le colis',
         sousTitre: 'Dans un point GVIP',
         alerte: false,
+        note: "Vous déposez vous-même votre colis dans l'un de nos points de collecte GVIP, à l'horaire que vous aurez choisi.",
     },
     {
         id: 'livreur_depot',
@@ -100,6 +142,7 @@ const OPTIONS_COLIS = [
         titre: 'Un livreur dépose le colis',
         sousTitre: 'Dans un point GVIP',
         alerte: true,
+        note: "Un livreur GVIP vient récupérer votre colis chez vous, puis le dépose lui-même dans un point GVIP pour expédition. Des frais de prise en charge supplémentaires peuvent s'appliquer.",
     },
 ];
 
@@ -157,7 +200,7 @@ const FORMULAIRE_VIDE = {
     notes: '',
 };
 
-// ── Clé utilisée pour stocker le "token" (= id Firebase du rendez-vous) dans le navigateur du client ──
+// ── Clé utilisée pour stocker le "token" (= id Firebase du dernier rendez-vous consulté) dans le navigateur du client ──
 const CLE_TOKEN_RDV = 'gvip_token_rdv';
 
 // ── Libellé lisible pour la catégorie de service ──
@@ -231,8 +274,23 @@ function construireEtapesSuivi(rdv) {
 }
 
 // ── Carte d'option réutilisable (desktop + mobile) ──
+// Au clic, en plus de sélectionner l'option, une note explicative apparaît
+// (comme une bulle d'info) pour détailler ce qui vient d'être choisi.
 function CarteOption({ option, active, onClick, enErreur }) {
-    const { Icone, direction, titre, sousTitre, alerte } = option;
+    const { Icone, direction, titre, sousTitre, alerte, note } = option;
+    const [noteFermee, setNoteFermee] = useState(false);
+
+    // Rouvre automatiquement la note si la carte redevient active
+    // (ex: l'utilisateur l'avait fermée, puis re-sélectionne cette carte)
+    useEffect(() => {
+        if (active) setNoteFermee(false);
+    }, [active]);
+
+    const fermerNote = (e) => {
+        e.stopPropagation();
+        setNoteFermee(true);
+    };
+
     return (
         <div
             className={`${styles.carte_option} ${active ? styles.carte_option_active : ''} ${enErreur ? styles.carte_option_erreur : ''}`}
@@ -252,6 +310,13 @@ function CarteOption({ option, active, onClick, enErreur }) {
                 <FaExclamationTriangle size={18} className={styles.carte_alerte} />
             ) : (
                 active && <FaCheckCircle size={18} className={styles.carte_check} />
+            )}
+
+            {active && note && !noteFermee && (
+                <div className={styles.carte_note} onClick={(e) => e.stopPropagation()}>
+                    <p className={styles.carte_note_texte}>{note}</p>
+                    <FaTimes className={styles.carte_note_fermer} onClick={fermerNote} />
+                </div>
             )}
         </div>
     );
@@ -367,12 +432,108 @@ function TimelineSuivi({ rdv }) {
     );
 }
 
-// ── Page affichée quand le visiteur a déjà un rendez-vous en cours (token reconnu) ──
-function SuiviRendezVous({ rdv, onAnnuler, onNouvelleDemande, annulationEnCours }) {
+// ── Page affichée quand le visiteur a un rendez-vous en cours de consultation (token reconnu) ──
+function SuiviRendezVous({ rdv, onAnnuler, onNouvelleDemande, onVoirListe, annulationEnCours }) {
     const statutInfos = infosStatutRdv(rdv.statut);
     const peutAnnuler = rdv.statut === 'En attente';
-    const peutReprendre = rdv.statut === 'Terminé' || rdv.statut === 'Annulé';
     const estAnnule = rdv.statut === 'Annulé';
+    // Une fois le rendez-vous confirmé (ou à une étape ultérieure), on ne peut plus
+    // modifier les informations : seule la fenêtre "En attente" le permet.
+    const peutModifier = rdv.statut === 'En attente';
+
+    // ── Mode édition des informations ──
+    const [modeEdition, setModeEdition] = useState(false);
+    const [formEdition, setFormEdition] = useState(null);
+    const [sauvegardeEnCours, setSauvegardeEnCours] = useState(false);
+    const [erreurEdition, setErreurEdition] = useState(false);
+    const [messageEdition, setMessageEdition] = useState(null);
+
+    // ── Sélecteur de pays pour le téléphone (en mode édition) ──
+    const [menuPaysOuvertEdition, setMenuPaysOuvertEdition] = useState(false);
+    const refSelecteurPaysEdition = useRef(null);
+
+    useEffect(() => {
+        if (!menuPaysOuvertEdition) return;
+        const fermerSiExterieur = (e) => {
+            if (refSelecteurPaysEdition.current && !refSelecteurPaysEdition.current.contains(e.target)) {
+                setMenuPaysOuvertEdition(false);
+            }
+        };
+        document.addEventListener('mousedown', fermerSiExterieur);
+        return () => document.removeEventListener('mousedown', fermerSiExterieur);
+    }, [menuPaysOuvertEdition]);
+
+    const majFormEdition = (champ, valeur) => {
+        setFormEdition((prev) => ({ ...prev, [champ]: valeur }));
+    };
+
+    const demarrerEdition = () => {
+        const pays = rdv.paysTelephone || 'CI';
+        const indicatif = INDICATIFS_PAYS[pays].indicatif;
+        const telephoneLocal = rdv.telephone?.startsWith(indicatif)
+            ? rdv.telephone.slice(indicatif.length).trim()
+            : (rdv.telephone || '');
+
+        setFormEdition({
+            nomComplet: rdv.nomComplet || '',
+            telephoneLocal,
+            paysTelephone: pays,
+            email: rdv.email || '',
+            typeColis: rdv.typeColis || '',
+            tailleColis: rdv.tailleColis || '',
+            destination: rdv.destination || '',
+            adresse: rdv.adresse || '',
+            notes: rdv.notes || '',
+        });
+        setErreurEdition(false);
+        setMessageEdition(null);
+        setModeEdition(true);
+    };
+
+    const annulerEdition = () => {
+        setModeEdition(false);
+        setFormEdition(null);
+        setErreurEdition(false);
+        setMessageEdition(null);
+    };
+
+    const enregistrerEdition = async () => {
+        const valide =
+            formEdition.nomComplet.trim() !== '' &&
+            formEdition.telephoneLocal.trim() !== '' &&
+            formEdition.destination.trim() !== '' &&
+            formEdition.adresse.trim() !== '';
+
+        if (!valide) {
+            setErreurEdition(true);
+            setMessageEdition({ type: 'error', texte: "Merci de remplir tous les champs obligatoires (*)." });
+            return;
+        }
+
+        setSauvegardeEnCours(true);
+        try {
+            await update(ref(db, `rendezVous/${rdv.id}`), {
+                nomComplet: formEdition.nomComplet.trim(),
+                telephone: `${INDICATIFS_PAYS[formEdition.paysTelephone].indicatif} ${formEdition.telephoneLocal.trim()}`,
+                paysTelephone: formEdition.paysTelephone,
+                email: formEdition.email.trim() || null,
+                typeColis: formEdition.typeColis || null,
+                tailleColis: formEdition.tailleColis || null,
+                destination: formEdition.destination.trim(),
+                adresse: formEdition.adresse.trim(),
+                notes: formEdition.notes.trim() || null,
+            });
+            setModeEdition(false);
+            setFormEdition(null);
+            setErreurEdition(false);
+            setMessageEdition(null);
+        } catch (error) {
+            console.error("Erreur lors de la modification :", error);
+            setMessageEdition({ type: 'error', texte: "Une erreur est survenue. Veuillez réessayer." });
+        } finally {
+            setSauvegardeEnCours(false);
+        }
+    };
 
     return (
         <div className={styles.s2_page}>
@@ -399,13 +560,14 @@ function SuiviRendezVous({ rdv, onAnnuler, onNouvelleDemande, annulationEnCours 
                     {rdv.statut === 'Annulé' && "Ce rendez-vous a été annulé."}
                 </p>
 
-                {/* ── Timeline des étapes (masquée si annulé) ── */}
-                {!estAnnule ? (
+                {/* ── Timeline des étapes (masquée si annulé ou en édition) ── */}
+                {!estAnnule && !modeEdition && (
                     <div className={styles.s2_bloc}>
                         <p className={styles.s2_bloc_titre}>Étapes du parcours</p>
                         <TimelineSuivi rdv={rdv} />
                     </div>
-                ) : (
+                )}
+                {estAnnule && !modeEdition && (
                     <div className={styles.s2_bloc_annule}>
                         <div className={styles.s2_icone_annule}>
                             <FaBan size={22} />
@@ -417,52 +579,188 @@ function SuiviRendezVous({ rdv, onAnnuler, onNouvelleDemande, annulationEnCours 
                     </div>
                 )}
 
-                {/* ── Détails de la commande ── */}
+                {/* ── Détails de la commande / Mode édition ── */}
                 <div className={styles.s2_bloc}>
-                    <p className={styles.s2_bloc_titre}>Détails de la commande</p>
-                    <div className={styles.s2_carte_details}>
+                    <p className={styles.s2_bloc_titre}>
+                        {modeEdition ? 'Modifier mes informations' : 'Détails de la commande'}
+                    </p>
 
-                        <div className={styles.s2_resume_service}>
-                            <div className={styles.s2_resume_icone}>
-                                {rdv.categorieService === 'depot' ? <FiPackage size={18} /> : <FaTruck size={18} />}
+                    {!modeEdition ? (
+                        <div className={styles.s2_carte_details}>
+                            <div className={styles.s2_resume_service}>
+                                <div className={styles.s2_resume_icone}>
+                                    {rdv.categorieService === 'depot' ? <FiPackage size={18} /> : <FaTruck size={18} />}
+                                </div>
+                                <div>
+                                    <p className={styles.s2_resume_categorie}>{libelleCategorieRdv(rdv.categorieService)}</p>
+                                    <p className={styles.s2_resume_date}>
+                                        {formatDateLisible(rdv.date)} · {rdv.heureDebut} - {rdv.heureFin}
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <p className={styles.s2_resume_categorie}>{libelleCategorieRdv(rdv.categorieService)}</p>
-                                <p className={styles.s2_resume_date}>
-                                    {formatDateLisible(rdv.date)} · {rdv.heureDebut} - {rdv.heureFin}
-                                </p>
+
+                            <div className={styles.s2_separateur} />
+
+                            <div className={styles.s2_grille_details}>
+                                <LigneDetail Icone={FaUser} libelle="Contact" valeur={rdv.nomComplet} />
+                                <LigneDetail Icone={FaPhoneAlt} libelle="Téléphone" valeur={rdv.telephone} />
+                                <LigneDetail Icone={FaMapMarkerAlt} libelle="Destination" valeur={rdv.destination} />
+                                <LigneDetail Icone={FaMapMarkerAlt} libelle="Adresse" valeur={rdv.adresse} />
+                                <LigneDetail Icone={FaTag} libelle="Type de colis" valeur={libelleTypeColis(rdv.typeColis)} />
+                                <LigneDetail Icone={FaRulerCombined} libelle="Taille" valeur={libelleTailleColis(rdv.tailleColis)} />
+                                <LigneDetail Icone={FaBoxOpen} libelle="Notes" valeur={rdv.notes} />
                             </div>
                         </div>
+                    ) : (
+                        <div className={styles.s2_carte_details}>
+                            <div className={`${styles.s2_edition_grille} ${erreurEdition ? styles.grille_options_erreur : ''}`}>
 
-                        <div className={styles.s2_separateur} />
+                                <div className={styles.s2_edition_champ}>
+                                    <label className={styles.s2_edition_label}>Nom complet <span className={styles.asterix}>*</span></label>
+                                    <input
+                                        className={styles.s2_edition_input}
+                                        type="text"
+                                        value={formEdition.nomComplet}
+                                        onChange={(e) => majFormEdition('nomComplet', e.target.value)}
+                                    />
+                                </div>
 
-                        <div className={styles.s2_grille_details}>
-                            <LigneDetail Icone={FaUser} libelle="Contact" valeur={rdv.nomComplet} />
-                            <LigneDetail Icone={FaPhoneAlt} libelle="Téléphone" valeur={rdv.telephone} />
-                            <LigneDetail Icone={FaMapMarkerAlt} libelle="Destination" valeur={rdv.destination} />
-                            <LigneDetail Icone={FaMapMarkerAlt} libelle="Adresse" valeur={rdv.adresse} />
-                            <LigneDetail Icone={FaTag} libelle="Type de colis" valeur={libelleTypeColis(rdv.typeColis)} />
-                            <LigneDetail Icone={FaRulerCombined} libelle="Taille" valeur={libelleTailleColis(rdv.tailleColis)} />
-                            <LigneDetail Icone={FaBoxOpen} libelle="Notes" valeur={rdv.notes} />
+                                <div className={styles.s2_edition_champ}>
+                                    <label className={styles.s2_edition_label}>Téléphone / WhatsApp <span className={styles.asterix}>*</span></label>
+                                    <div className={styles.s2_edition_telephone}>
+                                        <SelecteurPaysTelephone
+                                            paysActif={formEdition.paysTelephone}
+                                            ouvert={menuPaysOuvertEdition}
+                                            onToggle={() => setMenuPaysOuvertEdition((v) => !v)}
+                                            onChoisir={(code) => { majFormEdition('paysTelephone', code); setMenuPaysOuvertEdition(false); }}
+                                            wrapperRef={refSelecteurPaysEdition}
+                                        />
+                                        <input
+                                            className={styles.s2_edition_input}
+                                            type="text"
+                                            placeholder={INDICATIFS_PAYS[formEdition.paysTelephone].placeholder}
+                                            value={formEdition.telephoneLocal}
+                                            onChange={(e) => majFormEdition('telephoneLocal', e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className={styles.s2_edition_champ}>
+                                    <label className={styles.s2_edition_label}>Email <span className={styles.optionnel}>(optionnel)</span></label>
+                                    <input
+                                        className={styles.s2_edition_input}
+                                        type="email"
+                                        value={formEdition.email}
+                                        onChange={(e) => majFormEdition('email', e.target.value)}
+                                    />
+                                </div>
+
+                                <div className={styles.s2_edition_champ}>
+                                    <label className={styles.s2_edition_label}>Destination <span className={styles.asterix}>*</span></label>
+                                    <select
+                                        className={styles.s2_edition_select}
+                                        value={formEdition.destination}
+                                        onChange={(e) => majFormEdition('destination', e.target.value)}
+                                    >
+                                        <option value="">Sélectionnez une destination</option>
+                                        {OPTIONS_DESTINATION.map((d) => (
+                                            <option key={d.code} value={d.label}>{d.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className={styles.s2_edition_champ}>
+                                    <label className={styles.s2_edition_label}>Type de colis <span className={styles.optionnel}>(optionnel)</span></label>
+                                    <select
+                                        className={styles.s2_edition_select}
+                                        value={formEdition.typeColis}
+                                        onChange={(e) => majFormEdition('typeColis', e.target.value)}
+                                    >
+                                        <option value="">Sélectionnez un type</option>
+                                        {Object.entries(LIBELLES_TYPE_COLIS).map(([valeur, libelle]) => (
+                                            <option key={valeur} value={valeur}>{libelle}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className={styles.s2_edition_champ}>
+                                    <label className={styles.s2_edition_label}>Taille du colis <span className={styles.optionnel}>(optionnel)</span></label>
+                                    <select
+                                        className={styles.s2_edition_select}
+                                        value={formEdition.tailleColis}
+                                        onChange={(e) => majFormEdition('tailleColis', e.target.value)}
+                                    >
+                                        <option value="">Sélectionnez une taille</option>
+                                        {Object.entries(LIBELLES_TAILLE_COLIS).map(([valeur, libelle]) => (
+                                            <option key={valeur} value={valeur}>{libelle}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className={`${styles.s2_edition_champ} ${styles.s2_edition_champ_pleine_largeur}`}>
+                                    <label className={styles.s2_edition_label}>Adresse / ville <span className={styles.asterix}>*</span></label>
+                                    <input
+                                        className={styles.s2_edition_input}
+                                        type="text"
+                                        value={formEdition.adresse}
+                                        onChange={(e) => majFormEdition('adresse', e.target.value)}
+                                    />
+                                </div>
+
+                                <div className={`${styles.s2_edition_champ} ${styles.s2_edition_champ_pleine_largeur}`}>
+                                    <label className={styles.s2_edition_label}>Notes <span className={styles.optionnel}>(optionnel)</span></label>
+                                    <input
+                                        className={styles.s2_edition_input}
+                                        type="text"
+                                        value={formEdition.notes}
+                                        onChange={(e) => majFormEdition('notes', e.target.value)}
+                                    />
+                                </div>
+                            </div>
+
+                            <MessageEnvoi message={messageEdition} styleClasse={styles.message_envoi_mobile} />
+
+                            <div className={styles.s2_edition_actions}>
+                                <button className={styles.s2_bouton_annuler_edition} onClick={annulerEdition} disabled={sauvegardeEnCours}>
+                                    <FaTimes size={13} />
+                                    Annuler
+                                </button>
+                                <button className={styles.s2_bouton_enregistrer} onClick={enregistrerEdition} disabled={sauvegardeEnCours}>
+                                    <FaSave size={13} />
+                                    {sauvegardeEnCours ? 'Enregistrement...' : 'Enregistrer'}
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 {/* ── Actions ── */}
-                <div className={styles.s2_actions}>
-                    {peutAnnuler && (
-                        <button className={styles.s2_bouton_secondaire} onClick={onAnnuler} disabled={annulationEnCours}>
-                            <FaBan size={13} />
-                            {annulationEnCours ? 'Annulation...' : 'Annuler ma demande'}
-                        </button>
-                    )}
-                    {peutReprendre && (
+                {!modeEdition && (
+                    <div className={styles.s2_actions}>
+                        {peutModifier && (
+                            <button className={styles.s2_bouton_modifier} onClick={demarrerEdition}>
+                                <FaPen size={12} />
+                                Modifier mes informations
+                            </button>
+                        )}
+                        {peutAnnuler && (
+                            <button className={styles.s2_bouton_secondaire} onClick={onAnnuler} disabled={annulationEnCours}>
+                                <FaBan size={13} />
+                                {annulationEnCours ? 'Annulation...' : 'Annuler ma demande'}
+                            </button>
+                        )}
+                        {/* Toujours disponible : on peut prendre un nouveau rendez-vous
+                            même si celui-ci est encore actif, ils cohabitent en parallèle. */}
                         <button className={styles.s2_bouton_principal} onClick={onNouvelleDemande}>
                             <FaRedo size={13} />
                             Prendre un nouveau rendez-vous
                         </button>
-                    )}
-                </div>
+                        <button className={styles.s2_bouton_tertiaire} onClick={onVoirListe}>
+                            <FaClipboardList size={13} />
+                            Voir tous mes rendez-vous
+                        </button>
+                    </div>
+                )}
 
                 <div className={styles.s2_whatsapp}>
                     <FaWhatsapp size={16} color="#16a34a" />
@@ -473,10 +771,153 @@ function SuiviRendezVous({ rdv, onAnnuler, onNouvelleDemande, annulationEnCours 
     );
 }
 
+// ── Page de recherche : retrouver tous ses rendez-vous à partir du numéro de téléphone ──
+function MesRendezVous({ onRetour, onSelectionnerRdv }) {
+    const [paysRecherche, setPaysRecherche] = useState('CI');
+    const [menuPaysOuvert, setMenuPaysOuvert] = useState(false);
+    const refSelecteurPays = useRef(null);
+    const [telephoneLocal, setTelephoneLocal] = useState('');
+
+    const [rechercheEnCours, setRechercheEnCours] = useState(false);
+    const [rechercheEffectuee, setRechercheEffectuee] = useState(false);
+    const [erreurRecherche, setErreurRecherche] = useState(null);
+    const [rdvsTrouves, setRdvsTrouves] = useState([]);
+
+    useEffect(() => {
+        if (!menuPaysOuvert) return;
+        const fermerSiExterieur = (e) => {
+            if (refSelecteurPays.current && !refSelecteurPays.current.contains(e.target)) {
+                setMenuPaysOuvert(false);
+            }
+        };
+        document.addEventListener('mousedown', fermerSiExterieur);
+        return () => document.removeEventListener('mousedown', fermerSiExterieur);
+    }, [menuPaysOuvert]);
+
+    const rechercher = async () => {
+        if (!telephoneLocal.trim()) {
+            setErreurRecherche("Merci de saisir votre numéro de téléphone.");
+            return;
+        }
+        setErreurRecherche(null);
+        setRechercheEnCours(true);
+        setRechercheEffectuee(false);
+
+        const telephoneComplet = `${INDICATIFS_PAYS[paysRecherche].indicatif} ${telephoneLocal.trim()}`;
+
+        try {
+            const rdvRequete = query(ref(db, 'rendezVous'), orderByChild('telephone'), equalTo(telephoneComplet));
+            const snapshot = await get(rdvRequete);
+            const data = snapshot.val() || {};
+            const liste = Object.entries(data)
+                .map(([id, val]) => ({ id, ...val }))
+                .sort((a, b) => (b.dateCreation || 0) - (a.dateCreation || 0));
+
+            setRdvsTrouves(liste);
+            setRechercheEffectuee(true);
+        } catch (error) {
+            console.error("Erreur lors de la recherche :", error);
+            setErreurRecherche("Une erreur est survenue lors de la recherche. Veuillez réessayer.");
+        } finally {
+            setRechercheEnCours(false);
+        }
+    };
+
+    return (
+        <div className={styles.mrv_page}>
+            <div className={styles.mrv_conteneur}>
+
+                <div className={styles.mrv_entete}>
+                    <button className={styles.mrv_retour} onClick={onRetour}>
+                        <FaArrowLeft size={13} />
+                        Retour
+                    </button>
+                    <img src={logo} alt="Logo GVIP" className={styles.mrv_logo} />
+                </div>
+
+                <h1 className={styles.mrv_titre}>Mes rendez-vous</h1>
+                <p className={styles.mrv_sous_titre}>
+                    Entrez votre numéro de téléphone pour retrouver tous vos rendez-vous.
+                </p>
+
+                <div className={styles.mrv_recherche}>
+                    <div className={styles.mrv_recherche_telephone}>
+                        <SelecteurPaysTelephone
+                            paysActif={paysRecherche}
+                            ouvert={menuPaysOuvert}
+                            onToggle={() => setMenuPaysOuvert((v) => !v)}
+                            onChoisir={(code) => { setPaysRecherche(code); setMenuPaysOuvert(false); }}
+                            wrapperRef={refSelecteurPays}
+                        />
+                        <input
+                            className={styles.mrv_recherche_input}
+                            type="text"
+                            placeholder={INDICATIFS_PAYS[paysRecherche].placeholder}
+                            value={telephoneLocal}
+                            onChange={(e) => setTelephoneLocal(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') rechercher(); }}
+                        />
+                    </div>
+                    <button className={styles.mrv_bouton_rechercher} onClick={rechercher} disabled={rechercheEnCours}>
+                        <FaSearch size={13} />
+                        {rechercheEnCours ? 'Recherche...' : 'Rechercher'}
+                    </button>
+                </div>
+
+                {erreurRecherche && (
+                    <p className={styles.mrv_erreur}>{erreurRecherche}</p>
+                )}
+
+                {rechercheEffectuee && rdvsTrouves.length === 0 && !erreurRecherche && (
+                    <div className={styles.mrv_vide}>
+                        <FaClipboardList size={28} />
+                        <p>Aucun rendez-vous trouvé pour ce numéro.</p>
+                    </div>
+                )}
+
+                {rdvsTrouves.length > 0 && (
+                    <div className={styles.mrv_liste}>
+                        {rdvsTrouves.map((rdv) => {
+                            const statutInfos = infosStatutRdv(rdv.statut);
+                            return (
+                                <div key={rdv.id} className={styles.mrv_carte} onClick={() => onSelectionnerRdv(rdv.id)}>
+                                    <div className={styles.mrv_carte_gauche}>
+                                        <div className={styles.mrv_carte_icone}>
+                                            {rdv.categorieService === 'depot' ? <FiPackage size={17} /> : <FaTruck size={17} />}
+                                        </div>
+                                        <div className={styles.mrv_carte_infos}>
+                                            <p className={styles.mrv_carte_titre}>{libelleCategorieRdv(rdv.categorieService)}</p>
+                                            <p className={styles.mrv_carte_date}>
+                                                {formatDateLisible(rdv.date)} · {rdv.heureDebut} - {rdv.heureFin}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className={styles.mrv_carte_droite}>
+                                        <span
+                                            className={styles.mrv_carte_badge}
+                                            style={{ color: statutInfos.couleur, background: statutInfos.fond, borderColor: statutInfos.bordure }}
+                                        >
+                                            {statutInfos.texte}
+                                        </span>
+                                        <FaChevronRight size={13} className={styles.mrv_carte_chevron} />
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
 function Utilisateur() {
 
     const isDesktop = useMediaQuery({ minWidth: 768 });
     const isTablet = useMediaQuery({ minWidth: 768, maxWidth: 1024 });
+
+    // ── Vue active de l'application : 'accueil' (formulaire ou suivi) ou 'liste' (Mes rendez-vous) ──
+    const [vue, setVue] = useState('accueil');
 
     // ── Créneaux récupérés depuis Firebase ──
     const [creneaux, setCreneaux] = useState([]);
@@ -522,7 +963,9 @@ function Utilisateur() {
     const [envoiEnCours, setEnvoiEnCours] = useState(false);
     const [messageEnvoi, setMessageEnvoi] = useState(null); // { type: 'success' | 'error', texte: string }
 
-    // ── Token de rendez-vous existant (id Firebase stocké dans le navigateur du client) ──
+    // ── Token du rendez-vous actuellement consulté (id Firebase stocké dans le navigateur du client).
+    //    Ce n'est qu'un raccourci vers le "dernier rendez-vous regardé" : la vraie source de vérité
+    //    pour retrouver TOUS les rendez-vous d'un client reste la recherche par téléphone (MesRendezVous). ──
     const [tokenRdv, setTokenRdv] = useState(() => {
         try {
             return localStorage.getItem(CLE_TOKEN_RDV);
@@ -575,12 +1018,24 @@ function Utilisateur() {
         }
     };
 
-    // ── Le client efface son token pour pouvoir reprendre un nouveau rendez-vous ──
+    // ── Le client démarre un nouveau rendez-vous : l'ancien reste actif dans Firebase,
+    //    on efface juste le "raccourci" local pour afficher le formulaire vierge. ──
     const reprendreNouvelleDemande = () => {
         try { localStorage.removeItem(CLE_TOKEN_RDV); } catch { }
         setTokenRdv(null);
         setRdvExistant(null);
+        setVue('accueil');
     };
+
+    // ── Le client choisit un rendez-vous précis depuis la liste "Mes rendez-vous" ──
+    const consulterRdv = (id) => {
+        try { localStorage.setItem(CLE_TOKEN_RDV, id); } catch { }
+        setTokenRdv(id);
+        setVue('accueil');
+    };
+
+    const allerVersListe = () => setVue('liste');
+    const retourAccueil = () => setVue('accueil');
 
     // ── Références vers les sections du header pour le scroll ──
     const refRendezVous = useRef(null);
@@ -692,6 +1147,7 @@ function Utilisateur() {
                 creneauId: creneauSelectionne.id,
                 heureDebut: creneauSelectionne.heureDebut,
                 heureFin: creneauSelectionne.heureFin,
+                creneauPays: creneauSelectionne.pays || 'CI',
                 statut: 'En attente',
                 dateCreation: Date.now(),
             });
@@ -702,7 +1158,8 @@ function Utilisateur() {
             });
 
             // On garde une trace du rendez-vous côté client (token = id Firebase),
-            // pour reconnaître ce visiteur s'il revient sur le site.
+            // pour reconnaître ce visiteur s'il revient sur le site. Les rendez-vous
+            // précédents restent accessibles via "Mes rendez-vous" (recherche par téléphone).
             try { localStorage.setItem(CLE_TOKEN_RDV, nouvelleEntreeRef.key); } catch { }
             setTokenRdv(nouvelleEntreeRef.key);
 
@@ -725,7 +1182,12 @@ function Utilisateur() {
 
     return (
         <>
-            {chargementTokenRdv ? (
+            {vue === 'liste' ? (
+                <MesRendezVous
+                    onRetour={retourAccueil}
+                    onSelectionnerRdv={consulterRdv}
+                />
+            ) : chargementTokenRdv ? (
                 <div className={styles.page_chargement}>
                     <p>Chargement...</p>
                 </div>
@@ -734,6 +1196,7 @@ function Utilisateur() {
                     rdv={rdvExistant}
                     onAnnuler={annulerMaDemande}
                     onNouvelleDemande={reprendreNouvelleDemande}
+                    onVoirListe={allerVersListe}
                     annulationEnCours={annulationEnCours}
                 />
             ) : (
@@ -749,6 +1212,7 @@ function Utilisateur() {
                                     <p onClick={() => allerVers(refRendezVous)} style={{ cursor: 'pointer' }}>Prendre un rendez-vous</p>
                                     <p onClick={() => allerVers(refCommentCaMarche)} style={{ cursor: 'pointer' }}>Comment ça marche</p>
                                     <p onClick={() => allerVers(refAPropos)} style={{ cursor: 'pointer' }}>A propos</p>
+                                    <p onClick={allerVersListe} style={{ cursor: 'pointer' }}>Mes rendez-vous</p>
                                     <p onClick={() => allerVers(refContact)} style={{ cursor: 'pointer' }}>Contact</p>
                                 </div>
                                 <div className={styles.whatsapp} ref={refContact}>
@@ -935,7 +1399,7 @@ function Utilisateur() {
                                                     <option value="">Sélectionnez un créneau</option>
                                                     {creneauxDuJour.map((c) => (
                                                         <option key={c.id} value={c.id}>
-                                                            {c.type} · {c.heureDebut} - {c.heureFin}
+                                                            {c.type} · {c.heureDebut} - {c.heureFin} ({(c.pays || 'CI') === 'FR' ? 'heure de Paris' : "heure d'Abidjan"})
                                                         </option>
                                                     ))}
                                                 </select>
@@ -987,15 +1451,24 @@ function Utilisateur() {
                                             <p className={styles.sous_texte_creneaux}>Aucun créneau disponible</p>
                                         ) : (
                                             <div className={styles.creneaux_grid_desktop}>
-                                                {creneauxDuJour.map((c) => (
-                                                    <div
-                                                        key={c.id}
-                                                        className={`${styles.creneau_pill_desktop} ${creneauSelectionne?.id === c.id ? styles.creneau_pill_actif : ''}`}
-                                                        onClick={() => choisirCreneau(c)}
-                                                    >
-                                                        {c.heureDebut} - {c.heureFin}
-                                                    </div>
-                                                ))}
+                                                {creneauxDuJour.map((c) => {
+                                                    const paysCreneau = c.pays || 'CI';
+                                                    return (
+                                                        <div
+                                                            key={c.id}
+                                                            className={`${styles.creneau_pill_desktop} ${creneauSelectionne?.id === c.id ? styles.creneau_pill_actif : ''}`}
+                                                            onClick={() => choisirCreneau(c)}
+                                                            title={`Équivaut à ${heureDansAutrePays(c.date, c.heureDebut, paysCreneau)} - ${heureDansAutrePays(c.date, c.heureFin, paysCreneau)} en ${paysCreneau === 'CI' ? 'France' : "Côte d'Ivoire"}`}
+                                                        >
+                                                            {paysCreneau === 'FR' ? (
+                                                                <FR title="Heure de Paris" className={styles.creneau_drapeau} />
+                                                            ) : (
+                                                                <CI title="Heure d'Abidjan" className={styles.creneau_drapeau} />
+                                                            )}
+                                                            {c.heureDebut} - {c.heureFin}
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         )}
                                     </div>
@@ -1047,9 +1520,15 @@ function Utilisateur() {
                             {/* Header */}
                             <div className={styles.header_mobile}>
                                 <img className={styles.logo_img_mobile} src={logo} alt="Logo GVIP" />
-                                <div className={styles.whatsapp_mobile} onClick={() => allerVers(refContact)} style={{ cursor: 'pointer' }}>
-                                    <FaWhatsapp color='#fff' size={16} />
-                                    <p className={styles.numero_mobile}>+225 07 49 49 49 49</p>
+                                <div className={styles.header_mobile_actions}>
+                                    <button className={styles.mes_rdv_mobile} onClick={allerVersListe}>
+                                        <FaClipboardList size={14} />
+                                        Mes RDV
+                                    </button>
+                                    <div className={styles.whatsapp_mobile} onClick={() => allerVers(refContact)} style={{ cursor: 'pointer' }}>
+                                        <FaWhatsapp color='#fff' size={16} />
+                                        <p className={styles.numero_mobile}>+225 07 49 49 49 49</p>
+                                    </div>
                                 </div>
                             </div>
 
@@ -1206,15 +1685,23 @@ function Utilisateur() {
                                         <p className={styles.sous_texte_creneaux}>Aucun créneau disponible</p>
                                     ) : (
                                         <div className={styles.creneaux_grid}>
-                                            {creneauxDuJour.map((c) => (
-                                                <div
-                                                    key={c.id}
-                                                    className={`${styles.creneau_pill} ${creneauSelectionne?.id === c.id ? styles.creneau_pill_actif : ''}`}
-                                                    onClick={() => choisirCreneau(c)}
-                                                >
-                                                    {c.heureDebut}–{c.heureFin}
-                                                </div>
-                                            ))}
+                                            {creneauxDuJour.map((c) => {
+                                                const paysCreneau = c.pays || 'CI';
+                                                return (
+                                                    <div
+                                                        key={c.id}
+                                                        className={`${styles.creneau_pill} ${creneauSelectionne?.id === c.id ? styles.creneau_pill_actif : ''}`}
+                                                        onClick={() => choisirCreneau(c)}
+                                                    >
+                                                        {paysCreneau === 'FR' ? (
+                                                            <FR title="Heure de Paris" className={styles.creneau_drapeau} />
+                                                        ) : (
+                                                            <CI title="Heure d'Abidjan" className={styles.creneau_drapeau} />
+                                                        )}
+                                                        {c.heureDebut}–{c.heureFin}
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     )}
                                 </div>

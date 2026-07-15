@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import Utilisateur from './assets/Utilisateurs/Utilisateurs.jsx'
-import Admin from './assets/Administrateurs/Admin.jsx'
+import Utilisateur from './Utilisateurs/Utilisateurs.jsx'
+import Admin from './Administrateurs/Admin.jsx'
+import GvipRiskDashboard from './Dashboard/GvipRiskDashboard.jsx'
 
 function App() {
 
@@ -9,7 +10,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Utilisateur />} />
+        <Route path="/" element={<GvipRiskDashboard />} />
       </Routes>
     </BrowserRouter>
   )

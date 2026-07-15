@@ -42,6 +42,7 @@
         border-right: none;
         font-weight: 500;
         font-size: 13px;
+
     }
 
     .logo {
@@ -59,10 +60,12 @@
     }
 
     .navigation {
-        width: 40%;
+        width: 55%;
         display: flex;
         align-items: center;
         justify-content: space-evenly;
+        font-weight: 600;
+
     }
 
     .whatsapp {
@@ -896,6 +899,10 @@
     }
 
     .creneau_pill {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
         background: #fff;
         border: 1.5px solid #e5e7eb;
         border-radius: 8px;
@@ -1034,7 +1041,20 @@
     margin-bottom: 4%;
 }
 
+/* ── Drapeau indiquant le fuseau horaire du créneau (desktop + mobile) ── */
+.creneau_drapeau {
+    width: 14px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    object-fit: cover;
+}
+
 .creneau_pill_desktop {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
     background: #fff;
     border: 1.5px solid #e5e7eb;
     border-radius: 8px;
@@ -1083,6 +1103,7 @@
 
 /* ── Carte option (commune desktop + mobile) ── */
 .carte_option {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -1204,6 +1225,85 @@
 .carte_alerte {
     color: #f59e0b;
     flex-shrink: 0;
+}
+
+/* ── Note explicative : apparaît au clic sur une carte (desktop + mobile) ──
+   Fonctionne comme une bulle de type "tooltip", mais déclenchée par un clic
+   plutôt qu'un survol, pour être utilisable aussi bien à la souris qu'au doigt. */
+.carte_note {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 12px;
+    right: 12px;
+    z-index: 30;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: #111827;
+    color: #f9fafb;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 12px;
+    line-height: 1.45;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+    cursor: default;
+    animation: apparition_note 0.18s ease;
+}
+
+/* Petite flèche pointant vers la carte qui a été cliquée */
+.carte_note::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 24px;
+    width: 0;
+    height: 0;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-bottom: 7px solid #111827;
+}
+
+.carte_note_texte {
+    flex: 1;
+    margin: 0;
+}
+
+.carte_note_fermer {
+    flex-shrink: 0;
+    margin-top: 1px;
+    font-size: 12px;
+    color: #9ca3af;
+    cursor: pointer;
+}
+
+.carte_note_fermer:hover {
+    color: #fff;
+}
+
+@keyframes apparition_note {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ── Desktop : cartes en grille 2x2, la note doit rester lisible même
+   quand la carte est étroite et centrée (texte centré dans la carte) ── */
+@media (min-width: 768px) {
+    .carte_note {
+        left: 16px;
+        right: 16px;
+        text-align: left;
+    }
+
+    .carte_note::before {
+        left: 28px;
+    }
 }
 
 /* ── Conteneur desktop : grille 2x2 ── */
@@ -1842,4 +1942,476 @@
 
 .selecteur_pays_option_active .selecteur_pays_option_indicatif {
     color: #15803d;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   MODE ÉDITION — "Modifier mes informations" (page de suivi)
+   ════════════════════════════════════════════════════════════════════ */
+
+.s2_edition_grille {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px 14px;
+    padding: 4px 0 18px;
+}
+
+.s2_edition_champ {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.s2_edition_champ_pleine_largeur {
+    grid-column: 1 / -1;
+}
+
+.s2_edition_label {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 6px;
+}
+
+.s2_edition_input,
+.s2_edition_select {
+    width: 100%;
+    height: 42px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 0 12px;
+    font-size: 13px;
+    font-family: "Poppins", sans-serif;
+    color: #111827;
+    background: #fff;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.s2_edition_input:focus,
+.s2_edition_select:focus {
+    border-color: #16a34a;
+}
+
+.s2_edition_select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 30px;
+}
+
+.s2_edition_telephone {
+    display: flex;
+    align-items: center;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    height: 42px;
+    background: #fff;
+    transition: border-color 0.15s ease;
+}
+
+.s2_edition_telephone:focus-within {
+    border-color: #16a34a;
+}
+
+.s2_edition_telephone .s2_edition_input {
+    border: none;
+    height: 100%;
+    border-radius: 0;
+}
+
+.s2_edition_telephone .selecteur_pays_bouton {
+    height: 100%;
+}
+
+/* ── Boutons d'action du mode édition (Annuler / Enregistrer) ── */
+.s2_edition_actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 6px;
+    padding-bottom: 18px;
+}
+
+.s2_bouton_annuler_edition {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 13px;
+    border-radius: 12px;
+    border: 1.5px solid #e5e7eb;
+    background: #fff;
+    color: #374151;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: "Poppins", sans-serif;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.s2_bouton_annuler_edition:hover {
+    background: #f9fafb;
+}
+
+.s2_bouton_annuler_edition[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.s2_bouton_enregistrer {
+    flex: 1.4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 13px;
+    border-radius: 12px;
+    border: none;
+    background: linear-gradient(135deg, #16a34a, #4ade80);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: "Poppins", sans-serif;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(22, 163, 74, 0.3);
+    transition: opacity 0.15s ease;
+}
+
+.s2_bouton_enregistrer[disabled] {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+/* ── Bouton "Modifier mes informations" (au-dessus d'Annuler/Nouveau RDV) ── */
+.s2_bouton_modifier {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    border: 1.5px solid #bbf7d0;
+    background: #f0fdf4;
+    color: #15803d;
+    font-size: 13.5px;
+    font-weight: 600;
+    font-family: "Poppins", sans-serif;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.s2_bouton_modifier:hover {
+    background: #dcfce7;
+}
+
+/* ── Mobile : une seule colonne pour les champs d'édition ── */
+@media (max-width: 480px) {
+    .s2_edition_grille {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   PAGE "MES RENDEZ-VOUS" — recherche par téléphone + liste des résultats
+   Même famille visuelle que la page de suivi (s2_...)
+   ════════════════════════════════════════════════════════════════════ */
+
+.mrv_page {
+    width: 100vw;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    background: #f6f8f7;
+    padding: 28px 16px 60px;
+}
+
+.mrv_conteneur {
+    width: 100%;
+    max-width: 480px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ── En-tête ── */
+.mrv_entete {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.mrv_retour {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: none;
+    background: transparent;
+    color: #374151;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: "Poppins", sans-serif;
+    cursor: pointer;
+    padding: 6px 0;
+    transition: color 0.15s ease;
+}
+
+.mrv_retour:hover {
+    color: #16a34a;
+}
+
+.mrv_logo {
+    height: 32px;
+    object-fit: contain;
+}
+
+.mrv_titre {
+    font-size: 21px;
+    font-weight: 700;
+    color: #0f1720;
+    margin: 0 0 6px;
+    font-family: "Poppins", sans-serif;
+}
+
+.mrv_sous_titre {
+    font-size: 13.5px;
+    color: #6b7280;
+    margin: 0 0 22px;
+    line-height: 1.5;
+}
+
+/* ── Bloc de recherche ── */
+.mrv_recherche {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: #fff;
+    border: 1px solid #e9ebee;
+    border-radius: 18px;
+    padding: 18px;
+    box-shadow: 0 8px 24px rgba(15, 23, 32, 0.04);
+    margin-bottom: 18px;
+}
+
+.mrv_recherche_telephone {
+    display: flex;
+    align-items: center;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    height: 46px;
+    background: #fff;
+    transition: border-color 0.15s ease;
+}
+
+.mrv_recherche_telephone:focus-within {
+    border-color: #16a34a;
+}
+
+.mrv_recherche_input {
+    flex: 1;
+    height: 100%;
+    border: none;
+    outline: none;
+    font-size: 13.5px;
+    color: #111827;
+    background: transparent;
+    font-family: "Poppins", sans-serif;
+}
+
+.mrv_recherche_input::placeholder {
+    color: #9ca3af;
+}
+
+.mrv_bouton_rechercher {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 13px;
+    border-radius: 10px;
+    border: none;
+    background: linear-gradient(135deg, #16a34a, #4ade80);
+    color: #fff;
+    font-size: 13.5px;
+    font-weight: 600;
+    font-family: "Poppins", sans-serif;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(22, 163, 74, 0.3);
+    transition: opacity 0.15s ease;
+}
+
+.mrv_bouton_rechercher[disabled] {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.mrv_erreur {
+    color: #dc2626;
+    font-size: 12.5px;
+    font-weight: 500;
+    margin: -6px 0 12px;
+}
+
+/* ── État vide ── */
+.mrv_vide {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    text-align: center;
+    color: #9ca3af;
+    background: #fff;
+    border: 1px dashed #e5e7eb;
+    border-radius: 16px;
+    padding: 40px 20px;
+    font-size: 13px;
+}
+
+/* ── Liste des rendez-vous trouvés ── */
+.mrv_liste {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.mrv_carte {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: #fff;
+    border: 1px solid #e9ebee;
+    border-radius: 14px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, transform 0.08s ease;
+    box-shadow: 0 4px 14px rgba(15, 23, 32, 0.03);
+}
+
+.mrv_carte:hover {
+    border-color: #86efac;
+}
+
+.mrv_carte:active {
+    transform: scale(0.98);
+}
+
+.mrv_carte_gauche {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.mrv_carte_icone {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    border-radius: 12px;
+    background: #f0fdf4;
+    color: #16a34a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mrv_carte_infos {
+    min-width: 0;
+}
+
+.mrv_carte_titre {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 2px;
+}
+
+.mrv_carte_date {
+    font-size: 11.5px;
+    color: #6b7280;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mrv_carte_droite {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.mrv_carte_badge {
+    display: inline-flex;
+    align-items: center;
+    border: 1.5px solid;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
+.mrv_carte_chevron {
+    color: #9ca3af;
+}
+
+/* ── Desktop : conteneur un peu plus large ── */
+@media (min-width: 768px) {
+    .mrv_page {
+        padding: 56px 16px;
+    }
+
+    .mrv_conteneur {
+        max-width: 560px;
+    }
+
+    .mrv_titre {
+        font-size: 24px;
+    }
+
+    .mrv_recherche {
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .mrv_recherche_telephone {
+        flex: 1;
+    }
+
+    .mrv_bouton_rechercher {
+        width: auto;
+        padding: 13px 22px;
+        white-space: nowrap;
+    }
+}
+
+.s2_bouton_tertiaire {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    border: 1.5px solid #e5e7eb;
+    background: #fff;
+    color: #374151;
+    font-size: 13.5px;
+    font-weight: 600;
+    font-family: "Poppins", sans-serif;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.s2_bouton_tertiaire:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
 }

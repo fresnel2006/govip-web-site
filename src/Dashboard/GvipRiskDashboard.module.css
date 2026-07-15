@@ -1,0 +1,350 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap");
+
+.page {
+    --bg: #f5f7f6;
+    --surface: #ffffff;
+    --surface-2: #f8faf9;
+    --border: #e4e9e7;
+    --text: #14201b;
+    --text-muted: #6b7a74;
+    --green: #16a34a;
+    --green-soft: #eaf7ef;
+    --amber: #b7791f;
+    --amber-soft: #fdf3e2;
+    --red: #d9432b;
+    --red-soft: #fdeae7;
+
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Inter", system-ui, sans-serif;
+    padding: 56px 32px 80px;
+    box-sizing: border-box;
+}
+
+.header {
+    max-width: 920px;
+    margin: 0 auto 36px;
+}
+
+.eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    color: var(--green);
+    margin-bottom: 14px;
+}
+
+.title {
+    font-family: "Space Grotesk", sans-serif;
+    font-weight: 700;
+    font-size: clamp(26px, 4vw, 36px);
+    margin: 0 0 10px;
+    letter-spacing: -0.01em;
+    color: #0f1913;
+}
+
+.subtitle {
+    font-size: 15px;
+    color: var(--text-muted);
+    margin: 0;
+    max-width: 560px;
+    line-height: 1.5;
+}
+
+.toolbar {
+    max-width: 920px;
+    margin: 0 auto 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.searchWrap {
+    position: relative;
+    flex: 1;
+    min-width: 240px;
+    max-width: 420px;
+}
+
+.searchIcon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+.searchInput {
+    width: 100%;
+    box-sizing: border-box;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 11px 14px 11px 40px;
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    box-shadow: 0 1px 2px rgba(16, 24, 20, 0.04);
+}
+
+.searchInput::placeholder {
+    color: var(--text-muted);
+}
+
+.searchInput:focus {
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px var(--green-soft);
+}
+
+.liveTag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--red);
+    background: var(--red-soft);
+    border: 1px solid rgba(217, 67, 43, 0.18);
+    padding: 8px 14px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+.liveDot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--red);
+    animation: pulse 1.8s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(217, 67, 43, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 7px rgba(217, 67, 43, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(217, 67, 43, 0);
+    }
+}
+
+.tableCard {
+    max-width: 920px;
+    margin: 0 auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(16, 24, 20, 0.04), 0 8px 24px rgba(16, 24, 20, 0.03);
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table thead th {
+    text-align: left;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-2);
+}
+
+.thRank {
+    width: 44px;
+}
+
+.thScore {
+    width: 46%;
+}
+
+.row {
+    transition: background 0.12s ease;
+}
+
+.row:hover {
+    background: var(--surface-2);
+}
+
+.row td {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+    vertical-align: middle;
+}
+
+.row:last-child td {
+    border-bottom: none;
+}
+
+.rank {
+    font-family: "IBM Plex Mono", monospace;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.commune {
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: #0f1913;
+}
+
+.event {
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.impactCell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.barTrack {
+    flex: 1;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--border);
+    overflow: hidden;
+    min-width: 60px;
+}
+
+.barFill {
+    height: 100%;
+    border-radius: 999px;
+}
+
+.barFill.critical {
+    background: var(--red);
+}
+
+.barFill.medium {
+    background: var(--amber);
+}
+
+.barFill.low {
+    background: var(--green);
+}
+
+.scoreValue {
+    font-family: "IBM Plex Mono", monospace;
+    font-weight: 600;
+    font-size: 13px;
+    width: 28px;
+    text-align: right;
+}
+
+.scoreValue.critical {
+    color: var(--red);
+}
+
+.scoreValue.medium {
+    color: var(--amber);
+}
+
+.scoreValue.low {
+    color: var(--green);
+}
+
+.badge {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 4px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+.badge.critical {
+    color: var(--red);
+    background: var(--red-soft);
+    border: 1px solid rgba(217, 67, 43, 0.2);
+}
+
+.badge.medium {
+    color: var(--amber);
+    background: var(--amber-soft);
+    border: 1px solid rgba(183, 121, 31, 0.2);
+}
+
+.badge.low {
+    color: var(--green);
+    background: var(--green-soft);
+    border: 1px solid rgba(22, 163, 74, 0.2);
+}
+
+.stateBlock {
+    padding: 64px 20px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+.errorTitle {
+    color: var(--red);
+    font-weight: 600;
+    margin: 0 0 6px;
+}
+
+.errorSubtitle {
+    margin: 0;
+    font-size: 13px;
+}
+
+.errorSubtitle code {
+    font-family: "IBM Plex Mono", monospace;
+    background: var(--surface-2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+}
+
+.spinner {
+    width: 22px;
+    height: 22px;
+    border: 2px solid var(--border);
+    border-top-color: var(--green);
+    border-radius: 50%;
+    margin: 0 auto 14px;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 640px) {
+    .page {
+        padding: 40px 16px 60px;
+    }
+
+    .thHideMobile {
+        display: none;
+    }
+
+    .table td.thHideMobile {
+        display: none;
+    }
+}

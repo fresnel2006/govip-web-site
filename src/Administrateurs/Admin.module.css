@@ -389,3 +389,48 @@
     background: #fef2f2;
     color: #dc2626;
 }
+
+/* ════════════════════════════
+   FUSEAUX HORAIRES (Côte d'Ivoire / France)
+   Les rendez-vous sont saisis à l'heure d'Abidjan ; quand la destination
+   est la France, on affiche en plus l'heure équivalente à Paris.
+════════════════════════════ */
+
+.drapeau_mini {
+    width: 16px;
+    height: 12px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    object-fit: cover;
+}
+
+.destination_avec_drapeau {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.heure_avec_drapeau {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.apercu_conversion {
+    font-size: 12px;
+    color: #16a34a;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-top: -4px;
+}
+
+.heure_fuseau_secondaire {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 3px;
+    font-size: 11px;
+    color: #6b7280;
+}

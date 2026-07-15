@@ -7,7 +7,8 @@ import {
     FaCheck, FaBoxOpen, FaPlus, FaArrowRight, FaTimes, FaPen, FaTrash, FaToggleOn, FaToggleOff
 } from 'react-icons/fa';
 import { FiPackage } from 'react-icons/fi';
-import logo from '../logo_entreprise.png'; // ← ajuste le chemin si besoin
+import { CI, FR } from 'country-flag-icons/react/3x2';
+import logo from '../assets/logo_entreprise.png'; // ← ajuste le chemin si besoin
 
 // ── Connexion à Firebase ──
 const firebaseConfig = {
@@ -31,6 +32,48 @@ const navItems = [
     { id: 'creneaux', icon: <FaCalendarAlt size={16} />, label: 'Créneaux disponibles' },
     { id: 'clients', icon: <FaUsers size={16} />, label: 'Clients' },
 ];
+
+// ── Conversion d'heure Côte d'Ivoire ↔ France ──
+// La Côte d'Ivoire (Abidjan) est en UTC+0 toute l'année (pas d'heure d'été).
+// La France est en UTC+1 (CET, hiver) ou UTC+2 (CEST, heure d'été).
+// Cette fonction convertit une heure "HH:MM" saisie dans le fuseau `paysSource`
+// ('CI' ou 'FR') vers l'heure équivalente dans l'autre pays, en tenant compte
+// automatiquement du passage à l'heure d'été / hiver française.
+const formatteurHeureAbidjan = new Intl.DateTimeFormat('fr-FR', {
+    timeZone: 'Africa/Abidjan',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+});
+const formatteurHeureParis = new Intl.DateTimeFormat('fr-FR', {
+    timeZone: 'Europe/Paris',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+});
+
+function heureDansAutrePays(dateISO, heure, paysSource) {
+    if (!dateISO || !heure) return null;
+    const [annee, mois, jour] = dateISO.split('-').map(Number);
+    const [h, m] = heure.split(':').map(Number);
+    if ([annee, mois, jour, h, m].some((n) => Number.isNaN(n))) return null;
+
+    if (paysSource === 'CI') {
+        // Abidjan = UTC+0, donc l'heure saisie EST directement l'instant UTC.
+        const instantUTC = new Date(Date.UTC(annee, mois - 1, jour, h, m));
+        return formatteurHeureParis.format(instantUTC);
+    }
+
+    // France : on teste d'abord UTC+1 (hiver), puis on vérifie via le
+    // formatteur si on est en heure d'été (UTC+2) et on corrige si besoin.
+    let instantUTC = new Date(Date.UTC(annee, mois - 1, jour, h - 1, m));
+    const rendu = formatteurHeureParis.format(instantUTC);
+    const [hRendu] = rendu.split(':').map(Number);
+    if (hRendu !== h) {
+        instantUTC = new Date(Date.UTC(annee, mois - 1, jour, h - 2, m));
+    }
+    return formatteurHeureAbidjan.format(instantUTC);
+}
 
 // ── Libellé lisible pour la catégorie de service d'un rendez-vous ──
 function libelleCategorie(categorie) {
@@ -95,6 +138,7 @@ function ModalCreneau({ onClose, onAjouter, onModifier, creneauAModifier }) {
         heureFin: creneauAModifier?.heureFin || '',
         max: creneauAModifier?.max ?? 10,
         statut: creneauAModifier?.statut || 'Actif',
+        pays: creneauAModifier?.pays || 'CI',
     });
     const [loading, setLoading] = useState(false);
     const [erreur, setErreur] = useState('');
@@ -123,6 +167,7 @@ function ModalCreneau({ onClose, onAjouter, onModifier, creneauAModifier }) {
                     heureFin: form.heureFin,
                     max: Number(form.max),
                     statut: form.statut,
+                    pays: form.pays,
                 });
             } else {
                 await onAjouter({
@@ -132,6 +177,7 @@ function ModalCreneau({ onClose, onAjouter, onModifier, creneauAModifier }) {
                     heureFin: form.heureFin,
                     max: Number(form.max),
                     statut: 'Actif',
+                    pays: form.pays,
                 });
             }
             onClose();
@@ -199,6 +245,26 @@ function ModalCreneau({ onClose, onAjouter, onModifier, creneauAModifier }) {
                             />
                         </label>
                     </div>
+
+                    <label className={styles.libelle_modal}>
+                        Cet horaire est saisi en heure de...
+                        <select
+                            name="pays"
+                            className={styles.champ_modal}
+                            value={form.pays}
+                            onChange={handleChange}
+                        >
+                            <option value="CI">🇨🇮 Côte d'Ivoire (heure d'Abidjan)</option>
+                            <option value="FR">🇫🇷 France (heure de Paris)</option>
+                        </select>
+                    </label>
+
+                    {form.date && form.heureDebut && form.heureFin && (
+                        <p className={styles.apercu_conversion}>
+                            Équivaut à {heureDansAutrePays(form.date, form.heureDebut, form.pays)} - {heureDansAutrePays(form.date, form.heureFin, form.pays)}
+                            {' '}en {form.pays === 'CI' ? 'France' : "Côte d'Ivoire"}
+                        </p>
+                    )}
 
                     <label className={styles.libelle_modal}>
                         Capacité max.
@@ -499,19 +565,39 @@ function Admin() {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {rendezVous.slice(0, 5).map((r) => (
-                                                    <tr key={r.id}>
-                                                        <td>{r.nomComplet}</td>
-                                                        <td>{libelleCategorie(r.categorieService)}</td>
-                                                        <td>{r.date}</td>
-                                                        <td>{r.heureDebut} - {r.heureFin}</td>
-                                                        <td>
-                                                            <span className={`${styles.badge} ${classeBadgeStatutRdv(r.statut)}`}>
-                                                                {r.statut}
-                                                            </span>
-                                                        </td>
-                                                    </tr>
-                                                ))}
+                                                {rendezVous.slice(0, 5).map((r) => {
+                                                    const paysCreneauRdv = r.creneauPays || 'CI';
+                                                    return (
+                                                        <tr key={r.id}>
+                                                            <td>{r.nomComplet}</td>
+                                                            <td>{libelleCategorie(r.categorieService)}</td>
+                                                            <td>{r.date}</td>
+                                                            <td>
+                                                                <div className={styles.heure_avec_drapeau}>
+                                                                    {paysCreneauRdv === 'FR' ? (
+                                                                        <FR title="France" className={styles.drapeau_mini} />
+                                                                    ) : (
+                                                                        <CI title="Côte d'Ivoire" className={styles.drapeau_mini} />
+                                                                    )}
+                                                                    {r.heureDebut} - {r.heureFin}
+                                                                </div>
+                                                                <div className={styles.heure_fuseau_secondaire}>
+                                                                    {paysCreneauRdv === 'FR' ? (
+                                                                        <CI title="Côte d'Ivoire" className={styles.drapeau_mini} />
+                                                                    ) : (
+                                                                        <FR title="France" className={styles.drapeau_mini} />
+                                                                    )}
+                                                                    {heureDansAutrePays(r.date, r.heureDebut, paysCreneauRdv)} - {heureDansAutrePays(r.date, r.heureFin, paysCreneauRdv)}
+                                                                </div>
+                                                            </td>
+                                                            <td>
+                                                                <span className={`${styles.badge} ${classeBadgeStatutRdv(r.statut)}`}>
+                                                                    {r.statut}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
                                             </tbody>
                                         </table>
                                     )}
@@ -551,7 +637,16 @@ function Admin() {
                                                     <tr key={c.id}>
                                                         <td>{c.date}</td>
                                                         <td>{c.type}</td>
-                                                        <td>{c.heureDebut} - {c.heureFin}</td>
+                                                        <td>
+                                                            <div className={styles.heure_avec_drapeau}>
+                                                                {(c.pays || 'CI') === 'FR' ? (
+                                                                    <FR title="Heure de Paris" className={styles.drapeau_mini} />
+                                                                ) : (
+                                                                    <CI title="Heure d'Abidjan" className={styles.drapeau_mini} />
+                                                                )}
+                                                                {c.heureDebut} - {c.heureFin}
+                                                            </div>
+                                                        </td>
                                                         <td>Max. {c.max}</td>
                                                         <td>
                                                             <span
@@ -628,14 +723,41 @@ function Admin() {
                                     <tbody>
                                         {rendezVous.map((r) => {
                                             const peutConfirmerColis = r.statut === 'Confirmé';
+                                            const paysCreneauRdv = r.creneauPays || 'CI';
                                             return (
                                                 <tr key={r.id}>
                                                     <td>{r.nomComplet}</td>
                                                     <td>{r.telephone}</td>
                                                     <td>{libelleCategorie(r.categorieService)}</td>
-                                                    <td>{r.destination}</td>
+                                                    <td>
+                                                        <div className={styles.destination_avec_drapeau}>
+                                                            {r.destination === 'France' ? (
+                                                                <FR title="France" className={styles.drapeau_mini} />
+                                                            ) : (
+                                                                <CI title="Côte d'Ivoire" className={styles.drapeau_mini} />
+                                                            )}
+                                                            {r.destination}
+                                                        </div>
+                                                    </td>
                                                     <td>{r.date}</td>
-                                                    <td>{r.heureDebut} - {r.heureFin}</td>
+                                                    <td>
+                                                        <div className={styles.heure_avec_drapeau}>
+                                                            {paysCreneauRdv === 'FR' ? (
+                                                                <FR title="France" className={styles.drapeau_mini} />
+                                                            ) : (
+                                                                <CI title="Côte d'Ivoire" className={styles.drapeau_mini} />
+                                                            )}
+                                                            {r.heureDebut} - {r.heureFin}
+                                                        </div>
+                                                        <div className={styles.heure_fuseau_secondaire}>
+                                                            {paysCreneauRdv === 'FR' ? (
+                                                                <CI title="Côte d'Ivoire" className={styles.drapeau_mini} />
+                                                            ) : (
+                                                                <FR title="France" className={styles.drapeau_mini} />
+                                                            )}
+                                                            {heureDansAutrePays(r.date, r.heureDebut, paysCreneauRdv)} - {heureDansAutrePays(r.date, r.heureFin, paysCreneauRdv)}
+                                                        </div>
+                                                    </td>
                                                     <td>
                                                         <span
                                                             className={`${styles.badge} ${classeBadgeStatutRdv(r.statut)}`}
@@ -714,7 +836,16 @@ function Admin() {
                                             <tr key={c.id}>
                                                 <td>{c.date}</td>
                                                 <td>{c.type}</td>
-                                                <td>{c.heureDebut} - {c.heureFin}</td>
+                                                <td>
+                                                    <div className={styles.heure_avec_drapeau}>
+                                                        {(c.pays || 'CI') === 'FR' ? (
+                                                            <FR title="Heure de Paris" className={styles.drapeau_mini} />
+                                                        ) : (
+                                                            <CI title="Heure d'Abidjan" className={styles.drapeau_mini} />
+                                                        )}
+                                                        {c.heureDebut} - {c.heureFin}
+                                                    </div>
+                                                </td>
                                                 <td>Max. {c.max}</td>
                                                 <td>
                                                     <span
