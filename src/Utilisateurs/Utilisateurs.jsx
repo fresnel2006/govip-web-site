@@ -276,7 +276,9 @@ function construireEtapesSuivi(rdv) {
 // ── Carte d'option réutilisable (desktop + mobile) ──
 // Au clic, en plus de sélectionner l'option, une note explicative apparaît
 // (comme une bulle d'info) pour détailler ce qui vient d'être choisi.
-function CarteOption({ option, active, onClick, enErreur }) {
+// Le prop `compact` réduit la carte à une taille raisonnable (utilisé pour
+// les cartes de récupération placées sous "Notes complémentaires").
+function CarteOption({ option, active, onClick, enErreur, compact }) {
     const { Icone, direction, titre, sousTitre, alerte, note } = option;
     const [noteFermee, setNoteFermee] = useState(false);
 
@@ -293,7 +295,7 @@ function CarteOption({ option, active, onClick, enErreur }) {
 
     return (
         <div
-            className={`${styles.carte_option} ${active ? styles.carte_option_active : ''} ${enErreur ? styles.carte_option_erreur : ''}`}
+            className={`${styles.carte_option} ${compact ? styles.carte_option_compacte : ''} ${active ? styles.carte_option_active : ''} ${enErreur ? styles.carte_option_erreur : ''}`}
             onClick={onClick}
             role="button"
             tabIndex={0}
@@ -771,6 +773,77 @@ function SuiviRendezVous({ rdv, onAnnuler, onNouvelleDemande, onVoirListe, annul
     );
 }
 
+// ── Page de récapitulatif affichée juste avant l'enregistrement définitif ──
+// Reprend la même famille visuelle que la page de suivi (classes s2_...).
+// L'utilisateur peut soit revenir modifier le formulaire, soit confirmer
+// pour déclencher l'enregistrement réel dans Firebase.
+function RecapitulatifRendezVous({
+    formData,
+    paysTelephone,
+    optionActive,
+    dateISO,
+    creneauSelectionne,
+    onModifier,
+    onConfirmer,
+    envoiEnCours,
+    messageEnvoi,
+}) {
+    return (
+        <div className={styles.s2_page}>
+            <div className={styles.s2_conteneur}>
+
+                <div className={styles.s2_entete}>
+                    <img src={logo} alt="Logo GVIP" className={styles.s2_logo} />
+                </div>
+
+                <h1 className={styles.s2_titre}>Vérifiez votre demande</h1>
+                <p className={styles.s2_sous_titre}>
+                    Merci de relire vos informations avant l'enregistrement définitif de votre rendez-vous.
+                </p>
+
+                <div className={styles.s2_bloc}>
+                    <p className={styles.s2_bloc_titre}>Récapitulatif</p>
+                    <div className={styles.s2_carte_details}>
+                        <div className={styles.s2_grille_details}>
+                            <LigneDetail Icone={FaUser} libelle="Contact" valeur={formData.nomComplet} />
+                            <LigneDetail
+                                Icone={FaPhoneAlt}
+                                libelle="Téléphone"
+                                valeur={formData.telephone ? `${INDICATIFS_PAYS[paysTelephone].indicatif} ${formData.telephone}` : null}
+                            />
+                            <LigneDetail Icone={FaMapMarkerAlt} libelle="Destination" valeur={formData.destination} />
+                            <LigneDetail Icone={FaMapMarkerAlt} libelle="Adresse" valeur={formData.adresse} />
+                            <LigneDetail Icone={FaTag} libelle="Type de colis" valeur={libelleTypeColis(formData.typeColis)} />
+                            <LigneDetail Icone={FaRulerCombined} libelle="Taille" valeur={libelleTailleColis(formData.tailleColis)} />
+                            <LigneDetail Icone={FiPackage} libelle="Mode" valeur={optionActive?.titre} />
+                            <LigneDetail Icone={FaCalendarAlt} libelle="Date" valeur={formatDateLisible(dateISO)} />
+                            <LigneDetail
+                                Icone={FaClock}
+                                libelle="Créneau"
+                                valeur={creneauSelectionne ? `${creneauSelectionne.heureDebut} - ${creneauSelectionne.heureFin}` : null}
+                            />
+                            <LigneDetail Icone={FaStickyNote} libelle="Notes" valeur={formData.notes} />
+                        </div>
+                    </div>
+                </div>
+
+                <MessageEnvoi message={messageEnvoi} styleClasse={styles.message_envoi_mobile} />
+
+                <div className={styles.s2_edition_actions}>
+                    <button className={styles.s2_bouton_annuler_edition} onClick={onModifier} disabled={envoiEnCours}>
+                        <FaPen size={13} />
+                        Modifier
+                    </button>
+                    <button className={styles.s2_bouton_enregistrer} onClick={onConfirmer} disabled={envoiEnCours}>
+                        <FaCheck size={13} />
+                        {envoiEnCours ? 'Enregistrement...' : 'Confirmer et enregistrer'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ── Page de recherche : retrouver tous ses rendez-vous à partir du numéro de téléphone ──
 function MesRendezVous({ onRetour, onSelectionnerRdv }) {
     const [paysRecherche, setPaysRecherche] = useState('CI');
@@ -937,6 +1010,17 @@ function Utilisateur() {
     // ── Champs du formulaire ──
     const [formData, setFormData] = useState(FORMULAIRE_VIDE);
 
+    // ── Erreurs par champ obligatoire : sert à mettre le champ en rouge
+    //    tant qu'il n'a pas été rempli / sélectionné. ──
+    const [erreursChamps, setErreursChamps] = useState({
+        nomComplet: false,
+        telephone: false,
+        destination: false,
+        adresse: false,
+        date: false,
+        creneau: false,
+    });
+
     // ── Pays sélectionné pour l'indicatif téléphonique + état du menu déroulant ──
     const [paysTelephone, setPaysTelephone] = useState('CI');
     const [menuPaysOuvert, setMenuPaysOuvert] = useState(false);
@@ -962,6 +1046,10 @@ function Utilisateur() {
     // ── État d'envoi vers Firebase ──
     const [envoiEnCours, setEnvoiEnCours] = useState(false);
     const [messageEnvoi, setMessageEnvoi] = useState(null); // { type: 'success' | 'error', texte: string }
+
+    // ── Étape de récapitulatif : affichée après validation du formulaire,
+    //    avant l'enregistrement réel dans Firebase. ──
+    const [etapeConfirmation, setEtapeConfirmation] = useState(false);
 
     // ── Token du rendez-vous actuellement consulté (id Firebase stocké dans le navigateur du client).
     //    Ce n'est qu'un raccourci vers le "dernier rendez-vous regardé" : la vraie source de vérité
@@ -1024,6 +1112,7 @@ function Utilisateur() {
         try { localStorage.removeItem(CLE_TOKEN_RDV); } catch { }
         setTokenRdv(null);
         setRdvExistant(null);
+        setEtapeConfirmation(false);
         setVue('accueil');
     };
 
@@ -1078,10 +1167,12 @@ function Utilisateur() {
     const choisirDate = (date) => {
         setDateSelectionnee(date);
         setCreneauSelectionne(null);
+        setErreursChamps((prev) => ({ ...prev, date: false }));
     };
 
     const choisirCreneau = (creneau) => {
         setCreneauSelectionne(creneau);
+        setErreursChamps((prev) => ({ ...prev, creneau: false }));
     };
 
     const choisirOption = (id) => {
@@ -1090,15 +1181,29 @@ function Utilisateur() {
         setErreurOption(false);
     };
 
-    // ── Met à jour un champ du formulaire ──
+    // ── Met à jour un champ du formulaire, et efface l'erreur du champ
+    //    concerné dès que l'utilisateur commence à le corriger. ──
     const majFormulaire = (champ, valeur) => {
         setFormData((prev) => ({ ...prev, [champ]: valeur }));
+        if (erreursChamps[champ]) {
+            setErreursChamps((prev) => ({ ...prev, [champ]: false }));
+        }
     };
 
     // ── Scroll fluide vers une section quand on clique dans le header ──
     const allerVers = (ref) => {
         ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
+
+    // ── Détecte quels champs obligatoires sont vides, pour les mettre en rouge ──
+    const calculerErreursChamps = () => ({
+        nomComplet: formData.nomComplet.trim() === '',
+        telephone: formData.telephone.trim() === '',
+        destination: formData.destination.trim() === '',
+        adresse: formData.adresse.trim() === '',
+        date: dateSelectionnee === null,
+        creneau: creneauSelectionne === null,
+    });
 
     // ── Validation simple des champs obligatoires ──
     const formulaireValide = () => {
@@ -1113,16 +1218,49 @@ function Utilisateur() {
         );
     };
 
-    // ── Envoi du rendez-vous vers Firebase (nouvelle branche "rendezVous") ──
-    const envoyerRendezVous = async () => {
+    // ── Vérifie le formulaire puis bascule vers l'étape de récapitulatif.
+    //    Chaque champ obligatoire encore vide passe en rouge. L'enregistrement
+    //    réel dans Firebase n'a lieu qu'après confirmation de ce récapitulatif
+    //    (voir envoyerRendezVous, appelé par le bouton "Confirmer et
+    //    enregistrer" de RecapitulatifRendezVous). ──
+    const verifierEtAfficherRecap = () => {
         setMessageEnvoi(null);
+
+        const erreurs = calculerErreursChamps();
+        setErreursChamps(erreurs);
         setErreurOption(optionSelectionnee === null);
 
-        if (!formulaireValide()) {
+        const auMoinsUneErreur = Object.values(erreurs).some(Boolean) || optionSelectionnee === null;
+
+        if (auMoinsUneErreur) {
             setMessageEnvoi({
                 type: 'error',
                 texte: "Merci de remplir tous les champs obligatoires (*), de choisir un mode de récupération/dépôt, une date et un créneau horaire.",
             });
+            return;
+        }
+        setEtapeConfirmation(true);
+    };
+
+    // ── Retour au formulaire depuis l'écran de récapitulatif, pour corriger une information ──
+    const modifierDepuisRecap = () => {
+        setEtapeConfirmation(false);
+        setMessageEnvoi(null);
+    };
+
+    // ── Envoi du rendez-vous vers Firebase (nouvelle branche "rendezVous") ──
+    // Appelé uniquement depuis l'écran de récapitulatif, après confirmation de l'utilisateur.
+    const envoyerRendezVous = async () => {
+        setMessageEnvoi(null);
+
+        if (!formulaireValide()) {
+            setErreursChamps(calculerErreursChamps());
+            setErreurOption(optionSelectionnee === null);
+            setMessageEnvoi({
+                type: 'error',
+                texte: "Merci de remplir tous les champs obligatoires (*), de choisir un mode de récupération/dépôt, une date et un créneau horaire.",
+            });
+            setEtapeConfirmation(false);
             return;
         }
 
@@ -1163,12 +1301,24 @@ function Utilisateur() {
             try { localStorage.setItem(CLE_TOKEN_RDV, nouvelleEntreeRef.key); } catch { }
             setTokenRdv(nouvelleEntreeRef.key);
 
-            // Réinitialisation du formulaire après succès
+            // Réinitialisation du formulaire et de l'étape de récapitulatif après succès.
+            // Dès que tokenRdv est fixé, le listener Firebase remplit rdvExistant, ce qui
+            // fait automatiquement basculer l'affichage vers l'écran de suivi (SuiviRendezVous) :
+            // l'utilisateur ne peut plus revenir en arrière sur le formulaire.
             setFormData(FORMULAIRE_VIDE);
             setDateSelectionnee(null);
             setCreneauSelectionne(null);
             setOptionSelectionnee(null);
             setErreurOption(false);
+            setErreursChamps({
+                nomComplet: false,
+                telephone: false,
+                destination: false,
+                adresse: false,
+                date: false,
+                creneau: false,
+            });
+            setEtapeConfirmation(false);
         } catch (error) {
             console.error("Erreur lors de l'envoi du rendez-vous :", error);
             setMessageEnvoi({
@@ -1198,6 +1348,18 @@ function Utilisateur() {
                     onNouvelleDemande={reprendreNouvelleDemande}
                     onVoirListe={allerVersListe}
                     annulationEnCours={annulationEnCours}
+                />
+            ) : etapeConfirmation ? (
+                <RecapitulatifRendezVous
+                    formData={formData}
+                    paysTelephone={paysTelephone}
+                    optionActive={optionActive}
+                    dateISO={dateISO}
+                    creneauSelectionne={creneauSelectionne}
+                    onModifier={modifierDepuisRecap}
+                    onConfirmer={envoyerRendezVous}
+                    envoiEnCours={envoiEnCours}
+                    messageEnvoi={messageEnvoi}
                 />
             ) : (
                 <>
@@ -1233,9 +1395,10 @@ function Utilisateur() {
                                 </div>
                             </div>
 
-                            {/* ─── Cartes options (nouveau design clair) ─── */}
+                            {/* ─── Cartes options : uniquement "dépôt" en haut désormais.
+                                 Les cartes "récupération" sont plus bas, sous les Notes. ─── */}
                             <div className={`${styles.grille_options_desktop} ${erreurOption ? styles.grille_options_erreur : ''}`}>
-                                {OPTIONS_COLIS.map((option) => (
+                                {OPTIONS_COLIS.filter((o) => o.categorie === 'depot').map((option) => (
                                     <CarteOption
                                         key={option.id}
                                         option={option}
@@ -1245,11 +1408,6 @@ function Utilisateur() {
                                     />
                                 ))}
                             </div>
-                            {erreurOption && (
-                                <p className={styles.option_erreur_texte}>
-                                    Merci de sélectionner un mode de récupération / dépôt ci-dessus.
-                                </p>
-                            )}
 
                             <div className={styles.renseignements} ref={refRendezVous}>
                                 <div className={styles.formulaire}>
@@ -1257,7 +1415,7 @@ function Utilisateur() {
                                     <div className={styles.informations_personnelles}>
                                         <div className={styles.nom_complet}>
                                             <p>Nom complet <span className={styles.asterix}>*</span></p>
-                                            <div className={styles.champs}>
+                                            <div className={`${styles.champs} ${erreursChamps.nomComplet ? styles.champ_erreur : ''}`}>
                                                 <input
                                                     className={styles.input}
                                                     type="text"
@@ -1269,7 +1427,7 @@ function Utilisateur() {
                                         </div>
                                         <div className={styles.telephone_et_whatsapp}>
                                             <p>Télephone / WhatsApp <span className={styles.asterix}>*</span></p>
-                                            <div className={styles.champs}>
+                                            <div className={`${styles.champs} ${erreursChamps.telephone ? styles.champ_erreur : ''}`}>
                                                 <SelecteurPaysTelephone
                                                     paysActif={paysTelephone}
                                                     ouvert={menuPaysOuvert}
@@ -1287,7 +1445,7 @@ function Utilisateur() {
                                             </div>
                                         </div>
                                         <div className={styles.email}>
-                                            <p>Email (optionnel) <span className={styles.asterix}>*</span></p>
+                                            <p>Email (optionnel) </p>
                                             <div className={styles.champs}>
                                                 <input
                                                     className={styles.input}
@@ -1302,7 +1460,7 @@ function Utilisateur() {
 
                                     <div className={styles.informations_colis}>
                                         <div className={styles.type}>
-                                            <p>Type de colis (optionnel)</p>
+                                            <p>Type de colis <span className={styles.asterix}>*</span></p>
                                             <div className={styles.champs}>
                                                 <select
                                                     className={styles.input}
@@ -1339,7 +1497,7 @@ function Utilisateur() {
                                         </div>
                                         <div className={styles.destination}>
                                             <p>Destination <span className={styles.asterix}>*</span></p>
-                                            <div className={styles.champs}>
+                                            <div className={`${styles.champs} ${erreursChamps.destination ? styles.champ_erreur : ''}`}>
                                                 <select
                                                     className={styles.input}
                                                     value={formData.destination}
@@ -1357,7 +1515,7 @@ function Utilisateur() {
                                     </div>
 
                                     <p className={styles.adresse}>Adresse / ville <span className={styles.asterix}>*</span></p>
-                                    <div className={styles.champs_adresse_ville}>
+                                    <div className={`${styles.champs_adresse_ville} ${erreursChamps.adresse ? styles.champ_erreur : ''}`}>
                                         <input
                                             className={styles.input_adresse}
                                             type="text"
@@ -1372,7 +1530,7 @@ function Utilisateur() {
                                         <div className={styles.date_de_rendez_vous}>
                                             <p>Date de rendez-vous <span className={styles.asterix}>*</span></p>
                                             <input
-                                                className={styles.input_rendez_vous}
+                                                className={`${styles.input_rendez_vous} ${erreursChamps.date ? styles.champ_erreur : ''}`}
                                                 type="date"
                                                 placeholder='Sélectionner une date'
                                                 value={dateISO}
@@ -1382,14 +1540,14 @@ function Utilisateur() {
                                         <div className={styles.crenaux_horaires}>
                                             <p>Créneau horaire disponible <span className={styles.asterix}>*</span></p>
                                             {!dateSelectionnee ? (
-                                                <p className={styles.input_creanau_horaire}>Choisissez d'abord une date</p>
+                                                <p className={`${styles.input_creanau_horaire} ${erreursChamps.creneau ? styles.champ_erreur : ''}`}>Choisissez d'abord une date</p>
                                             ) : loadingCreneaux ? (
                                                 <p className={styles.input_creanau_horaire}>Chargement des créneaux...</p>
                                             ) : creneauxDuJour.length === 0 ? (
-                                                <p className={styles.input_creanau_horaire}>Aucun créneau disponible ce jour-là</p>
+                                                <p className={`${styles.input_creanau_horaire} ${erreursChamps.creneau ? styles.champ_erreur : ''}`}>Aucun créneau disponible ce jour-là</p>
                                             ) : (
                                                 <select
-                                                    className={styles.input_creanau_horaire}
+                                                    className={`${styles.input_creanau_horaire} ${erreursChamps.creneau ? styles.champ_erreur : ''}`}
                                                     value={creneauSelectionne?.id || ''}
                                                     onChange={(e) => {
                                                         const c = creneauxDuJour.find((cr) => cr.id === e.target.value);
@@ -1418,10 +1576,35 @@ function Utilisateur() {
                                             />
                                         </div>
                                     </div>
+
+                                    {/* ─── Mode de récupération : sous Notes, cartes compactes, obligatoire ─── */}
+                                    <div className={styles.recuperation_bloc}>
+                                        <p className={styles.recuperation_label}>
+                                            Mode de récupération <span className={styles.asterix}>*</span>
+                                        </p>
+                                        <div className={`${styles.grille_options_recuperation} ${erreurOption ? styles.grille_options_erreur : ''}`}>
+                                            {OPTIONS_COLIS.filter((o) => o.categorie === 'recuperation').map((option) => (
+                                                <CarteOption
+                                                    key={option.id}
+                                                    option={option}
+                                                    active={optionSelectionnee === option.id}
+                                                    onClick={() => choisirOption(option.id)}
+                                                    enErreur={erreurOption}
+                                                    compact
+                                                />
+                                            ))}
+                                        </div>
+                                        {erreurOption && (
+                                            <p className={styles.option_erreur_texte}>
+                                                Merci de sélectionner un mode de récupération / dépôt.
+                                            </p>
+                                        )}
+                                    </div>
+
                                     <div className={styles.bouton}>
-                                        <button className={styles.button} onClick={envoyerRendezVous} disabled={envoiEnCours}>
+                                        <button className={styles.button} onClick={verifierEtAfficherRecap} disabled={envoiEnCours}>
                                             <FaCalendarAlt />
-                                            <p>{envoiEnCours ? 'Envoi en cours...' : 'Confirmez le rendez-vous'}</p>
+                                            <p>Confirmez le rendez-vous</p>
                                         </button>
                                     </div>
                                     <MessageEnvoi message={messageEnvoi} styleClasse={styles.message_envoi} />
@@ -1430,7 +1613,7 @@ function Utilisateur() {
                                     </div>
                                 </div>
                                 <div className={styles.dates}>
-                                    <div className={styles.calendrier}>
+                                    <div className={`${styles.calendrier} ${(erreursChamps.date || erreursChamps.creneau) ? styles.champ_erreur : ''}`}>
                                         <div className={styles.choix}>
                                             <p>Choisir une date</p>
                                         </div>
@@ -1544,9 +1727,10 @@ function Utilisateur() {
                                 </div>
                             </div>
 
-                            {/* Choix type de colis (nouveau design clair, 4 cartes) */}
+                            {/* Choix type de colis : uniquement "dépôt" ici désormais.
+                                Les cartes "récupération" sont plus bas, sous les Notes. */}
                             <div className={`${styles.grille_options_mobile} ${erreurOption ? styles.grille_options_erreur : ''}`}>
-                                {OPTIONS_COLIS.map((option) => (
+                                {OPTIONS_COLIS.filter((o) => o.categorie === 'depot').map((option) => (
                                     <CarteOption
                                         key={option.id}
                                         option={option}
@@ -1556,11 +1740,6 @@ function Utilisateur() {
                                     />
                                 ))}
                             </div>
-                            {erreurOption && (
-                                <p className={styles.option_erreur_texte}>
-                                    Merci de sélectionner un mode de récupération / dépôt ci-dessus.
-                                </p>
-                            )}
 
                             {/* Formulaire */}
                             <div className={styles.formulaire_mobile} ref={refRendezVous}>
@@ -1570,7 +1749,7 @@ function Utilisateur() {
 
                                 <div className={styles.champ_mobile}>
                                     <label className={styles.label_mobile}>Nom complet <span className={styles.asterix}>*</span></label>
-                                    <div className={styles.champs_mobile}>
+                                    <div className={`${styles.champs_mobile} ${erreursChamps.nomComplet ? styles.champ_erreur : ''}`}>
                                         <input
                                             className={styles.input_mobile}
                                             type="text"
@@ -1582,7 +1761,7 @@ function Utilisateur() {
                                 </div>
                                 <div className={styles.champ_mobile}>
                                     <label className={styles.label_mobile}>Téléphone / WhatsApp <span className={styles.asterix}>*</span></label>
-                                    <div className={styles.champs_mobile}>
+                                    <div className={`${styles.champs_mobile} ${erreursChamps.telephone ? styles.champ_erreur : ''}`}>
                                         <SelecteurPaysTelephone
                                             paysActif={paysTelephone}
                                             ouvert={menuPaysOuvert}
@@ -1643,7 +1822,7 @@ function Utilisateur() {
 
                                 <div className={styles.champ_mobile}>
                                     <label className={styles.label_mobile}>Destination <span className={styles.asterix}>*</span></label>
-                                    <div className={styles.champs_mobile}>
+                                    <div className={`${styles.champs_mobile} ${erreursChamps.destination ? styles.champ_erreur : ''}`}>
                                         <select
                                             className={styles.input_mobile}
                                             value={formData.destination}
@@ -1660,7 +1839,7 @@ function Utilisateur() {
                                 </div>
                                 <div className={styles.champ_mobile}>
                                     <label className={styles.label_mobile}>Adresse / Ville <span className={styles.asterix}>*</span></label>
-                                    <div className={styles.champs_mobile}>
+                                    <div className={`${styles.champs_mobile} ${erreursChamps.adresse ? styles.champ_erreur : ''}`}>
                                         <input
                                             className={styles.input_mobile}
                                             type="text"
@@ -1673,7 +1852,7 @@ function Utilisateur() {
 
                                 <div className={styles.section_label}>Date & horaire</div>
 
-                                <div className={styles.calendrier_mobile}>
+                                <div className={`${styles.calendrier_mobile} ${(erreursChamps.date || erreursChamps.creneau) ? styles.champ_erreur : ''}`}>
                                     <p className={styles.choix_mobile}>Choisir une date</p>
                                     <DayPicker mode="single" showOutsideDays selected={dateSelectionnee} onSelect={choisirDate} />
                                     <p className={styles.choix_mobile}>Choisir un créneau horaire</p>
@@ -1719,9 +1898,33 @@ function Utilisateur() {
                                     </div>
                                 </div>
 
-                                <button className={styles.button_mobile} onClick={envoyerRendezVous} disabled={envoiEnCours}>
+                                {/* ─── Mode de récupération : sous Notes, cartes compactes, obligatoire ─── */}
+                                <div className={styles.recuperation_bloc}>
+                                    <p className={styles.recuperation_label}>
+                                        Mode de récupération <span className={styles.asterix}>*</span>
+                                    </p>
+                                    <div className={`${styles.grille_options_recuperation} ${erreurOption ? styles.grille_options_erreur : ''}`}>
+                                        {OPTIONS_COLIS.filter((o) => o.categorie === 'recuperation').map((option) => (
+                                            <CarteOption
+                                                key={option.id}
+                                                option={option}
+                                                active={optionSelectionnee === option.id}
+                                                onClick={() => choisirOption(option.id)}
+                                                enErreur={erreurOption}
+                                                compact
+                                            />
+                                        ))}
+                                    </div>
+                                    {erreurOption && (
+                                        <p className={styles.option_erreur_texte}>
+                                            Merci de sélectionner un mode de récupération / dépôt.
+                                        </p>
+                                    )}
+                                </div>
+
+                                <button className={styles.button_mobile} onClick={verifierEtAfficherRecap} disabled={envoiEnCours}>
                                     <FaCalendarAlt size={15} />
-                                    <span>{envoiEnCours ? 'Envoi en cours...' : 'Confirmer le rendez-vous'}</span>
+                                    <span>Confirmer le rendez-vous</span>
                                 </button>
                                 <MessageEnvoi message={messageEnvoi} styleClasse={styles.message_envoi_mobile} />
                                 <p className={styles.conditions_mobile}>

@@ -1434,10 +1434,6 @@
 
 /* ════════════════════════════════════════════════════════════════════
    PAGE DE SUIVI v2 — Timeline d'étapes + détails de commande
-   Nouveau design de la page de suivi de rendez-vous, inspiré d'un
-   parcours en étapes numérotées (1, 2, 3, 4) reliées par une ligne
-   verticale, avec une carte mise en avant pour l'étape en cours et
-   un récapitulatif détaillé de la commande.
    ════════════════════════════════════════════════════════════════════ */
 
 .s2_page {
@@ -2116,7 +2112,6 @@
 
 /* ════════════════════════════════════════════════════════════════════
    PAGE "MES RENDEZ-VOUS" — recherche par téléphone + liste des résultats
-   Même famille visuelle que la page de suivi (s2_...)
    ════════════════════════════════════════════════════════════════════ */
 
 .mrv_page {
@@ -2414,4 +2409,156 @@
 .s2_bouton_tertiaire:hover {
     background: #f9fafb;
     border-color: #d1d5db;
+}
+
+/* ════════════════════════════════════════════════════════════
+   CORRECTIF — Cartes "Mode de récupération" (version compacte)
+   Deux problèmes dans l'ancien CSS :
+   1. .carte_option_compacte n'était jamais définie : les cartes
+      "compact" reprenaient donc la hauteur normale (26vh sur
+      desktop), d'où les cartes géantes vues à l'écran.
+   2. .grille_options_recuperation n'avait aucune mise en page :
+      pas de grille ni d'espacement, juste un empilement brut.
+   ════════════════════════════════════════════════════════════ */
+
+.grille_options_recuperation {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    margin: 10px 0 4px;
+    border-radius: 14px;
+    transition: box-shadow 0.2s ease;
+}
+
+/* Sélecteur combiné (.carte_option + .carte_option_compacte) pour
+   garantir la priorité sur la règle desktop min-height: 26vh. */
+.carte_option.carte_option_compacte {
+    min-height: unset;
+    flex-direction: row;
+    align-items: center;
+    text-align: left;
+    padding: 10px 14px;
+    gap: 12px;
+    border-radius: 12px;
+}
+
+.carte_option_compacte .carte_icone_cercle {
+    width: 38px;
+    height: 38px;
+}
+
+.carte_option_compacte .carte_titre {
+    font-size: 12.5px;
+}
+
+.carte_option_compacte .carte_sous_titre {
+    font-size: 11px;
+}
+
+.recuperation_bloc {
+    
+    margin-bottom: 6px;
+}
+
+.recuperation_label {
+    font-size: 16px;
+    font-weight: 400;
+    margin-left: 36px;
+}
+
+@media (min-width: 768px) {
+    .grille_options_recuperation {
+        display: flex;
+        flex-direction: row;
+        width: 90%;
+        gap: 12px;
+        height: 80px;
+        margin: 12px auto 6px;
+    }
+
+    .carte_option.carte_option_compacte {
+        min-height: unset;
+    }
+}
+/* ════════════════════════════════════════════════════════════
+   Champs obligatoires non remplis → contour rouge au moment
+   de la validation
+   ════════════════════════════════════════════════════════════ */
+.champ_erreur {
+    border-color: #ef4444 !important;
+    background: #fef7f7 !important;
+    animation: secousse_erreur 0.35s ease;
+}
+
+.champ_erreur::placeholder {
+    color: #f87171;
+}
+
+/* Le calendrier / bloc date-créneau n'a pas de bordure visible par
+   défaut sur certains navigateurs sans ce renfort */
+.calendrier.champ_erreur,
+.calendrier_mobile.champ_erreur {
+    border-width: 2px;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.15);
+}
+/* ════════════════════════════════════════════════════════════
+   Effet au survol du bouton de confirmation
+   ════════════════════════════════════════════════════════════ */
+.button,
+.button_mobile {
+    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.button:hover:not([disabled]),
+.button_mobile:hover:not([disabled]) {
+    filter: brightness(1.08);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(22, 163, 74, 0.4);
+}
+
+.button:active:not([disabled]),
+.button_mobile:active:not([disabled]) {
+    transform: translateY(0);
+}
+/* ════════════════════════════════════════════════════════════
+   Cartes "dépôt" / "récupération" non sélectionnées → rouge
+   au moment de la validation
+   ════════════════════════════════════════════════════════════ */
+.carte_option_erreur {
+    border-color: #ef4444;
+    background: #fef7f7;
+    animation: secousse_erreur 0.35s ease;
+}
+
+.carte_option_erreur:hover {
+    border-color: #dc2626;
+}
+
+.carte_option_erreur .carte_icone_cercle {
+    border-color: #fca5a5;
+    color: #ef4444;
+}
+/* ════════════════════════════════════════════════════════════
+   Effet au survol des cartes (dépôt / récupération)
+   ════════════════════════════════════════════════════════════ */
+.carte_option {
+    transition: border-color 0.15s ease, background-color 0.15s ease,
+        transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.carte_option:hover {
+    border-color: #86efac;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(22, 163, 74, 0.12);
+}
+
+.carte_option_active:hover {
+    border-color: #16a34a;
+    box-shadow: 0 6px 16px rgba(22, 163, 74, 0.18);
+}
+
+.carte_option_erreur:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(239, 68, 68, 0.15);
 }
