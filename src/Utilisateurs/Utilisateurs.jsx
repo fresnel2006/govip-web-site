@@ -594,7 +594,11 @@ function SuiviRendezVous({ rdv, onAnnuler, onNouvelleDemande, onVoirListe, annul
                                     {rdv.categorieService === 'depot' ? <FiPackage size={18} /> : <FaTruck size={18} />}
                                 </div>
                                 <div>
-                                    <p className={styles.s2_resume_categorie}>{libelleCategorieRdv(rdv.categorieService)}</p>
+                                    <p className={styles.s2_resume_categorie}>
+                                        {rdv.depotLibelle && rdv.recuperationLibelle
+                                            ? `${rdv.depotLibelle} · ${rdv.recuperationLibelle}`
+                                            : libelleCategorieRdv(rdv.categorieService)}
+                                    </p>
                                     <p className={styles.s2_resume_date}>
                                         {formatDateLisible(rdv.date)} · {rdv.heureDebut} - {rdv.heureFin}
                                     </p>
@@ -780,7 +784,8 @@ function SuiviRendezVous({ rdv, onAnnuler, onNouvelleDemande, onVoirListe, annul
 function RecapitulatifRendezVous({
     formData,
     paysTelephone,
-    optionActive,
+    depotActif,
+    recuperationActive,
     dateISO,
     creneauSelectionne,
     onModifier,
@@ -815,7 +820,8 @@ function RecapitulatifRendezVous({
                             <LigneDetail Icone={FaMapMarkerAlt} libelle="Adresse" valeur={formData.adresse} />
                             <LigneDetail Icone={FaTag} libelle="Type de colis" valeur={libelleTypeColis(formData.typeColis)} />
                             <LigneDetail Icone={FaRulerCombined} libelle="Taille" valeur={libelleTailleColis(formData.tailleColis)} />
-                            <LigneDetail Icone={FiPackage} libelle="Mode" valeur={optionActive?.titre} />
+                            <LigneDetail Icone={FiPackage} libelle="Mode de dépôt" valeur={depotActif?.titre} />
+                            <LigneDetail Icone={FaTruck} libelle="Mode de récupération" valeur={recuperationActive?.titre} />
                             <LigneDetail Icone={FaCalendarAlt} libelle="Date" valeur={formatDateLisible(dateISO)} />
                             <LigneDetail
                                 Icone={FaClock}
@@ -959,7 +965,11 @@ function MesRendezVous({ onRetour, onSelectionnerRdv }) {
                                             {rdv.categorieService === 'depot' ? <FiPackage size={17} /> : <FaTruck size={17} />}
                                         </div>
                                         <div className={styles.mrv_carte_infos}>
-                                            <p className={styles.mrv_carte_titre}>{libelleCategorieRdv(rdv.categorieService)}</p>
+                                            <p className={styles.mrv_carte_titre}>
+                                                {rdv.depotLibelle && rdv.recuperationLibelle
+                                                    ? `${rdv.depotLibelle} · ${rdv.recuperationLibelle}`
+                                                    : libelleCategorieRdv(rdv.categorieService)}
+                                            </p>
                                             <p className={styles.mrv_carte_date}>
                                                 {formatDateLisible(rdv.date)} · {rdv.heureDebut} - {rdv.heureFin}
                                             </p>
@@ -1000,12 +1010,16 @@ function Utilisateur() {
     const [dateSelectionnee, setDateSelectionnee] = useState(null);
     const [creneauSelectionne, setCreneauSelectionne] = useState(null);
 
-    // ── Option de service colis sélectionnée (une des 4 cartes) ──
-    // Aucune option n'est sélectionnée par défaut : le client DOIT choisir.
-    const [optionSelectionnee, setOptionSelectionnee] = useState(null);
-    const [erreurOption, setErreurOption] = useState(false);
-    const optionActive = OPTIONS_COLIS.find((o) => o.id === optionSelectionnee);
-    const categorieActive = optionActive?.categorie; // 'recuperation' | 'depot'
+    // ── Deux choix de service colis désormais obligatoires et indépendants ──
+    // Le client DOIT choisir un mode de dépôt ET un mode de récupération :
+    // ce ne sont plus 4 cartes concurrentes mais 2 groupes de 2 cartes,
+    // chacun avec sa propre sélection et sa propre erreur de validation.
+    const [depotSelectionne, setDepotSelectionne] = useState(null);
+    const [recuperationSelectionnee, setRecuperationSelectionnee] = useState(null);
+    const [erreurDepot, setErreurDepot] = useState(false);
+    const [erreurRecuperation, setErreurRecuperation] = useState(false);
+    const depotActif = OPTIONS_COLIS.find((o) => o.id === depotSelectionne);
+    const recuperationActive = OPTIONS_COLIS.find((o) => o.id === recuperationSelectionnee);
 
     // ── Champs du formulaire ──
     const [formData, setFormData] = useState(FORMULAIRE_VIDE);
@@ -1153,15 +1167,14 @@ function Utilisateur() {
         return () => unsubscribe();
     }, []);
 
-    // ── Créneaux actifs disponibles pour la date sélectionnée ET la catégorie choisie (récupération / dépôt) ──
+    // ── Créneaux actifs disponibles pour la date sélectionnée ──
+    // NB : le filtrage par catégorie unique ('recuperation' OU 'depot') n'a
+    // plus de sens puisque dépôt et récupération sont maintenant deux choix
+    // obligatoires et simultanés (voir depotSelectionne / recuperationSelectionnee) :
+    // tous les créneaux actifs du jour sont donc proposés.
     const dateISO = formatDateISO(dateSelectionnee);
     const creneauxDuJour = creneaux.filter((c) => {
-        if (c.statut !== 'Actif' || c.date !== dateISO) return false;
-        const typeNormalise = normaliserTypeCreneau(c.type);
-        if (typeNormalise && categorieActive) {
-            return typeNormalise === categorieActive;
-        }
-        return true;
+        return c.statut === 'Actif' && c.date === dateISO;
     });
 
     const choisirDate = (date) => {
@@ -1175,10 +1188,16 @@ function Utilisateur() {
         setErreursChamps((prev) => ({ ...prev, creneau: false }));
     };
 
-    const choisirOption = (id) => {
-        setOptionSelectionnee(id);
+    const choisirDepot = (id) => {
+        setDepotSelectionne(id);
         setCreneauSelectionne(null);
-        setErreurOption(false);
+        setErreurDepot(false);
+    };
+
+    const choisirRecuperation = (id) => {
+        setRecuperationSelectionnee(id);
+        setCreneauSelectionne(null);
+        setErreurRecuperation(false);
     };
 
     // ── Met à jour un champ du formulaire, et efface l'erreur du champ
@@ -1208,7 +1227,8 @@ function Utilisateur() {
     // ── Validation simple des champs obligatoires ──
     const formulaireValide = () => {
         return (
-            optionSelectionnee !== null &&
+            depotSelectionne !== null &&
+            recuperationSelectionnee !== null &&
             formData.nomComplet.trim() !== '' &&
             formData.telephone.trim() !== '' &&
             formData.destination.trim() !== '' &&
@@ -1228,14 +1248,18 @@ function Utilisateur() {
 
         const erreurs = calculerErreursChamps();
         setErreursChamps(erreurs);
-        setErreurOption(optionSelectionnee === null);
+        setErreurDepot(depotSelectionne === null);
+        setErreurRecuperation(recuperationSelectionnee === null);
 
-        const auMoinsUneErreur = Object.values(erreurs).some(Boolean) || optionSelectionnee === null;
+        const auMoinsUneErreur =
+            Object.values(erreurs).some(Boolean) ||
+            depotSelectionne === null ||
+            recuperationSelectionnee === null;
 
         if (auMoinsUneErreur) {
             setMessageEnvoi({
                 type: 'error',
-                texte: "Merci de remplir tous les champs obligatoires (*), de choisir un mode de récupération/dépôt, une date et un créneau horaire.",
+                texte: "Merci de remplir tous les champs obligatoires (*), de choisir un mode de dépôt, un mode de récupération, une date et un créneau horaire.",
             });
             return;
         }
@@ -1255,10 +1279,11 @@ function Utilisateur() {
 
         if (!formulaireValide()) {
             setErreursChamps(calculerErreursChamps());
-            setErreurOption(optionSelectionnee === null);
+            setErreurDepot(depotSelectionne === null);
+            setErreurRecuperation(recuperationSelectionnee === null);
             setMessageEnvoi({
                 type: 'error',
-                texte: "Merci de remplir tous les champs obligatoires (*), de choisir un mode de récupération/dépôt, une date et un créneau horaire.",
+                texte: "Merci de remplir tous les champs obligatoires (*), de choisir un mode de dépôt, un mode de récupération, une date et un créneau horaire.",
             });
             setEtapeConfirmation(false);
             return;
@@ -1279,8 +1304,10 @@ function Utilisateur() {
                 destination: formData.destination.trim(),
                 adresse: formData.adresse.trim(),
                 notes: formData.notes.trim() || null,
-                optionService: optionSelectionnee,
-                categorieService: categorieActive,
+                depotService: depotSelectionne,
+                depotLibelle: depotActif?.titre || null,
+                recuperationService: recuperationSelectionnee,
+                recuperationLibelle: recuperationActive?.titre || null,
                 date: dateISO,
                 creneauId: creneauSelectionne.id,
                 heureDebut: creneauSelectionne.heureDebut,
@@ -1308,8 +1335,10 @@ function Utilisateur() {
             setFormData(FORMULAIRE_VIDE);
             setDateSelectionnee(null);
             setCreneauSelectionne(null);
-            setOptionSelectionnee(null);
-            setErreurOption(false);
+            setDepotSelectionne(null);
+            setRecuperationSelectionnee(null);
+            setErreurDepot(false);
+            setErreurRecuperation(false);
             setErreursChamps({
                 nomComplet: false,
                 telephone: false,
@@ -1353,7 +1382,8 @@ function Utilisateur() {
                 <RecapitulatifRendezVous
                     formData={formData}
                     paysTelephone={paysTelephone}
-                    optionActive={optionActive}
+                    depotActif={depotActif}
+                    recuperationActive={recuperationActive}
                     dateISO={dateISO}
                     creneauSelectionne={creneauSelectionne}
                     onModifier={modifierDepuisRecap}
@@ -1395,18 +1425,26 @@ function Utilisateur() {
                                 </div>
                             </div>
 
-                            {/* ─── Cartes options : uniquement "dépôt" en haut désormais.
-                                 Les cartes "récupération" sont plus bas, sous les Notes. ─── */}
-                            <div className={`${styles.grille_options_desktop} ${erreurOption ? styles.grille_options_erreur : ''}`}>
-                                {OPTIONS_COLIS.filter((o) => o.categorie === 'depot').map((option) => (
-                                    <CarteOption
-                                        key={option.id}
-                                        option={option}
-                                        active={optionSelectionnee === option.id}
-                                        onClick={() => choisirOption(option.id)}
-                                        enErreur={erreurOption}
-                                    />
-                                ))}
+                            {/* ─── Mode de dépôt : choix obligatoire et indépendant du mode
+                                 de récupération (cartes "récupération" plus bas, sous les Notes). ─── */}
+                            <div className={styles.depot_bloc}>
+                                
+                                <div className={`${styles.grille_options_desktop} ${erreurDepot ? styles.grille_options_erreur : ''}`}>
+                                    {OPTIONS_COLIS.filter((o) => o.categorie === 'depot').map((option) => (
+                                        <CarteOption
+                                            key={option.id}
+                                            option={option}
+                                            active={depotSelectionne === option.id}
+                                            onClick={() => choisirDepot(option.id)}
+                                            enErreur={erreurDepot}
+                                        />
+                                    ))}
+                                </div>
+                                {erreurDepot && (
+                                    <p className={styles.option_erreur_texte}>
+                                        Merci de sélectionner un mode de dépôt.
+                                    </p>
+                                )}
                             </div>
 
                             <div className={styles.renseignements} ref={refRendezVous}>
@@ -1582,21 +1620,21 @@ function Utilisateur() {
                                         <p className={styles.recuperation_label}>
                                             Mode de récupération <span className={styles.asterix}>*</span>
                                         </p>
-                                        <div className={`${styles.grille_options_recuperation} ${erreurOption ? styles.grille_options_erreur : ''}`}>
+                                        <div className={`${styles.grille_options_recuperation} ${erreurRecuperation ? styles.grille_options_erreur : ''}`}>
                                             {OPTIONS_COLIS.filter((o) => o.categorie === 'recuperation').map((option) => (
                                                 <CarteOption
                                                     key={option.id}
                                                     option={option}
-                                                    active={optionSelectionnee === option.id}
-                                                    onClick={() => choisirOption(option.id)}
-                                                    enErreur={erreurOption}
+                                                    active={recuperationSelectionnee === option.id}
+                                                    onClick={() => choisirRecuperation(option.id)}
+                                                    enErreur={erreurRecuperation}
                                                     compact
                                                 />
                                             ))}
                                         </div>
-                                        {erreurOption && (
+                                        {erreurRecuperation && (
                                             <p className={styles.option_erreur_texte}>
-                                                Merci de sélectionner un mode de récupération / dépôt.
+                                                Merci de sélectionner un mode de récupération.
                                             </p>
                                         )}
                                     </div>
@@ -1727,18 +1765,26 @@ function Utilisateur() {
                                 </div>
                             </div>
 
-                            {/* Choix type de colis : uniquement "dépôt" ici désormais.
-                                Les cartes "récupération" sont plus bas, sous les Notes. */}
-                            <div className={`${styles.grille_options_mobile} ${erreurOption ? styles.grille_options_erreur : ''}`}>
-                                {OPTIONS_COLIS.filter((o) => o.categorie === 'depot').map((option) => (
-                                    <CarteOption
-                                        key={option.id}
-                                        option={option}
-                                        active={optionSelectionnee === option.id}
-                                        onClick={() => choisirOption(option.id)}
-                                        enErreur={erreurOption}
-                                    />
-                                ))}
+                            {/* Mode de dépôt : choix obligatoire et indépendant du mode de
+                                récupération. Les cartes "récupération" sont plus bas, sous les Notes. */}
+                            <div className={styles.depot_bloc}>
+                                
+                                <div className={`${styles.grille_options_mobile} ${erreurDepot ? styles.grille_options_erreur : ''}`}>
+                                    {OPTIONS_COLIS.filter((o) => o.categorie === 'depot').map((option) => (
+                                        <CarteOption
+                                            key={option.id}
+                                            option={option}
+                                            active={depotSelectionne === option.id}
+                                            onClick={() => choisirDepot(option.id)}
+                                            enErreur={erreurDepot}
+                                        />
+                                    ))}
+                                </div>
+                                {erreurDepot && (
+                                    <p className={styles.option_erreur_texte}>
+                                        Merci de sélectionner un mode de dépôt.
+                                    </p>
+                                )}
                             </div>
 
                             {/* Formulaire */}
@@ -1903,21 +1949,21 @@ function Utilisateur() {
                                     <p className={styles.recuperation_label}>
                                         Mode de récupération <span className={styles.asterix}>*</span>
                                     </p>
-                                    <div className={`${styles.grille_options_recuperation} ${erreurOption ? styles.grille_options_erreur : ''}`}>
+                                    <div className={`${styles.grille_options_recuperation} ${erreurRecuperation ? styles.grille_options_erreur : ''}`}>
                                         {OPTIONS_COLIS.filter((o) => o.categorie === 'recuperation').map((option) => (
                                             <CarteOption
                                                 key={option.id}
                                                 option={option}
-                                                active={optionSelectionnee === option.id}
-                                                onClick={() => choisirOption(option.id)}
-                                                enErreur={erreurOption}
+                                                active={recuperationSelectionnee === option.id}
+                                                onClick={() => choisirRecuperation(option.id)}
+                                                enErreur={erreurRecuperation}
                                                 compact
                                             />
                                         ))}
                                     </div>
-                                    {erreurOption && (
+                                    {erreurRecuperation && (
                                         <p className={styles.option_erreur_texte}>
-                                            Merci de sélectionner un mode de récupération / dépôt.
+                                            Merci de sélectionner un mode de récupération.
                                         </p>
                                     )}
                                 </div>

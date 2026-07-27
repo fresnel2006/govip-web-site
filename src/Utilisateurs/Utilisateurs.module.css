@@ -227,7 +227,7 @@
     /* ─── Renseignements / Formulaire ─── */
 
     .renseignements {
-        margin-top: 6%;
+        margin-top: 4%;
         width: 100%;
         height: 40%;
         display: flex;
@@ -1451,7 +1451,23 @@
     display: flex;
     flex-direction: column;
 }
-
+.header_mobile_actions{
+    display: flex;
+    width: 50%;
+    justify-content:space-between;
+}
+.mes_rdv_mobile{
+   width: 50%;
+border-radius: 30px;
+border-color: #dedede;
+border-style: groove;
+background-color: rgb(255, 255, 255);
+display: flex;
+gap: 5%;
+align-items: center;
+justify-content: center;
+color: rgb(41, 41, 41);
+}
 /* ── En-tête ── */
 .s2_entete {
     display: flex;
@@ -2457,7 +2473,7 @@
 }
 
 .recuperation_bloc {
-    
+
     margin-bottom: 6px;
 }
 
@@ -2465,6 +2481,25 @@
     font-size: 16px;
     font-weight: 400;
     margin-left: 36px;
+}
+
+/* ════════════════════════════════════════════════════════════
+   Mode de dépôt : choix obligatoire, affiché en haut de page
+   (au-dessus du formulaire), donc centré comme le reste du hero
+   plutôt qu'indenté comme le bloc "récupération" du formulaire.
+   ════════════════════════════════════════════════════════════ */
+.depot_bloc {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.depot_label {
+    font-size: 16px;
+    font-weight: 500;
+    text-align: center;
+    margin-bottom: 4px;
 }
 
 @media (min-width: 768px) {
