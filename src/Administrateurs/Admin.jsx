@@ -4,7 +4,7 @@ import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, push, onValue, serverTimestamp, update, remove } from 'firebase/database';
 import {
     FaHome, FaCalendarAlt, FaClock, FaUsers,
-    FaCheck, FaBoxOpen, FaPlus, FaArrowRight, FaTimes, FaPen, FaTrash, FaToggleOn, FaToggleOff, FaHashtag
+    FaCheck, FaBoxOpen, FaPlus, FaArrowRight, FaTimes, FaPen, FaTrash, FaToggleOn, FaToggleOff, FaHashtag, FaSearch
 } from 'react-icons/fa';
 import { FiPackage } from 'react-icons/fi';
 import { CI, FR } from 'country-flag-icons/react/3x2';
@@ -132,6 +132,41 @@ function StatCard({ label, value, sub, icon, iconColor }) {
             <div className={styles.icone_stat} style={{ color: iconColor, borderColor: iconColor + '33', background: iconColor + '12' }}>
                 {icon}
             </div>
+        </div>
+    );
+}
+
+// ── Barre de recherche réutilisable (style discret, cohérent avec les cartes) ──
+function BarreRecherche({ valeur, onChange, placeholder }) {
+    return (
+        <div
+            style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                padding: '8px 12px',
+                marginBottom: '14px',
+                background: '#f9fafb',
+                maxWidth: '360px',
+            }}
+        >
+            <FaSearch size={12} color="#9ca3af" />
+            <input
+                type="text"
+                value={valeur}
+                onChange={onChange}
+                placeholder={placeholder}
+                style={{
+                    border: 'none',
+                    outline: 'none',
+                    background: 'transparent',
+                    width: '100%',
+                    fontSize: '13px',
+                    color: '#111827',
+                }}
+            />
         </div>
     );
 }
@@ -325,6 +360,10 @@ function Admin() {
 
     const [sectionActive, setSectionActive] = useState('dashboard');
 
+    // ── Texte saisi dans les barres de recherche ──
+    const [rechercheRdv, setRechercheRdv] = useState('');
+    const [rechercheClient, setRechercheClient] = useState('');
+
     // ── Lecture en temps réel de la branche "creneaux" dans Firebase ──
     useEffect(() => {
         const creneauxRef = ref(db, 'creneaux');
@@ -474,6 +513,33 @@ function Admin() {
             return acc;
         }, {})
     );
+
+    // ── Filtrage des rendez-vous selon la barre de recherche ──
+    // (recherche sur le n°, le nom, le téléphone, la destination, la catégorie et le statut)
+    const termeRdv = rechercheRdv.trim().toLowerCase();
+    const rendezVousFiltres = termeRdv === ''
+        ? rendezVous
+        : rendezVous.filter((r) => {
+            const champs = [
+                formatIdentifiantCourt(r.id),
+                r.nomComplet,
+                r.telephone,
+                r.destination,
+                libelleCategorie(r.categorieService),
+                r.statut,
+                r.date,
+            ];
+            return champs.some((champ) => (champ || '').toString().toLowerCase().includes(termeRdv));
+        });
+
+    // ── Filtrage des clients selon la barre de recherche ──
+    const termeClient = rechercheClient.trim().toLowerCase();
+    const clientsFiltres = termeClient === ''
+        ? clients
+        : clients.filter((c) => {
+            const champs = [c.nom, c.telephone, c.email];
+            return champs.some((champ) => (champ || '').toString().toLowerCase().includes(termeClient));
+        });
 
     const titresSection = {
         dashboard: 'Tableau de bord',
@@ -721,10 +787,18 @@ function Admin() {
                         <div className={styles.carte_tableau}>
                             <h2 className={styles.titre_tableau}>Tous les rendez-vous</h2>
 
+                            <BarreRecherche
+                                valeur={rechercheRdv}
+                                onChange={(e) => setRechercheRdv(e.target.value)}
+                                placeholder="Rechercher par n°, nom, téléphone, destination, statut..."
+                            />
+
                             {loadingRendezVous ? (
                                 <p className={styles.sous_texte_stat}>Chargement des rendez-vous...</p>
-                            ) : rendezVous.length === 0 ? (
-                                <p className={styles.sous_texte_stat}>Aucun rendez-vous pour le moment.</p>
+                            ) : rendezVousFiltres.length === 0 ? (
+                                <p className={styles.sous_texte_stat}>
+                                    {termeRdv === '' ? 'Aucun rendez-vous pour le moment.' : 'Aucun rendez-vous ne correspond à cette recherche.'}
+                                </p>
                             ) : (
                                 <table className={styles.tableau}>
                                     <thead>
@@ -741,7 +815,7 @@ function Admin() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {rendezVous.map((r) => {
+                                        {rendezVousFiltres.map((r) => {
                                             const peutConfirmerColis = r.statut === 'Confirmé';
                                             const paysCreneauRdv = r.creneauPays || 'CI';
                                             return (
@@ -924,10 +998,18 @@ function Admin() {
                         <div className={styles.carte_tableau}>
                             <h2 className={styles.titre_tableau}>Liste des clients</h2>
 
+                            <BarreRecherche
+                                valeur={rechercheClient}
+                                onChange={(e) => setRechercheClient(e.target.value)}
+                                placeholder="Rechercher par nom, téléphone ou email..."
+                            />
+
                             {loadingRendezVous ? (
                                 <p className={styles.sous_texte_stat}>Chargement des clients...</p>
-                            ) : clients.length === 0 ? (
-                                <p className={styles.sous_texte_stat}>Aucun client pour le moment.</p>
+                            ) : clientsFiltres.length === 0 ? (
+                                <p className={styles.sous_texte_stat}>
+                                    {termeClient === '' ? 'Aucun client pour le moment.' : 'Aucun client ne correspond à cette recherche.'}
+                                </p>
                             ) : (
                                 <table className={styles.tableau}>
                                     <thead>
@@ -939,7 +1021,7 @@ function Admin() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {clients.map((c, i) => (
+                                        {clientsFiltres.map((c, i) => (
                                             <tr key={i}>
                                                 <td>{c.nom}</td>
                                                 <td>{c.telephone}</td>
