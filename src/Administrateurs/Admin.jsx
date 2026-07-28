@@ -4,7 +4,7 @@ import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, push, onValue, serverTimestamp, update, remove } from 'firebase/database';
 import {
     FaHome, FaCalendarAlt, FaClock, FaUsers,
-    FaCheck, FaBoxOpen, FaPlus, FaArrowRight, FaTimes, FaPen, FaTrash, FaToggleOn, FaToggleOff
+    FaCheck, FaBoxOpen, FaPlus, FaArrowRight, FaTimes, FaPen, FaTrash, FaToggleOn, FaToggleOff, FaHashtag
 } from 'react-icons/fa';
 import { FiPackage } from 'react-icons/fi';
 import { CI, FR } from 'country-flag-icons/react/3x2';
@@ -93,6 +93,15 @@ function messageConfirmationColis(categorie) {
     if (categorie === 'depot') return 'Confirmer que le colis a bien été déposé et est maintenant en expédition ?';
     if (categorie === 'recuperation') return 'Confirmer que le colis a bien été récupéré et est maintenant en expédition ?';
     return 'Confirmer que ce colis est en expédition ?';
+}
+
+// ── Format court et lisible de l'identifiant Firebase d'un rendez-vous,
+//    utilisé comme "numéro de commande" (même logique que côté client
+//    dans Utilisateurs.jsx, pour que le numéro affiché à l'admin corresponde
+//    exactement à celui vu par le client). ──
+function formatIdentifiantCourt(id) {
+    if (!id) return '';
+    return id.slice(-8).toUpperCase();
 }
 
 // ── Cycle des statuts possibles pour un rendez-vous (clic sur le badge pour avancer) ──
@@ -557,6 +566,7 @@ function Admin() {
                                         <table className={styles.tableau}>
                                             <thead>
                                                 <tr>
+                                                    <th>N°</th>
                                                     <th>Nom</th>
                                                     <th>Catégorie</th>
                                                     <th>Date</th>
@@ -569,6 +579,15 @@ function Admin() {
                                                     const paysCreneauRdv = r.creneauPays || 'CI';
                                                     return (
                                                         <tr key={r.id}>
+                                                            <td>
+                                                                <span
+                                                                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#6b7280' }}
+                                                                    title={r.id}
+                                                                >
+                                                                    <FaHashtag size={9} />
+                                                                    {formatIdentifiantCourt(r.id)}
+                                                                </span>
+                                                            </td>
                                                             <td>{r.nomComplet}</td>
                                                             <td>{libelleCategorie(r.categorieService)}</td>
                                                             <td>{r.date}</td>
@@ -710,6 +729,7 @@ function Admin() {
                                 <table className={styles.tableau}>
                                     <thead>
                                         <tr>
+                                            <th>N°</th>
                                             <th>Nom</th>
                                             <th>Téléphone</th>
                                             <th>Catégorie</th>
@@ -726,6 +746,15 @@ function Admin() {
                                             const paysCreneauRdv = r.creneauPays || 'CI';
                                             return (
                                                 <tr key={r.id}>
+                                                    <td>
+                                                        <span
+                                                            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#6b7280' }}
+                                                            title={r.id}
+                                                        >
+                                                            <FaHashtag size={9} />
+                                                            {formatIdentifiantCourt(r.id)}
+                                                        </span>
+                                                    </td>
                                                     <td>{r.nomComplet}</td>
                                                     <td>{r.telephone}</td>
                                                     <td>{libelleCategorie(r.categorieService)}</td>

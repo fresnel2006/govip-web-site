@@ -9,7 +9,7 @@ import {
     FaArrowRight, FaBicycle, FaMotorcycle, FaExclamationTriangle, FaTimesCircle, FaClock,
     FaBan, FaRedo, FaMapMarkerAlt, FaBoxOpen, FaUser, FaPhoneAlt, FaStickyNote, FaTag,
     FaRulerCombined, FaCheck, FaHourglassHalf, FaPaperPlane, FaTruck, FaChevronDown, FaTimes,
-    FaPen, FaSave, FaSearch, FaArrowLeft, FaClipboardList, FaChevronRight
+    FaPen, FaSave, FaSearch, FaArrowLeft, FaClipboardList, FaChevronRight, FaHashtag
 } from 'react-icons/fa'
 import { FiPackage } from 'react-icons/fi'
 import { Bs1CircleFill, Bs2CircleFill, Bs3CircleFill, Bs4CircleFill } from "react-icons/bs";
@@ -109,20 +109,20 @@ const OPTIONS_COLIS = [
         categorie: 'recuperation',
         direction: 'up',
         Icone: FiPackage,
-        titre: 'GVIP vient récupérer',
+        titre: 'GOVIP vient récupérer',
         sousTitre: 'Je fais récupérer mon colis',
         alerte: false,
-        note: "Un livreur GVIP se déplace à l'adresse que vous indiquez pour récupérer le colis que vous envoyez. Vous n'avez pas à vous déplacer.",
+        note: "Un livreur GOVIP se déplace à l'adresse que vous indiquez pour récupérer le colis que vous envoyez. Vous n'avez pas à vous déplacer.",
     },
     {
         id: 'gvip_recupere',
         categorie: 'recuperation',
         direction: 'up',
         Icone: FaBicycle,
-        titre: 'GVIP vient récupérer pour vous apporter',
+        titre: 'GOVIP vient récupérer pour vous apporter',
         sousTitre: 'Un livreur passe chez vous',
         alerte: true,
-        note: "Un livreur GVIP récupère un colis qui vous est destiné et vous l'apporte directement à votre adresse. Des frais de livraison supplémentaires peuvent s'appliquer.",
+        note: "Un livreur GOVIP récupère un colis qui vous est destiné et vous l'apporte directement à votre adresse. Des frais de livraison supplémentaires peuvent s'appliquer.",
     },
     {
         id: 'depot_point',
@@ -130,9 +130,9 @@ const OPTIONS_COLIS = [
         direction: 'down',
         Icone: FiPackage,
         titre: 'Je dépose le colis',
-        sousTitre: 'Dans un point GVIP',
+        sousTitre: 'Dans un point GOVIP',
         alerte: false,
-        note: "Vous déposez vous-même votre colis dans l'un de nos points de collecte GVIP, à l'horaire que vous aurez choisi.",
+        note: "Vous déposez vous-même votre colis dans l'un de nos points de collecte GOVIP, à l'horaire que vous aurez choisi.",
     },
     {
         id: 'livreur_depot',
@@ -140,9 +140,9 @@ const OPTIONS_COLIS = [
         direction: 'down',
         Icone: FaMotorcycle,
         titre: 'Un livreur dépose le colis',
-        sousTitre: 'Dans un point GVIP',
+        sousTitre: 'Dans un point GOVIP',
         alerte: true,
-        note: "Un livreur GVIP vient récupérer votre colis chez vous, puis le dépose lui-même dans un point GVIP pour expédition. Des frais de prise en charge supplémentaires peuvent s'appliquer.",
+        note: "Un livreur GOVIP vient récupérer votre colis chez vous, puis le dépose lui-même dans un point GOVIP pour expédition. Des frais de prise en charge supplémentaires peuvent s'appliquer.",
     },
 ];
 
@@ -208,6 +208,13 @@ function libelleCategorieRdv(categorie) {
     if (categorie === 'recuperation') return 'Récupération';
     if (categorie === 'depot') return 'Dépôt';
     return '—';
+}
+
+// ── Format court et lisible de l'identifiant Firebase d'un rendez-vous,
+//    utilisé comme "numéro de commande" affiché au client (suivi + liste). ──
+function formatIdentifiantCourt(id) {
+    if (!id) return '';
+    return id.slice(-8).toUpperCase();
 }
 
 // ── Couleur/texte associés à chaque statut de rendez-vous ──
@@ -278,9 +285,11 @@ function construireEtapesSuivi(rdv) {
 // (comme une bulle d'info) pour détailler ce qui vient d'être choisi.
 // Le prop `compact` réduit la carte à une taille raisonnable (utilisé pour
 // les cartes de récupération placées sous "Notes complémentaires").
-function CarteOption({ option, active, onClick, enErreur, compact }) {
+function CarteOption({ option, active, onClick, enErreur, compact, hoverActif }) {
     const { Icone, direction, titre, sousTitre, alerte, note } = option;
     const [noteFermee, setNoteFermee] = useState(false);
+    // ── Affichage de la note au survol (souris), uniquement côté desktop (hoverActif) ──
+    const [survole, setSurvole] = useState(false);
 
     // Rouvre automatiquement la note si la carte redevient active
     // (ex: l'utilisateur l'avait fermée, puis re-sélectionne cette carte)
@@ -293,10 +302,16 @@ function CarteOption({ option, active, onClick, enErreur, compact }) {
         setNoteFermee(true);
     };
 
+    // La note s'affiche si la carte est active (clic, avec bouton fermer),
+    // ou si elle est survolée à la souris sur desktop (aperçu temporaire sans bouton fermer).
+    const afficherNote = note && !noteFermee && (active || (hoverActif && survole));
+
     return (
         <div
             className={`${styles.carte_option} ${compact ? styles.carte_option_compacte : ''} ${active ? styles.carte_option_active : ''} ${enErreur ? styles.carte_option_erreur : ''}`}
             onClick={onClick}
+            onMouseEnter={() => { if (hoverActif) setSurvole(true); }}
+            onMouseLeave={() => setSurvole(false)}
             role="button"
             tabIndex={0}
         >
@@ -314,10 +329,12 @@ function CarteOption({ option, active, onClick, enErreur, compact }) {
                 active && <FaCheckCircle size={18} className={styles.carte_check} />
             )}
 
-            {active && note && !noteFermee && (
+            {afficherNote && (
                 <div className={styles.carte_note} onClick={(e) => e.stopPropagation()}>
                     <p className={styles.carte_note_texte}>{note}</p>
-                    <FaTimes className={styles.carte_note_fermer} onClick={fermerNote} />
+                    {active && (
+                        <FaTimes className={styles.carte_note_fermer} onClick={fermerNote} />
+                    )}
                 </div>
             )}
         </div>
@@ -554,6 +571,13 @@ function SuiviRendezVous({ rdv, onAnnuler, onNouvelleDemande, onVoirListe, annul
                 </div>
 
                 <h1 className={styles.s2_titre}>Suivi de votre rendez-vous</h1>
+                <p
+                    className={styles.s2_identifiant}
+                    style={{ fontSize: 13, color: '#6b7280', marginTop: -6, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}
+                >
+                    <FaHashtag size={11} />
+                    Numéro de commande : <strong>{formatIdentifiantCourt(rdv.id)}</strong>
+                </p>
                 <p className={styles.s2_sous_titre}>
                     {rdv.statut === 'En attente' && "Nous allons vous contacter sur WhatsApp pour confirmer votre créneau."}
                     {rdv.statut === 'Confirmé' && "Votre rendez-vous est confirmé, à très vite !"}
@@ -608,6 +632,7 @@ function SuiviRendezVous({ rdv, onAnnuler, onNouvelleDemande, onVoirListe, annul
                             <div className={styles.s2_separateur} />
 
                             <div className={styles.s2_grille_details}>
+                                <LigneDetail Icone={FaHashtag} libelle="Numéro de commande" valeur={formatIdentifiantCourt(rdv.id)} />
                                 <LigneDetail Icone={FaUser} libelle="Contact" valeur={rdv.nomComplet} />
                                 <LigneDetail Icone={FaPhoneAlt} libelle="Téléphone" valeur={rdv.telephone} />
                                 <LigneDetail Icone={FaMapMarkerAlt} libelle="Destination" valeur={rdv.destination} />
@@ -804,6 +829,8 @@ function RecapitulatifRendezVous({
                 <h1 className={styles.s2_titre}>Vérifiez votre demande</h1>
                 <p className={styles.s2_sous_titre}>
                     Merci de relire vos informations avant l'enregistrement définitif de votre rendez-vous.
+                    Un numéro de commande vous sera attribué dès la confirmation, et vous permettra de
+                    retrouver et suivre cette demande à tout moment.
                 </p>
 
                 <div className={styles.s2_bloc}>
@@ -972,6 +999,10 @@ function MesRendezVous({ onRetour, onSelectionnerRdv }) {
                                             </p>
                                             <p className={styles.mrv_carte_date}>
                                                 {formatDateLisible(rdv.date)} · {rdv.heureDebut} - {rdv.heureFin}
+                                            </p>
+                                            <p style={{ fontSize: 12, color: '#9ca3af', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                <FaHashtag size={9} />
+                                                {formatIdentifiantCourt(rdv.id)}
                                             </p>
                                         </div>
                                     </div>
@@ -1319,7 +1350,7 @@ function Utilisateur() {
 
             setMessageEnvoi({
                 type: 'success',
-                texte: "Votre rendez-vous a bien été enregistré ! Nous vous contacterons sur WhatsApp pour confirmer.",
+                texte: `Votre rendez-vous a bien été enregistré ! Votre numéro de commande est ${formatIdentifiantCourt(nouvelleEntreeRef.key)}. Nous vous contacterons sur WhatsApp pour confirmer.`,
             });
 
             // On garde une trace du rendez-vous côté client (token = id Firebase),
@@ -1410,7 +1441,7 @@ function Utilisateur() {
                                 <div className={styles.whatsapp} ref={refContact}>
                                     <FaWhatsapp color='#4caf50' size={30} />
                                     <div className={styles.numero}>
-                                        <p>+225 07 49 49 49 49</p>
+                                        <p>+33 75 81 45 54 6</p>
                                     </div>
                                 </div>
                             </div>
@@ -1437,6 +1468,7 @@ function Utilisateur() {
                                             active={depotSelectionne === option.id}
                                             onClick={() => choisirDepot(option.id)}
                                             enErreur={erreurDepot}
+                                            hoverActif={isDesktop}
                                         />
                                     ))}
                                 </div>
@@ -1629,6 +1661,7 @@ function Utilisateur() {
                                                     onClick={() => choisirRecuperation(option.id)}
                                                     enErreur={erreurRecuperation}
                                                     compact
+                                                    hoverActif={isDesktop}
                                                 />
                                             ))}
                                         </div>
@@ -1748,7 +1781,7 @@ function Utilisateur() {
                                     </button>
                                     <div className={styles.whatsapp_mobile} onClick={() => allerVers(refContact)} style={{ cursor: 'pointer' }}>
                                         <FaWhatsapp color='#fff' size={16} />
-                                        <p className={styles.numero_mobile}>+225 07 49 49 49 49</p>
+                                        <p className={styles.numero_mobile}>+33 75 81 45 54 6</p>
                                     </div>
                                 </div>
                             </div>
@@ -1884,7 +1917,7 @@ function Utilisateur() {
                                     </div>
                                 </div>
                                 <div className={styles.champ_mobile}>
-                                    <label className={styles.label_mobile}>Adresse / Ville <span className={styles.asterix}>*</span></label>
+                                    <label className={styles.label_mobile}>Adresse / Ville de départ <span className={styles.asterix}>*</span></label>
                                     <div className={`${styles.champs_mobile} ${erreursChamps.adresse ? styles.champ_erreur : ''}`}>
                                         <input
                                             className={styles.input_mobile}
