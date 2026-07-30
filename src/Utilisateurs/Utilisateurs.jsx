@@ -109,10 +109,10 @@ const OPTIONS_COLIS = [
         categorie: 'recuperation',
         direction: 'up',
         Icone: FiPackage,
-        titre: 'GOVIP vient récupérer',
-        sousTitre: 'Je fais récupérer mon colis',
+        titre: 'Je récupère le colis',
+        sousTitre: 'Je viens récupérer mon colis',
         alerte: false,
-        note: "Un livreur GOVIP se déplace à l'adresse que vous indiquez pour récupérer le colis que vous envoyez. Vous n'avez pas à vous déplacer.",
+        note: "Vous venez vous-même récupérer votre colis dans l'un de nos points GOVIP, à l'horaire que vous aurez choisi.",
     },
     {
         id: 'gvip_recupere',
