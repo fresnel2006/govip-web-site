@@ -3,8 +3,15 @@ import styles from './Admin.module.css';
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, push, onValue, serverTimestamp, update, remove } from 'firebase/database';
 import {
+    getAuth,
+    onAuthStateChanged,
+    signInWithEmailAndPassword,
+    signOut,
+} from 'firebase/auth';
+import {
     FaHome, FaCalendarAlt, FaClock, FaUsers,
-    FaCheck, FaBoxOpen, FaPlus, FaArrowRight, FaTimes, FaPen, FaTrash, FaToggleOn, FaToggleOff, FaHashtag, FaSearch
+    FaCheck, FaBoxOpen, FaPlus, FaArrowRight, FaTimes, FaPen, FaTrash, FaToggleOn, FaToggleOff, FaHashtag, FaSearch,
+    FaSignOutAlt, FaLock, FaEnvelope, FaEye, FaEyeSlash
 } from 'react-icons/fa';
 import { FiPackage } from 'react-icons/fi';
 import { CI, FR } from 'country-flag-icons/react/3x2';
@@ -24,6 +31,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const auth = getAuth(app);
 
 // ── Sections disponibles dans la barre latérale ──
 const navItems = [
@@ -98,7 +106,6 @@ function formatIdentifiantCourt(id) {
     for (let i = 0; i < id.length; i++) {
         hash = (Math.imul(hash, 31) + id.charCodeAt(i)) >>> 0;
     }
-    // 9 chiffres, toujours entre 100 000 000 et 999 999 999 (pas de zéro en tête)
     const numero = 100000000 + (hash % 900000000);
     return String(numero);
 }
@@ -166,6 +173,157 @@ function BarreRecherche({ valeur, onChange, placeholder }) {
                     color: '#111827',
                 }}
             />
+        </div>
+    );
+}
+
+// ── Page de connexion admin (email / mot de passe via Firebase Auth) ──
+// Réutilise les mêmes classes que les modales (fenetre_modal, champ_modal,
+// libelle_modal, bouton_ajouter, erreur_modal) pour garder exactement
+// le même style visuel que le reste de l'interface admin.
+function PageConnexionAdmin() {
+    const [email, setEmail] = useState('');
+    const [motDePasse, setMotDePasse] = useState('');
+    const [afficherMotDePasse, setAfficherMotDePasse] = useState(false);
+    const [chargement, setChargement] = useState(false);
+    const [erreur, setErreur] = useState('');
+    const [tentatives, setTentatives] = useState(0);
+
+    // ── Traduit les codes d'erreur Firebase en messages compréhensibles,
+    //    sans jamais préciser si c'est l'email ou le mot de passe qui est
+    //    faux (sécurité : ne pas révéler si un email existe ou non). ──
+    const messageErreur = (code) => {
+        switch (code) {
+            case 'auth/invalid-email':
+                return "L'adresse email n'est pas valide.";
+            case 'auth/user-disabled':
+                return 'Ce compte a été désactivé.';
+            case 'auth/user-not-found':
+            case 'auth/wrong-password':
+            case 'auth/invalid-credential':
+                return 'Email ou mot de passe incorrect.';
+            case 'auth/too-many-requests':
+                return 'Trop de tentatives. Réessayez dans quelques minutes.';
+            case 'auth/network-request-failed':
+                return 'Problème de connexion internet. Vérifiez votre réseau.';
+            default:
+                return 'Une erreur est survenue. Veuillez réessayer.';
+        }
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setErreur('');
+
+        const emailPropre = email.trim();
+
+        if (!emailPropre || !motDePasse) {
+            setErreur('Merci de remplir tous les champs.');
+            return;
+        }
+
+        setChargement(true);
+        try {
+            await signInWithEmailAndPassword(auth, emailPropre, motDePasse);
+            setTentatives(0);
+            // Pas besoin de rediriger manuellement : onAuthStateChanged dans
+            // Admin() détecte la connexion et affiche automatiquement le dashboard.
+        } catch (err) {
+            console.error('Erreur de connexion admin :', err.code);
+            setErreur(messageErreur(err.code));
+            setTentatives((n) => n + 1);
+        } finally {
+            setChargement(false);
+        }
+    };
+
+    return (
+        <div
+            style={{
+                minHeight: '100vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: '#f3f4f6',
+                padding: '20px',
+            }}
+        >
+            <div className={styles.fenetre_modal} style={{ width: '100%', maxWidth: '400px', margin: 0 }}>
+
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '20px' }}>
+                    <img src={logo} alt="Logo GVIP" style={{ height: '52px', marginBottom: '14px' }} />
+                    <h2 className={styles.titre_modal} style={{ marginBottom: '4px' }}>
+                        Espace administrateur
+                    </h2>
+                    <p style={{ fontSize: '13px', color: '#6b7280', textAlign: 'center' }}>
+                        Connectez-vous pour accéder au tableau de bord GVIP.
+                    </p>
+                </div>
+
+                <form onSubmit={handleSubmit} className={styles.formulaire_modal}>
+                    <label className={styles.libelle_modal}>
+                        Email
+                        <div style={{ position: 'relative' }}>
+                            <FaEnvelope
+                                size={13}
+                                color="#9ca3af"
+                                style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }}
+                            />
+                            <input
+                                type="email"
+                                className={styles.champ_modal}
+                                style={{ paddingLeft: '32px' }}
+                                placeholder="admin@govip.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                autoComplete="username"
+                                disabled={chargement}
+                            />
+                        </div>
+                    </label>
+
+                    <label className={styles.libelle_modal}>
+                        Mot de passe
+                        <div style={{ position: 'relative' }}>
+                            <FaLock
+                                size={13}
+                                color="#9ca3af"
+                                style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }}
+                            />
+                            <input
+                                type={afficherMotDePasse ? 'text' : 'password'}
+                                className={styles.champ_modal}
+                                style={{ paddingLeft: '32px', paddingRight: '36px' }}
+                                placeholder="••••••••"
+                                value={motDePasse}
+                                onChange={(e) => setMotDePasse(e.target.value)}
+                                autoComplete="current-password"
+                                disabled={chargement}
+                            />
+                            <span
+                                onClick={() => setAfficherMotDePasse((v) => !v)}
+                                style={{
+                                    position: 'absolute',
+                                    right: '10px',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    cursor: 'pointer',
+                                    color: '#9ca3af',
+                                    display: 'flex',
+                                }}
+                            >
+                                {afficherMotDePasse ? <FaEyeSlash size={13} /> : <FaEye size={13} />}
+                            </span>
+                        </div>
+                    </label>
+
+                    {erreur && <p className={styles.erreur_modal}>{erreur}</p>}
+
+                    <button type="submit" className={styles.bouton_ajouter} disabled={chargement} style={{ justifyContent: 'center', width: '100%' }}>
+                        {chargement ? 'Connexion...' : 'Se connecter'}
+                    </button>
+                </form>
+            </div>
         </div>
     );
 }
@@ -348,6 +506,23 @@ function ModalCreneau({ onClose, onAjouter, onModifier, creneauAModifier }) {
 }
 
 function Admin() {
+    // ── État de l'authentification admin ──
+    const [utilisateur, setUtilisateur] = useState(null);
+    const [chargementAuth, setChargementAuth] = useState(true);
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            setUtilisateur(user);
+            setChargementAuth(false);
+        });
+        return () => unsubscribe();
+    }, []);
+
+    const deconnexion = async () => {
+        if (!window.confirm('Se déconnecter ?')) return;
+        await signOut(auth);
+    };
+
     const [creneaux, setCreneaux] = useState([]);
     const [loadingCreneaux, setLoadingCreneaux] = useState(true);
 
@@ -363,8 +538,10 @@ function Admin() {
     const [rechercheRdv, setRechercheRdv] = useState('');
     const [rechercheClient, setRechercheClient] = useState('');
 
-    // ── Lecture en temps réel de la branche "creneaux" dans Firebase ──
+    // ── Lecture en temps réel de la branche "creneaux" (seulement une fois connecté) ──
     useEffect(() => {
+        if (!utilisateur) return;
+
         const creneauxRef = ref(db, 'creneaux');
 
         const unsubscribe = onValue(creneauxRef, (snapshot) => {
@@ -384,10 +561,12 @@ function Admin() {
         });
 
         return () => unsubscribe();
-    }, []);
+    }, [utilisateur]);
 
-    // ── Lecture en temps réel de la branche "rendezVous" dans Firebase ──
+    // ── Lecture en temps réel de la branche "rendezVous" (seulement une fois connecté) ──
     useEffect(() => {
+        if (!utilisateur) return;
+
         const rendezVousRef = ref(db, 'rendezVous');
 
         const unsubscribe = onValue(rendezVousRef, (snapshot) => {
@@ -410,7 +589,7 @@ function Admin() {
         });
 
         return () => unsubscribe();
-    }, []);
+    }, [utilisateur]);
 
     // ── Ajout d'un créneau dans Firebase ──
     const ajouterCreneau = async (nouveauCreneau) => {
@@ -544,6 +723,20 @@ function Admin() {
         clients: 'Clients',
     };
 
+    // ── Tant qu'on ne sait pas encore si l'admin est connecté, écran d'attente ──
+    if (chargementAuth) {
+        return (
+            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <p style={{ color: '#6b7280', fontSize: '14px' }}>Chargement...</p>
+            </div>
+        );
+    }
+
+    // ── Pas connecté → formulaire de connexion, on s'arrête là ──
+    if (!utilisateur) {
+        return <PageConnexionAdmin />;
+    }
+
     return (
         <>
             <div className={styles.disposition}>
@@ -566,12 +759,25 @@ function Admin() {
                                 <span>{item.label}</span>
                             </div>
                         ))}
+
+                        {/* ── Déconnexion ── */}
+                        <div
+                            className={styles.element_nav}
+                            onClick={deconnexion}
+                            style={{ cursor: 'pointer', marginTop: 'auto', color: '#dc2626' }}
+                        >
+                            <FaSignOutAlt size={16} />
+                            <span>Déconnexion</span>
+                        </div>
                     </nav>
                 </aside>
 
                 {/* ── Contenu principal ── */}
                 <main className={styles.contenu_principal}>
-                    <h1 className={styles.titre_page}>{titresSection[sectionActive]}</h1>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <h1 className={styles.titre_page}>{titresSection[sectionActive]}</h1>
+                        <p style={{ fontSize: '13px', color: '#6b7280' }}>{utilisateur.email}</p>
+                    </div>
 
                     {/* ── Section : Tableau de bord ── */}
                     {sectionActive === 'dashboard' && (
