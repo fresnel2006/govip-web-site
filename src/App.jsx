@@ -12,7 +12,7 @@ function App() {
       <Routes>
         <Route path="/" element={<GvipRiskDashboard />} />
         <Route path="/utilisateurs" element={<Utilisateur />} />
-        <Route path="/admnistrateurs" element={<Admin />} />
+        <Route path="/administrateurs" element={<Admin />} />
       </Routes>
     </BrowserRouter>
   )
