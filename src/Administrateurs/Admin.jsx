@@ -34,11 +34,6 @@ const navItems = [
 ];
 
 // ── Conversion d'heure Côte d'Ivoire ↔ France ──
-// La Côte d'Ivoire (Abidjan) est en UTC+0 toute l'année (pas d'heure d'été).
-// La France est en UTC+1 (CET, hiver) ou UTC+2 (CEST, heure d'été).
-// Cette fonction convertit une heure "HH:MM" saisie dans le fuseau `paysSource`
-// ('CI' ou 'FR') vers l'heure équivalente dans l'autre pays, en tenant compte
-// automatiquement du passage à l'heure d'été / hiver française.
 const formatteurHeureAbidjan = new Intl.DateTimeFormat('fr-FR', {
     timeZone: 'Africa/Abidjan',
     hour: '2-digit',
@@ -59,13 +54,10 @@ function heureDansAutrePays(dateISO, heure, paysSource) {
     if ([annee, mois, jour, h, m].some((n) => Number.isNaN(n))) return null;
 
     if (paysSource === 'CI') {
-        // Abidjan = UTC+0, donc l'heure saisie EST directement l'instant UTC.
         const instantUTC = new Date(Date.UTC(annee, mois - 1, jour, h, m));
         return formatteurHeureParis.format(instantUTC);
     }
 
-    // France : on teste d'abord UTC+1 (hiver), puis on vérifie via le
-    // formatteur si on est en heure d'été (UTC+2) et on corrige si besoin.
     let instantUTC = new Date(Date.UTC(annee, mois - 1, jour, h - 1, m));
     const rendu = formatteurHeureParis.format(instantUTC);
     const [hRendu] = rendu.split(':').map(Number);
@@ -96,12 +88,19 @@ function messageConfirmationColis(categorie) {
 }
 
 // ── Format court et lisible de l'identifiant Firebase d'un rendez-vous,
-//    utilisé comme "numéro de commande" (même logique que côté client
-//    dans Utilisateurs.jsx, pour que le numéro affiché à l'admin corresponde
-//    exactement à celui vu par le client). ──
+//    utilisé comme "numéro de commande" (9 chiffres, jamais de lettres,
+//    jamais de zéro en tête). CETTE FONCTION DOIT RESTER STRICTEMENT
+//    IDENTIQUE à celle de Utilisateurs.jsx pour que le numéro affiché
+//    à l'admin corresponde exactement à celui vu par le client. ──
 function formatIdentifiantCourt(id) {
     if (!id) return '';
-    return id.slice(-8).toUpperCase();
+    let hash = 0;
+    for (let i = 0; i < id.length; i++) {
+        hash = (Math.imul(hash, 31) + id.charCodeAt(i)) >>> 0;
+    }
+    // 9 chiffres, toujours entre 100 000 000 et 999 999 999 (pas de zéro en tête)
+    const numero = 100000000 + (hash % 900000000);
+    return String(numero);
 }
 
 // ── Cycle des statuts possibles pour un rendez-vous (clic sur le badge pour avancer) ──
@@ -388,7 +387,6 @@ function Admin() {
     }, []);
 
     // ── Lecture en temps réel de la branche "rendezVous" dans Firebase ──
-    // (c'est la branche utilisée par le formulaire client : Utilisateurs.jsx)
     useEffect(() => {
         const rendezVousRef = ref(db, 'rendezVous');
 
@@ -399,7 +397,6 @@ function Admin() {
                 ...val,
             }));
 
-            // Les plus récents en premier (basé sur la date du rendez-vous, puis date de création)
             liste.sort((a, b) => {
                 if (a.date !== b.date) return a.date > b.date ? -1 : 1;
                 return (b.dateCreation || 0) - (a.dateCreation || 0);
@@ -515,7 +512,6 @@ function Admin() {
     );
 
     // ── Filtrage des rendez-vous selon la barre de recherche ──
-    // (recherche sur le n°, le nom, le téléphone, la destination, la catégorie et le statut)
     const termeRdv = rechercheRdv.trim().toLowerCase();
     const rendezVousFiltres = termeRdv === ''
         ? rendezVous
