@@ -795,7 +795,7 @@ function SuiviRendezVous({ rdv, onAnnuler, onNouvelleDemande, onVoirListe, annul
 
                 <div className={styles.s2_whatsapp}>
                     <FaWhatsapp size={16} color="#16a34a" />
-                    <p>+225 07 49 49 49 49</p>
+                    <p>+33 75 81 45 54 6</p>
                 </div>
             </div>
         </div>
