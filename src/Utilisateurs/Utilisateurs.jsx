@@ -212,20 +212,9 @@ function libelleCategorieRdv(categorie) {
 
 // ── Format court et lisible de l'identifiant Firebase d'un rendez-vous,
 //    utilisé comme "numéro de commande" affiché au client (suivi + liste). ──
-// Le numéro est calculé à partir de l'id Firebase (une clé alphanumérique)
-// via un hachage déterministe, puis transformé en une suite de 9 chiffres
-// (jamais de lettres, jamais de zéro en tête) — c'est le format demandé.
-// Cette fonction doit rester STRICTEMENT identique à celle d'Admin.jsx
-// pour que le numéro affiché au client corresponde à celui vu par l'admin.
 function formatIdentifiantCourt(id) {
     if (!id) return '';
-    let hash = 0;
-    for (let i = 0; i < id.length; i++) {
-        hash = (Math.imul(hash, 31) + id.charCodeAt(i)) >>> 0;
-    }
-    // 9 chiffres, toujours entre 100 000 000 et 999 999 999 (pas de zéro en tête)
-    const numero = 100000000 + (hash % 900000000);
-    return String(numero);
+    return id.slice(-8).toUpperCase();
 }
 
 // ── Couleur/texte associés à chaque statut de rendez-vous ──
@@ -806,7 +795,7 @@ function SuiviRendezVous({ rdv, onAnnuler, onNouvelleDemande, onVoirListe, annul
 
                 <div className={styles.s2_whatsapp}>
                     <FaWhatsapp size={16} color="#16a34a" />
-                    <p>+33 75 81 45 54 6</p>
+                    <p>+225 07 49 49 49 49</p>
                 </div>
             </div>
         </div>

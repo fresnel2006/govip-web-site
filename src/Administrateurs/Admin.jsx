@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import styles from './Admin.module.css';
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, push, onValue, serverTimestamp, update, remove } from 'firebase/database';
@@ -32,6 +32,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
+
+// ── Durée d'inactivité avant déconnexion automatique de l'admin ──
+const DELAI_INACTIVITE_MS = 10 * 60 * 1000; // 10 minutes
 
 // ── Sections disponibles dans la barre latérale ──
 const navItems = [
@@ -96,18 +99,12 @@ function messageConfirmationColis(categorie) {
 }
 
 // ── Format court et lisible de l'identifiant Firebase d'un rendez-vous,
-//    utilisé comme "numéro de commande" (9 chiffres, jamais de lettres,
-//    jamais de zéro en tête). CETTE FONCTION DOIT RESTER STRICTEMENT
-//    IDENTIQUE à celle de Utilisateurs.jsx pour que le numéro affiché
-//    à l'admin corresponde exactement à celui vu par le client. ──
+//    utilisé comme "numéro de commande" (même logique que côté client
+//    dans Utilisateurs.jsx, pour que le numéro affiché à l'admin corresponde
+//    exactement à celui vu par le client). ──
 function formatIdentifiantCourt(id) {
     if (!id) return '';
-    let hash = 0;
-    for (let i = 0; i < id.length; i++) {
-        hash = (Math.imul(hash, 31) + id.charCodeAt(i)) >>> 0;
-    }
-    const numero = 100000000 + (hash % 900000000);
-    return String(numero);
+    return id.slice(-8).toUpperCase();
 }
 
 // ── Cycle des statuts possibles pour un rendez-vous (clic sur le badge pour avancer) ──
@@ -178,20 +175,14 @@ function BarreRecherche({ valeur, onChange, placeholder }) {
 }
 
 // ── Page de connexion admin (email / mot de passe via Firebase Auth) ──
-// Réutilise les mêmes classes que les modales (fenetre_modal, champ_modal,
-// libelle_modal, bouton_ajouter, erreur_modal) pour garder exactement
-// le même style visuel que le reste de l'interface admin.
-function PageConnexionAdmin() {
+// Réutilise les mêmes classes que les modales pour garder le même style visuel.
+function PageConnexionAdmin({ messageInfo }) {
     const [email, setEmail] = useState('');
     const [motDePasse, setMotDePasse] = useState('');
     const [afficherMotDePasse, setAfficherMotDePasse] = useState(false);
     const [chargement, setChargement] = useState(false);
     const [erreur, setErreur] = useState('');
-    const [tentatives, setTentatives] = useState(0);
 
-    // ── Traduit les codes d'erreur Firebase en messages compréhensibles,
-    //    sans jamais préciser si c'est l'email ou le mot de passe qui est
-    //    faux (sécurité : ne pas révéler si un email existe ou non). ──
     const messageErreur = (code) => {
         switch (code) {
             case 'auth/invalid-email':
@@ -225,13 +216,9 @@ function PageConnexionAdmin() {
         setChargement(true);
         try {
             await signInWithEmailAndPassword(auth, emailPropre, motDePasse);
-            setTentatives(0);
-            // Pas besoin de rediriger manuellement : onAuthStateChanged dans
-            // Admin() détecte la connexion et affiche automatiquement le dashboard.
         } catch (err) {
             console.error('Erreur de connexion admin :', err.code);
             setErreur(messageErreur(err.code));
-            setTentatives((n) => n + 1);
         } finally {
             setChargement(false);
         }
@@ -259,6 +246,23 @@ function PageConnexionAdmin() {
                         Connectez-vous pour accéder au tableau de bord GVIP.
                     </p>
                 </div>
+
+                {messageInfo && (
+                    <p
+                        style={{
+                            fontSize: '13px',
+                            color: '#f97316',
+                            background: '#fff7ed',
+                            border: '1px solid #fed7aa',
+                            borderRadius: '8px',
+                            padding: '10px 12px',
+                            marginBottom: '16px',
+                            textAlign: 'center',
+                        }}
+                    >
+                        {messageInfo}
+                    </p>
+                )}
 
                 <form onSubmit={handleSubmit} className={styles.formulaire_modal}>
                     <label className={styles.libelle_modal}>
@@ -334,7 +338,7 @@ function ModalCreneau({ onClose, onAjouter, onModifier, creneauAModifier }) {
 
     const [form, setForm] = useState({
         date: creneauAModifier?.date || '',
-        type: creneauAModifier?.type || 'Enlèvement',
+        type: creneauAModifier?.type || 'Dépôt',
         heureDebut: creneauAModifier?.heureDebut || '',
         heureFin: creneauAModifier?.heureFin || '',
         max: creneauAModifier?.max ?? 10,
@@ -419,7 +423,6 @@ function ModalCreneau({ onClose, onAjouter, onModifier, creneauAModifier }) {
                             value={form.type}
                             onChange={handleChange}
                         >
-                            <option value="Enlèvement">Enlèvement</option>
                             <option value="Dépôt">Dépôt</option>
                         </select>
                     </label>
@@ -509,6 +512,8 @@ function Admin() {
     // ── État de l'authentification admin ──
     const [utilisateur, setUtilisateur] = useState(null);
     const [chargementAuth, setChargementAuth] = useState(true);
+    // ── Message affiché sur la page de connexion après une déconnexion automatique ──
+    const [messageDeconnexionAuto, setMessageDeconnexionAuto] = useState('');
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -522,6 +527,46 @@ function Admin() {
         if (!window.confirm('Se déconnecter ?')) return;
         await signOut(auth);
     };
+
+    // ── Déconnexion automatique après DELAI_INACTIVITE_MS sans aucune activité
+    //    (souris, clavier, clic, défilement, tactile). Le minuteur est relancé
+    //    à chaque activité détectée, et complètement retiré si l'admin n'est
+    //    pas connecté (pas besoin de surveiller une page de connexion). ──
+    const minuteurInactiviteRef = useRef(null);
+
+    useEffect(() => {
+        if (!utilisateur) return;
+
+        const reinitialiserMinuteur = () => {
+            if (minuteurInactiviteRef.current) {
+                clearTimeout(minuteurInactiviteRef.current);
+            }
+            minuteurInactiviteRef.current = setTimeout(() => {
+                signOut(auth);
+                setMessageDeconnexionAuto('Vous avez été déconnecté après 10 minutes d\'inactivité.');
+            }, DELAI_INACTIVITE_MS);
+        };
+
+        const evenementsActivite = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
+        evenementsActivite.forEach((evt) => window.addEventListener(evt, reinitialiserMinuteur));
+
+        // Démarre le minuteur dès la connexion
+        reinitialiserMinuteur();
+
+        return () => {
+            if (minuteurInactiviteRef.current) {
+                clearTimeout(minuteurInactiviteRef.current);
+            }
+            evenementsActivite.forEach((evt) => window.removeEventListener(evt, reinitialiserMinuteur));
+        };
+    }, [utilisateur]);
+
+    // ── Efface le message d'info dès qu'une nouvelle connexion réussit ──
+    useEffect(() => {
+        if (utilisateur) {
+            setMessageDeconnexionAuto('');
+        }
+    }, [utilisateur]);
 
     const [creneaux, setCreneaux] = useState([]);
     const [loadingCreneaux, setLoadingCreneaux] = useState(true);
@@ -732,9 +777,9 @@ function Admin() {
         );
     }
 
-    // ── Pas connecté → formulaire de connexion, on s'arrête là ──
+    // ── Pas connecté → formulaire de connexion (avec message si déconnexion auto) ──
     if (!utilisateur) {
-        return <PageConnexionAdmin />;
+        return <PageConnexionAdmin messageInfo={messageDeconnexionAuto} />;
     }
 
     return (
@@ -760,7 +805,7 @@ function Admin() {
                             </div>
                         ))}
 
-                        {/* ── Déconnexion ── */}
+                        {/* ── Déconnexion manuelle ── */}
                         <div
                             className={styles.element_nav}
                             onClick={deconnexion}
