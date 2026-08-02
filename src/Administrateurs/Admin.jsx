@@ -107,6 +107,14 @@ function formatIdentifiantCourt(id) {
     return id.slice(-8).toUpperCase();
 }
 
+// ── Numéro de commande à afficher côté admin : priorité au champ
+//    numérique `numeroCommande` (9 chiffres), avec repli sur l'ancien
+//    format pour les rendez-vous créés avant ce champ. ──
+function numeroCommandeAffiche(rdv) {
+    if (!rdv) return '';
+    return rdv.numeroCommande || formatIdentifiantCourt(rdv.id);
+}
+
 // ── Cycle des statuts possibles pour un rendez-vous (clic sur le badge pour avancer) ──
 const CYCLE_STATUTS_RDV = ['En attente', 'Confirmé', 'En expédition', 'Terminé'];
 
@@ -741,7 +749,7 @@ function Admin() {
         ? rendezVous
         : rendezVous.filter((r) => {
             const champs = [
-                formatIdentifiantCourt(r.id),
+                numeroCommandeAffiche(r),
                 r.nomComplet,
                 r.telephone,
                 r.destination,
@@ -898,7 +906,7 @@ function Admin() {
                                                                     title={r.id}
                                                                 >
                                                                     <FaHashtag size={9} />
-                                                                    {formatIdentifiantCourt(r.id)}
+                                                                    {numeroCommandeAffiche(r)}
                                                                 </span>
                                                             </td>
                                                             <td>{r.nomComplet}</td>
@@ -1073,7 +1081,7 @@ function Admin() {
                                                             title={r.id}
                                                         >
                                                             <FaHashtag size={9} />
-                                                            {formatIdentifiantCourt(r.id)}
+                                                            {numeroCommandeAffiche(r)}
                                                         </span>
                                                     </td>
                                                     <td>{r.nomComplet}</td>

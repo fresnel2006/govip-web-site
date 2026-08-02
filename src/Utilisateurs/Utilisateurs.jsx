@@ -207,10 +207,28 @@ function libelleCategorieRdv(categorie) {
 }
 
 // ── Format court et lisible de l'identifiant Firebase d'un rendez-vous,
-//    utilisé comme "numéro de commande" affiché au client (suivi + liste). ──
+//    utilisé comme "numéro de commande" affiché au client (suivi + liste).
+//    Conservé pour les anciens enregistrements qui n'ont pas encore de
+//    champ `numeroCommande` numérique. ──
 function formatIdentifiantCourt(id) {
     if (!id) return '';
     return id.slice(-8).toUpperCase();
+}
+
+// ── Numéro de commande "propre" : une suite de 9 chiffres (dans la
+//    fourchette 8-10 chiffres demandée). Généré une seule fois à la
+//    création du rendez-vous et stocké dans Firebase (champ
+//    `numeroCommande`), séparément de la clé technique Firebase qui reste
+//    utilisée en interne pour le token/suivi. ──
+function genererNumeroCommande() {
+    return String(Math.floor(100000000 + Math.random() * 900000000));
+}
+
+// ── Numéro de commande à afficher : priorité au champ numérique, avec
+//    repli sur l'ancien format pour les rendez-vous créés avant ce champ. ──
+function numeroCommandeAffiche(rdv) {
+    if (!rdv) return '';
+    return rdv.numeroCommande || formatIdentifiantCourt(rdv.id);
 }
 
 // ── Couleur/texte associés à chaque statut de rendez-vous ──
@@ -586,7 +604,7 @@ function SuiviRendezVous({ rdv, onAnnuler, onNouvelleDemande, onVoirListe, annul
                     style={{ fontSize: 13, color: '#6b7280', marginTop: -6, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}
                 >
                     <FaHashtag size={11} />
-                    Numéro de commande : <strong>{formatIdentifiantCourt(rdv.id)}</strong>
+                    Numéro de commande : <strong>{numeroCommandeAffiche(rdv)}</strong>
                 </p>
                 <p className={styles.s2_sous_titre}>
                     {rdv.statut === 'En attente' && "Nous allons vous contacter sur WhatsApp pour confirmer votre créneau."}
@@ -642,7 +660,7 @@ function SuiviRendezVous({ rdv, onAnnuler, onNouvelleDemande, onVoirListe, annul
                             <div className={styles.s2_separateur} />
 
                             <div className={styles.s2_grille_details}>
-                                <LigneDetail Icone={FaHashtag} libelle="Numéro de commande" valeur={formatIdentifiantCourt(rdv.id)} />
+                                <LigneDetail Icone={FaHashtag} libelle="Numéro de commande" valeur={numeroCommandeAffiche(rdv)} />
                                 <LigneDetail Icone={FaUser} libelle="Contact" valeur={rdv.nomComplet} />
                                 <LigneDetail Icone={FaPhoneAlt} libelle="Téléphone" valeur={rdv.telephone} />
                                 <LigneDetail Icone={FaMapMarkerAlt} libelle="Destination" valeur={rdv.destination} />
@@ -1009,7 +1027,7 @@ function MesRendezVous({ onRetour, onSelectionnerRdv }) {
                                             </p>
                                             <p style={{ fontSize: 12, color: '#9ca3af', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
                                                 <FaHashtag size={9} />
-                                                {formatIdentifiantCourt(rdv.id)}
+                                                {numeroCommandeAffiche(rdv)}
                                             </p>
                                         </div>
                                     </div>
@@ -1296,8 +1314,10 @@ function Utilisateur() {
         try {
             const rendezVousRef = ref(db, 'rendezVous');
             const nouvelleEntreeRef = push(rendezVousRef);
+            const numeroCommande = genererNumeroCommande();
 
             await set(nouvelleEntreeRef, {
+                numeroCommande,
                 nomComplet: formData.nomComplet.trim(),
                 telephone: `${INDICATIFS_PAYS[paysTelephone].indicatif} ${formData.telephone.trim()}`,
                 paysTelephone,
@@ -1322,7 +1342,7 @@ function Utilisateur() {
 
             setMessageEnvoi({
                 type: 'success',
-                texte: `Votre rendez-vous a bien été enregistré ! Votre numéro de commande est ${formatIdentifiantCourt(nouvelleEntreeRef.key)}. Nous vous contacterons sur WhatsApp pour confirmer.`,
+                texte: `Votre rendez-vous a bien été enregistré ! Votre numéro de commande est ${numeroCommande}. Nous vous contacterons sur WhatsApp pour confirmer.`,
             });
 
             try { localStorage.setItem(CLE_TOKEN_RDV, nouvelleEntreeRef.key); } catch { }
