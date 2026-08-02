@@ -101,13 +101,11 @@
         justify-content: center;
     }
 
-    /* Anciennement : style={{ color: '#09b50f', fontWeight: '600' }} */
     .titre_section {
         color: #09b50f;
         font-weight: 600;
     }
 
-    /* Anciennement : style={{ fontSize: '38px', fontWeight: '600' }} */
     .titre_principal {
         font-size: 38px;
         font-weight: 600;
@@ -217,7 +215,6 @@
         border-radius: 100px;
     }
 
-    /* Anciennement : style={{ color: 'white', fontWeight: '600' }} */
     .texte_blanc_bold {
         color: white;
         font-weight: 600;
@@ -245,7 +242,6 @@
         padding-bottom: 5%;
     }
 
-    /* Anciennement : style={{ marginTop: '20px', marginBottom: '10px' }} */
     .titre_formulaire {
         margin-top: 4%;
         margin-bottom: 3%;
@@ -841,6 +837,13 @@
         color: #9ca3af;
     }
 
+    /* Les <select> mobiles (Type de colis, Taille du colis, Destination)
+       réutilisent .input_mobile mais ont besoin d'un curseur "pointer"
+       comme sur desktop. */
+    select.input_mobile {
+        cursor: pointer;
+    }
+
     .champs_mobile_textarea {
         border: 1.5px solid #e5e7eb;
         border-radius: 10px;
@@ -1227,9 +1230,7 @@
     flex-shrink: 0;
 }
 
-/* ── Note explicative : apparaît au clic sur une carte (desktop + mobile) ──
-   Fonctionne comme une bulle de type "tooltip", mais déclenchée par un clic
-   plutôt qu'un survol, pour être utilisable aussi bien à la souris qu'au doigt. */
+/* ── Note explicative : apparaît au clic sur une carte (desktop + mobile) ── */
 .carte_note {
     position: absolute;
     top: calc(100% + 10px);
@@ -1268,16 +1269,39 @@
     margin: 0;
 }
 
+/* ════════════════════════════════════════════════════════════
+   CORRECTIF — bouton de fermeture de la note (croix)
+   Avant : une simple icône SVG de 12px sans zone de clic propre,
+   donc quasi impossible à toucher précisément au doigt sur mobile
+   (ce qui donnait l'impression que "la croix ne marche pas").
+   Maintenant : un vrai <button> avec une zone tactile de 26x26px,
+   un léger décalage négatif pour rester aligné visuellement, et
+   touch-action: manipulation pour éviter le délai/ghost-click des
+   navigateurs mobiles.
+   ════════════════════════════════════════════════════════════ */
 .carte_note_fermer {
     flex-shrink: 0;
-    margin-top: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    margin: -6px -4px 0 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    border-radius: 50%;
     font-size: 12px;
     color: #9ca3af;
     cursor: pointer;
+    touch-action: manipulation;
+    transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.carte_note_fermer:hover {
+.carte_note_fermer:hover,
+.carte_note_fermer:active {
     color: #fff;
+    background: rgba(255, 255, 255, 0.14);
 }
 
 @keyframes apparition_note {
@@ -2429,12 +2453,6 @@ color: rgb(41, 41, 41);
 
 /* ════════════════════════════════════════════════════════════
    CORRECTIF — Cartes "Mode de récupération" (version compacte)
-   Deux problèmes dans l'ancien CSS :
-   1. .carte_option_compacte n'était jamais définie : les cartes
-      "compact" reprenaient donc la hauteur normale (26vh sur
-      desktop), d'où les cartes géantes vues à l'écran.
-   2. .grille_options_recuperation n'avait aucune mise en page :
-      pas de grille ni d'espacement, juste un empilement brut.
    ════════════════════════════════════════════════════════════ */
 
 .grille_options_recuperation {
@@ -2447,8 +2465,6 @@ color: rgb(41, 41, 41);
     transition: box-shadow 0.2s ease;
 }
 
-/* Sélecteur combiné (.carte_option + .carte_option_compacte) pour
-   garantir la priorité sur la règle desktop min-height: 26vh. */
 .carte_option.carte_option_compacte {
     min-height: unset;
     flex-direction: row;
@@ -2485,8 +2501,6 @@ color: rgb(41, 41, 41);
 
 /* ════════════════════════════════════════════════════════════
    Mode de dépôt : choix obligatoire, affiché en haut de page
-   (au-dessus du formulaire), donc centré comme le reste du hero
-   plutôt qu'indenté comme le bloc "récupération" du formulaire.
    ════════════════════════════════════════════════════════════ */
 .depot_bloc {
     width: 100%;
@@ -2530,8 +2544,6 @@ color: rgb(41, 41, 41);
     color: #f87171;
 }
 
-/* Le calendrier / bloc date-créneau n'a pas de bordure visible par
-   défaut sur certains navigateurs sans ce renfort */
 .calendrier.champ_erreur,
 .calendrier_mobile.champ_erreur {
     border-width: 2px;

@@ -65,10 +65,6 @@ function normaliserTypeCreneau(type) {
 }
 
 // ── Conversion d'heure Côte d'Ivoire ↔ France ──
-// L'administrateur indique, pour chaque créneau, s'il a saisi l'heure d'Abidjan
-// (UTC+0 toute l'année) ou l'heure de Paris (UTC+1 l'hiver, UTC+2 l'été).
-// Cette fonction calcule l'heure équivalente dans l'autre pays, en tenant
-// compte automatiquement du changement d'heure d'été / hiver français.
 const formatteurHeureAbidjan = new Intl.DateTimeFormat('fr-FR', {
     timeZone: 'Africa/Abidjan',
     hour: '2-digit',
@@ -297,7 +293,13 @@ function CarteOption({ option, active, onClick, enErreur, compact, hoverActif })
         if (active) setNoteFermee(false);
     }, [active]);
 
+    // ── Fermeture de la note. Séparée du onClick de la carte via
+    //    stopPropagation + preventDefault (sur click ET touchend) pour
+    //    garantir un comportement fiable sur mobile : sans ça, un tap
+    //    imprécis sur la petite icône pouvait "remonter" jusqu'à la carte
+    //    et re-déclencher sa sélection au lieu de simplement fermer la note. ──
     const fermerNote = (e) => {
+        e.preventDefault();
         e.stopPropagation();
         setNoteFermee(true);
     };
@@ -333,7 +335,15 @@ function CarteOption({ option, active, onClick, enErreur, compact, hoverActif })
                 <div className={styles.carte_note} onClick={(e) => e.stopPropagation()}>
                     <p className={styles.carte_note_texte}>{note}</p>
                     {active && (
-                        <FaTimes className={styles.carte_note_fermer} onClick={fermerNote} />
+                        <button
+                            type="button"
+                            className={styles.carte_note_fermer}
+                            onClick={fermerNote}
+                            onTouchEnd={fermerNote}
+                            aria-label="Fermer la note"
+                        >
+                            <FaTimes size={11} />
+                        </button>
                     )}
                 </div>
             )}
@@ -803,9 +813,6 @@ function SuiviRendezVous({ rdv, onAnnuler, onNouvelleDemande, onVoirListe, annul
 }
 
 // ── Page de récapitulatif affichée juste avant l'enregistrement définitif ──
-// Reprend la même famille visuelle que la page de suivi (classes s2_...).
-// L'utilisateur peut soit revenir modifier le formulaire, soit confirmer
-// pour déclencher l'enregistrement réel dans Firebase.
 function RecapitulatifRendezVous({
     formData,
     paysTelephone,
@@ -1042,9 +1049,6 @@ function Utilisateur() {
     const [creneauSelectionne, setCreneauSelectionne] = useState(null);
 
     // ── Deux choix de service colis désormais obligatoires et indépendants ──
-    // Le client DOIT choisir un mode de dépôt ET un mode de récupération :
-    // ce ne sont plus 4 cartes concurrentes mais 2 groupes de 2 cartes,
-    // chacun avec sa propre sélection et sa propre erreur de validation.
     const [depotSelectionne, setDepotSelectionne] = useState(null);
     const [recuperationSelectionnee, setRecuperationSelectionnee] = useState(null);
     const [erreurDepot, setErreurDepot] = useState(false);
@@ -1055,8 +1059,7 @@ function Utilisateur() {
     // ── Champs du formulaire ──
     const [formData, setFormData] = useState(FORMULAIRE_VIDE);
 
-    // ── Erreurs par champ obligatoire : sert à mettre le champ en rouge
-    //    tant qu'il n'a pas été rempli / sélectionné. ──
+    // ── Erreurs par champ obligatoire ──
     const [erreursChamps, setErreursChamps] = useState({
         nomComplet: false,
         telephone: false,
@@ -1071,7 +1074,6 @@ function Utilisateur() {
     const [menuPaysOuvert, setMenuPaysOuvert] = useState(false);
     const refSelecteurPays = useRef(null);
 
-    // ── Ferme le menu du sélecteur de pays si on clique en dehors ──
     useEffect(() => {
         if (!menuPaysOuvert) return;
         const fermerSiExterieur = (e) => {
@@ -1090,15 +1092,12 @@ function Utilisateur() {
 
     // ── État d'envoi vers Firebase ──
     const [envoiEnCours, setEnvoiEnCours] = useState(false);
-    const [messageEnvoi, setMessageEnvoi] = useState(null); // { type: 'success' | 'error', texte: string }
+    const [messageEnvoi, setMessageEnvoi] = useState(null);
 
-    // ── Étape de récapitulatif : affichée après validation du formulaire,
-    //    avant l'enregistrement réel dans Firebase. ──
+    // ── Étape de récapitulatif ──
     const [etapeConfirmation, setEtapeConfirmation] = useState(false);
 
-    // ── Token du rendez-vous actuellement consulté (id Firebase stocké dans le navigateur du client).
-    //    Ce n'est qu'un raccourci vers le "dernier rendez-vous regardé" : la vraie source de vérité
-    //    pour retrouver TOUS les rendez-vous d'un client reste la recherche par téléphone (MesRendezVous). ──
+    // ── Token du rendez-vous actuellement consulté ──
     const [tokenRdv, setTokenRdv] = useState(() => {
         try {
             return localStorage.getItem(CLE_TOKEN_RDV);
@@ -1110,8 +1109,6 @@ function Utilisateur() {
     const [chargementTokenRdv, setChargementTokenRdv] = useState(Boolean(tokenRdv));
     const [annulationEnCours, setAnnulationEnCours] = useState(false);
 
-    // ── Si un token est présent, on écoute en temps réel le rendez-vous correspondant.
-    //    Ça permet aussi de mettre à jour automatiquement la page si l'admin change le statut. ──
     useEffect(() => {
         if (!tokenRdv) {
             setChargementTokenRdv(false);
@@ -1125,7 +1122,6 @@ function Utilisateur() {
             if (data) {
                 setRdvExistant({ id: tokenRdv, ...data });
             } else {
-                // Le token ne correspond plus à rien (supprimé côté admin) → on l'efface
                 try { localStorage.removeItem(CLE_TOKEN_RDV); } catch { }
                 setTokenRdv(null);
                 setRdvExistant(null);
@@ -1138,7 +1134,6 @@ function Utilisateur() {
         return () => unsubscribe();
     }, [tokenRdv]);
 
-    // ── Le client annule lui-même sa demande en attente ──
     const annulerMaDemande = async () => {
         if (!tokenRdv) return;
         setAnnulationEnCours(true);
@@ -1151,8 +1146,6 @@ function Utilisateur() {
         }
     };
 
-    // ── Le client démarre un nouveau rendez-vous : l'ancien reste actif dans Firebase,
-    //    on efface juste le "raccourci" local pour afficher le formulaire vierge. ──
     const reprendreNouvelleDemande = () => {
         try { localStorage.removeItem(CLE_TOKEN_RDV); } catch { }
         setTokenRdv(null);
@@ -1161,7 +1154,6 @@ function Utilisateur() {
         setVue('accueil');
     };
 
-    // ── Le client choisit un rendez-vous précis depuis la liste "Mes rendez-vous" ──
     const consulterRdv = (id) => {
         try { localStorage.setItem(CLE_TOKEN_RDV, id); } catch { }
         setTokenRdv(id);
@@ -1171,13 +1163,11 @@ function Utilisateur() {
     const allerVersListe = () => setVue('liste');
     const retourAccueil = () => setVue('accueil');
 
-    // ── Références vers les sections du header pour le scroll ──
     const refRendezVous = useRef(null);
     const refCommentCaMarche = useRef(null);
     const refAPropos = useRef(null);
     const refContact = useRef(null);
 
-    // ── Lecture en temps réel des créneaux dans Firebase ──
     useEffect(() => {
         const creneauxRef = ref(db, 'creneaux');
 
@@ -1198,11 +1188,6 @@ function Utilisateur() {
         return () => unsubscribe();
     }, []);
 
-    // ── Créneaux actifs disponibles pour la date sélectionnée ──
-    // NB : le filtrage par catégorie unique ('recuperation' OU 'depot') n'a
-    // plus de sens puisque dépôt et récupération sont maintenant deux choix
-    // obligatoires et simultanés (voir depotSelectionne / recuperationSelectionnee) :
-    // tous les créneaux actifs du jour sont donc proposés.
     const dateISO = formatDateISO(dateSelectionnee);
     const creneauxDuJour = creneaux.filter((c) => {
         return c.statut === 'Actif' && c.date === dateISO;
@@ -1231,8 +1216,6 @@ function Utilisateur() {
         setErreurRecuperation(false);
     };
 
-    // ── Met à jour un champ du formulaire, et efface l'erreur du champ
-    //    concerné dès que l'utilisateur commence à le corriger. ──
     const majFormulaire = (champ, valeur) => {
         setFormData((prev) => ({ ...prev, [champ]: valeur }));
         if (erreursChamps[champ]) {
@@ -1240,12 +1223,10 @@ function Utilisateur() {
         }
     };
 
-    // ── Scroll fluide vers une section quand on clique dans le header ──
     const allerVers = (ref) => {
         ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
 
-    // ── Détecte quels champs obligatoires sont vides, pour les mettre en rouge ──
     const calculerErreursChamps = () => ({
         nomComplet: formData.nomComplet.trim() === '',
         telephone: formData.telephone.trim() === '',
@@ -1255,7 +1236,6 @@ function Utilisateur() {
         creneau: creneauSelectionne === null,
     });
 
-    // ── Validation simple des champs obligatoires ──
     const formulaireValide = () => {
         return (
             depotSelectionne !== null &&
@@ -1269,11 +1249,6 @@ function Utilisateur() {
         );
     };
 
-    // ── Vérifie le formulaire puis bascule vers l'étape de récapitulatif.
-    //    Chaque champ obligatoire encore vide passe en rouge. L'enregistrement
-    //    réel dans Firebase n'a lieu qu'après confirmation de ce récapitulatif
-    //    (voir envoyerRendezVous, appelé par le bouton "Confirmer et
-    //    enregistrer" de RecapitulatifRendezVous). ──
     const verifierEtAfficherRecap = () => {
         setMessageEnvoi(null);
 
@@ -1297,14 +1272,11 @@ function Utilisateur() {
         setEtapeConfirmation(true);
     };
 
-    // ── Retour au formulaire depuis l'écran de récapitulatif, pour corriger une information ──
     const modifierDepuisRecap = () => {
         setEtapeConfirmation(false);
         setMessageEnvoi(null);
     };
 
-    // ── Envoi du rendez-vous vers Firebase (nouvelle branche "rendezVous") ──
-    // Appelé uniquement depuis l'écran de récapitulatif, après confirmation de l'utilisateur.
     const envoyerRendezVous = async () => {
         setMessageEnvoi(null);
 
@@ -1353,16 +1325,9 @@ function Utilisateur() {
                 texte: `Votre rendez-vous a bien été enregistré ! Votre numéro de commande est ${formatIdentifiantCourt(nouvelleEntreeRef.key)}. Nous vous contacterons sur WhatsApp pour confirmer.`,
             });
 
-            // On garde une trace du rendez-vous côté client (token = id Firebase),
-            // pour reconnaître ce visiteur s'il revient sur le site. Les rendez-vous
-            // précédents restent accessibles via "Mes rendez-vous" (recherche par téléphone).
             try { localStorage.setItem(CLE_TOKEN_RDV, nouvelleEntreeRef.key); } catch { }
             setTokenRdv(nouvelleEntreeRef.key);
 
-            // Réinitialisation du formulaire et de l'étape de récapitulatif après succès.
-            // Dès que tokenRdv est fixé, le listener Firebase remplit rdvExistant, ce qui
-            // fait automatiquement basculer l'affichage vers l'écran de suivi (SuiviRendezVous) :
-            // l'utilisateur ne peut plus revenir en arrière sur le formulaire.
             setFormData(FORMULAIRE_VIDE);
             setDateSelectionnee(null);
             setCreneauSelectionne(null);
@@ -1456,10 +1421,8 @@ function Utilisateur() {
                                 </div>
                             </div>
 
-                            {/* ─── Mode de dépôt : choix obligatoire et indépendant du mode
-                                 de récupération (cartes "récupération" plus bas, sous les Notes). ─── */}
                             <div className={styles.depot_bloc}>
-                                
+
                                 <div className={`${styles.grille_options_desktop} ${erreurDepot ? styles.grille_options_erreur : ''}`}>
                                     {OPTIONS_COLIS.filter((o) => o.categorie === 'depot').map((option) => (
                                         <CarteOption
@@ -1647,7 +1610,6 @@ function Utilisateur() {
                                         </div>
                                     </div>
 
-                                    {/* ─── Mode de récupération : sous Notes, cartes compactes, obligatoire ─── */}
                                     <div className={styles.recuperation_bloc}>
                                         <p className={styles.recuperation_label}>
                                             Mode de récupération <span className={styles.asterix}>*</span>
@@ -1798,10 +1760,8 @@ function Utilisateur() {
                                 </div>
                             </div>
 
-                            {/* Mode de dépôt : choix obligatoire et indépendant du mode de
-                                récupération. Les cartes "récupération" sont plus bas, sous les Notes. */}
                             <div className={styles.depot_bloc}>
-                                
+
                                 <div className={`${styles.grille_options_mobile} ${erreurDepot ? styles.grille_options_erreur : ''}`}>
                                     {OPTIONS_COLIS.filter((o) => o.categorie === 'depot').map((option) => (
                                         <CarteOption
@@ -1872,30 +1832,37 @@ function Utilisateur() {
 
                                 <div className={styles.section_label}>Détails du colis</div>
 
-                                <div className={styles.row_double}>
-                                    <div className={styles.champ_mobile}>
-                                        <label className={styles.label_mobile}>Type <span className={styles.optionnel}>(optionnel)</span></label>
-                                        <div className={styles.champs_mobile}>
-                                            <input
-                                                className={styles.input_mobile}
-                                                type="text"
-                                                placeholder="Ex: vêtements"
-                                                value={formData.typeColis}
-                                                onChange={(e) => majFormulaire('typeColis', e.target.value)}
-                                            />
-                                        </div>
+                                {/* ── Type et Taille : désormais des <select> alignés sur les mêmes
+                                    valeurs que le desktop (LIBELLES_TYPE_COLIS / LIBELLES_TAILLE_COLIS),
+                                    et chacun en pleine largeur (plus de row_double qui écrasait "Taille"). ── */}
+                                <div className={styles.champ_mobile}>
+                                    <label className={styles.label_mobile}>Type de colis <span className={styles.optionnel}>(optionnel)</span></label>
+                                    <div className={styles.champs_mobile}>
+                                        <select
+                                            className={styles.input_mobile}
+                                            value={formData.typeColis}
+                                            onChange={(e) => majFormulaire('typeColis', e.target.value)}
+                                        >
+                                            <option value="">Sélectionnez un type de colis</option>
+                                            {Object.entries(LIBELLES_TYPE_COLIS).map(([valeur, libelle]) => (
+                                                <option key={valeur} value={valeur}>{libelle}</option>
+                                            ))}
+                                        </select>
                                     </div>
-                                    <div className={styles.champ_mobile}>
-                                        <label className={styles.label_mobile}>Taille <span className={styles.optionnel}>(optionnel)</span></label>
-                                        <div className={styles.champs_mobile}>
-                                            <input
-                                                className={styles.input_mobile}
-                                                type="text"
-                                                placeholder="Ex: moyen"
-                                                value={formData.tailleColis}
-                                                onChange={(e) => majFormulaire('tailleColis', e.target.value)}
-                                            />
-                                        </div>
+                                </div>
+                                <div className={styles.champ_mobile}>
+                                    <label className={styles.label_mobile}>Taille du colis <span className={styles.optionnel}>(optionnel)</span></label>
+                                    <div className={styles.champs_mobile}>
+                                        <select
+                                            className={styles.input_mobile}
+                                            value={formData.tailleColis}
+                                            onChange={(e) => majFormulaire('tailleColis', e.target.value)}
+                                        >
+                                            <option value="">Sélectionnez une taille de colis</option>
+                                            {Object.entries(LIBELLES_TAILLE_COLIS).map(([valeur, libelle]) => (
+                                                <option key={valeur} value={valeur}>{libelle}</option>
+                                            ))}
+                                        </select>
                                     </div>
                                 </div>
 
@@ -1977,7 +1944,6 @@ function Utilisateur() {
                                     </div>
                                 </div>
 
-                                {/* ─── Mode de récupération : sous Notes, cartes compactes, obligatoire ─── */}
                                 <div className={styles.recuperation_bloc}>
                                     <p className={styles.recuperation_label}>
                                         Mode de récupération <span className={styles.asterix}>*</span>
