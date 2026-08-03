@@ -11,7 +11,7 @@ import {
 import {
     FaHome, FaCalendarAlt, FaClock, FaUsers,
     FaCheck, FaBoxOpen, FaPlus, FaArrowRight, FaTimes, FaPen, FaTrash, FaToggleOn, FaToggleOff, FaHashtag, FaSearch,
-    FaSignOutAlt, FaLock, FaEnvelope, FaEye, FaEyeSlash
+    FaSignOutAlt, FaLock, FaEnvelope, FaEye, FaEyeSlash, FaBars
 } from 'react-icons/fa';
 import { FiPackage } from 'react-icons/fi';
 import { CI, FR } from 'country-flag-icons/react/3x2';
@@ -523,6 +523,9 @@ function Admin() {
     // ── Message affiché sur la page de connexion après une déconnexion automatique ──
     const [messageDeconnexionAuto, setMessageDeconnexionAuto] = useState('');
 
+    // ── État d'ouverture du menu latéral sur mobile (fermé par défaut) ──
+    const [menuMobileOuvert, setMenuMobileOuvert] = useState(false);
+
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             setUtilisateur(user);
@@ -719,6 +722,12 @@ function Admin() {
         setCreneauEnEdition(null);
     };
 
+    // ── Change de section et referme automatiquement le menu mobile ──
+    const allerVersSection = (id) => {
+        setSectionActive(id);
+        setMenuMobileOuvert(false);
+    };
+
     // ── Calcul des stats à partir des vraies données de Firebase ──
     const totalRendezVous = rendezVous.length;
     const enAttente = rendezVous.filter((r) => r.statut === 'En attente').length;
@@ -794,10 +803,37 @@ function Admin() {
         <>
             <div className={styles.disposition}>
 
-                {/* ── Barre latérale ── */}
-                <aside className={styles.barre_laterale}>
+                {/* ── Barre d'en-tête mobile (visible uniquement en dessous de 900px) ── */}
+                <div className={styles.entete_mobile}>
+                    <button
+                        className={styles.bouton_hamburger}
+                        onClick={() => setMenuMobileOuvert(true)}
+                        aria-label="Ouvrir le menu"
+                    >
+                        <FaBars />
+                    </button>
+                    <img src={logo} alt="Logo GVIP" className={styles.entete_mobile_logo} />
+                    <span style={{ width: 32 }} />
+                </div>
+
+                {/* ── Voile sombre derrière le menu mobile ouvert ── */}
+                {menuMobileOuvert && (
+                    <div
+                        className={styles.voile_mobile}
+                        onClick={() => setMenuMobileOuvert(false)}
+                    />
+                )}
+
+                {/* ── Barre latérale (menu coulissant sur mobile) ── */}
+                <aside
+                    className={`${styles.barre_laterale} ${menuMobileOuvert ? styles.barre_laterale_ouverte : ''}`}
+                >
                     <div className={styles.barre_laterale_logo}>
                         <img src={logo} alt="Logo GVIP" className={styles.image_logo} />
+                        <span
+                            className={styles.bouton_hamburger}
+                            style={{ marginLeft: 'auto', color: '#fff', display: 'none' }}
+                        />
                     </div>
 
                     <nav className={styles.navigation}>
@@ -805,7 +841,7 @@ function Admin() {
                             <div
                                 key={item.id}
                                 className={`${styles.element_nav} ${sectionActive === item.id ? styles.element_nav_actif : ''}`}
-                                onClick={() => setSectionActive(item.id)}
+                                onClick={() => allerVersSection(item.id)}
                                 style={{ cursor: 'pointer' }}
                             >
                                 {item.icon}
@@ -827,7 +863,7 @@ function Admin() {
 
                 {/* ── Contenu principal ── */}
                 <main className={styles.contenu_principal}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
                         <h1 className={styles.titre_page}>{titresSection[sectionActive]}</h1>
                         <p style={{ fontSize: '13px', color: '#6b7280' }}>{utilisateur.email}</p>
                     </div>
@@ -884,64 +920,66 @@ function Admin() {
                                     ) : rendezVous.length === 0 ? (
                                         <p className={styles.sous_texte_stat}>Aucun rendez-vous pour le moment.</p>
                                     ) : (
-                                        <table className={styles.tableau}>
-                                            <thead>
-                                                <tr>
-                                                    <th>N°</th>
-                                                    <th>Nom</th>
-                                                    <th>Catégorie</th>
-                                                    <th>Date</th>
-                                                    <th>Heure</th>
-                                                    <th>Statut</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {rendezVous.slice(0, 5).map((r) => {
-                                                    const paysCreneauRdv = r.creneauPays || 'CI';
-                                                    return (
-                                                        <tr key={r.id}>
-                                                            <td>
-                                                                <span
-                                                                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#6b7280' }}
-                                                                    title={r.id}
-                                                                >
-                                                                    <FaHashtag size={9} />
-                                                                    {numeroCommandeAffiche(r)}
-                                                                </span>
-                                                            </td>
-                                                            <td>{r.nomComplet}</td>
-                                                            <td>{libelleCategorie(r.categorieService)}</td>
-                                                            <td>{r.date}</td>
-                                                            <td>
-                                                                <div className={styles.heure_avec_drapeau}>
-                                                                    {paysCreneauRdv === 'FR' ? (
-                                                                        <FR title="France" className={styles.drapeau_mini} />
-                                                                    ) : (
-                                                                        <CI title="Côte d'Ivoire" className={styles.drapeau_mini} />
-                                                                    )}
-                                                                    {r.heureDebut} - {r.heureFin}
-                                                                </div>
-                                                                <div className={styles.heure_fuseau_secondaire}>
-                                                                    {paysCreneauRdv === 'FR' ? (
-                                                                        <CI title="Côte d'Ivoire" className={styles.drapeau_mini} />
-                                                                    ) : (
-                                                                        <FR title="France" className={styles.drapeau_mini} />
-                                                                    )}
-                                                                    {heureDansAutrePays(r.date, r.heureDebut, paysCreneauRdv)} - {heureDansAutrePays(r.date, r.heureFin, paysCreneauRdv)}
-                                                                </div>
-                                                            </td>
-                                                            <td>
-                                                                <span className={`${styles.badge} ${classeBadgeStatutRdv(r.statut)}`}>
-                                                                    {r.statut}
-                                                                </span>
-                                                            </td>
-                                                        </tr>
-                                                    );
-                                                })}
-                                            </tbody>
-                                        </table>
+                                        <div className={styles.conteneur_tableau_scroll}>
+                                            <table className={styles.tableau}>
+                                                <thead>
+                                                    <tr>
+                                                        <th>N°</th>
+                                                        <th>Nom</th>
+                                                        <th>Catégorie</th>
+                                                        <th>Date</th>
+                                                        <th>Heure</th>
+                                                        <th>Statut</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {rendezVous.slice(0, 5).map((r) => {
+                                                        const paysCreneauRdv = r.creneauPays || 'CI';
+                                                        return (
+                                                            <tr key={r.id}>
+                                                                <td>
+                                                                    <span
+                                                                        style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#6b7280' }}
+                                                                        title={r.id}
+                                                                    >
+                                                                        <FaHashtag size={9} />
+                                                                        {numeroCommandeAffiche(r)}
+                                                                    </span>
+                                                                </td>
+                                                                <td>{r.nomComplet}</td>
+                                                                <td>{libelleCategorie(r.categorieService)}</td>
+                                                                <td>{r.date}</td>
+                                                                <td>
+                                                                    <div className={styles.heure_avec_drapeau}>
+                                                                        {paysCreneauRdv === 'FR' ? (
+                                                                            <FR title="France" className={styles.drapeau_mini} />
+                                                                        ) : (
+                                                                            <CI title="Côte d'Ivoire" className={styles.drapeau_mini} />
+                                                                        )}
+                                                                        {r.heureDebut} - {r.heureFin}
+                                                                    </div>
+                                                                    <div className={styles.heure_fuseau_secondaire}>
+                                                                        {paysCreneauRdv === 'FR' ? (
+                                                                            <CI title="Côte d'Ivoire" className={styles.drapeau_mini} />
+                                                                        ) : (
+                                                                            <FR title="France" className={styles.drapeau_mini} />
+                                                                        )}
+                                                                        {heureDansAutrePays(r.date, r.heureDebut, paysCreneauRdv)} - {heureDansAutrePays(r.date, r.heureFin, paysCreneauRdv)}
+                                                                    </div>
+                                                                </td>
+                                                                <td>
+                                                                    <span className={`${styles.badge} ${classeBadgeStatutRdv(r.statut)}`}>
+                                                                        {r.statut}
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     )}
-                                    <p className={styles.voir_tous} onClick={() => setSectionActive('rendezvous')}>
+                                    <p className={styles.voir_tous} onClick={() => allerVersSection('rendezvous')}>
                                         Voir tous les rendez-vous
                                     </p>
                                 </div>
@@ -961,74 +999,76 @@ function Admin() {
                                     ) : creneaux.length === 0 ? (
                                         <p className={styles.sous_texte_stat}>Aucun créneau pour le moment.</p>
                                     ) : (
-                                        <table className={styles.tableau}>
-                                            <thead>
-                                                <tr>
-                                                    <th>Date</th>
-                                                    <th>Type</th>
-                                                    <th>Heure</th>
-                                                    <th>Max.</th>
-                                                    <th>Statut</th>
-                                                    <th>Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {creneaux.slice(0, 5).map((c) => (
-                                                    <tr key={c.id}>
-                                                        <td>{c.date}</td>
-                                                        <td>{c.type}</td>
-                                                        <td>
-                                                            <div className={styles.heure_avec_drapeau}>
-                                                                {(c.pays || 'CI') === 'FR' ? (
-                                                                    <FR title="Heure de Paris" className={styles.drapeau_mini} />
-                                                                ) : (
-                                                                    <CI title="Heure d'Abidjan" className={styles.drapeau_mini} />
-                                                                )}
-                                                                {c.heureDebut} - {c.heureFin}
-                                                            </div>
-                                                        </td>
-                                                        <td>Max. {c.max}</td>
-                                                        <td>
-                                                            <span
-                                                                className={`${styles.badge} ${c.statut === 'Actif' ? styles.badge_vert : styles.badge_orange}`}
-                                                                style={{ cursor: 'pointer' }}
-                                                                title="Cliquer pour changer le statut"
-                                                                onClick={() => toggleStatutCreneau(c)}
-                                                            >
-                                                                {c.statut}
-                                                            </span>
-                                                        </td>
-                                                        <td>
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <div className={styles.conteneur_tableau_scroll}>
+                                            <table className={styles.tableau}>
+                                                <thead>
+                                                    <tr>
+                                                        <th>Date</th>
+                                                        <th>Type</th>
+                                                        <th>Heure</th>
+                                                        <th>Max.</th>
+                                                        <th>Statut</th>
+                                                        <th>Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {creneaux.slice(0, 5).map((c) => (
+                                                        <tr key={c.id}>
+                                                            <td>{c.date}</td>
+                                                            <td>{c.type}</td>
+                                                            <td>
+                                                                <div className={styles.heure_avec_drapeau}>
+                                                                    {(c.pays || 'CI') === 'FR' ? (
+                                                                        <FR title="Heure de Paris" className={styles.drapeau_mini} />
+                                                                    ) : (
+                                                                        <CI title="Heure d'Abidjan" className={styles.drapeau_mini} />
+                                                                    )}
+                                                                    {c.heureDebut} - {c.heureFin}
+                                                                </div>
+                                                            </td>
+                                                            <td>Max. {c.max}</td>
+                                                            <td>
                                                                 <span
-                                                                    title={c.statut === 'Actif' ? 'Désactiver' : 'Activer'}
-                                                                    style={{ cursor: 'pointer', color: c.statut === 'Actif' ? '#16a34a' : '#9ca3af', fontSize: '18px', display: 'flex' }}
+                                                                    className={`${styles.badge} ${c.statut === 'Actif' ? styles.badge_vert : styles.badge_orange}`}
+                                                                    style={{ cursor: 'pointer' }}
+                                                                    title="Cliquer pour changer le statut"
                                                                     onClick={() => toggleStatutCreneau(c)}
                                                                 >
-                                                                    {c.statut === 'Actif' ? <FaToggleOn /> : <FaToggleOff />}
+                                                                    {c.statut}
                                                                 </span>
-                                                                <span
-                                                                    title="Modifier"
-                                                                    style={{ cursor: 'pointer', color: '#6b7280', fontSize: '13px', display: 'flex' }}
-                                                                    onClick={() => ouvrirModalEdition(c)}
-                                                                >
-                                                                    <FaPen />
-                                                                </span>
-                                                                <span
-                                                                    title="Supprimer"
-                                                                    style={{ cursor: 'pointer', color: '#dc2626', fontSize: '13px', display: 'flex' }}
-                                                                    onClick={() => supprimerCreneau(c.id)}
-                                                                >
-                                                                    <FaTrash />
-                                                                </span>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
+                                                            </td>
+                                                            <td>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                                    <span
+                                                                        title={c.statut === 'Actif' ? 'Désactiver' : 'Activer'}
+                                                                        style={{ cursor: 'pointer', color: c.statut === 'Actif' ? '#16a34a' : '#9ca3af', fontSize: '18px', display: 'flex' }}
+                                                                        onClick={() => toggleStatutCreneau(c)}
+                                                                    >
+                                                                        {c.statut === 'Actif' ? <FaToggleOn /> : <FaToggleOff />}
+                                                                    </span>
+                                                                    <span
+                                                                        title="Modifier"
+                                                                        style={{ cursor: 'pointer', color: '#6b7280', fontSize: '13px', display: 'flex' }}
+                                                                        onClick={() => ouvrirModalEdition(c)}
+                                                                    >
+                                                                        <FaPen />
+                                                                    </span>
+                                                                    <span
+                                                                        title="Supprimer"
+                                                                        style={{ cursor: 'pointer', color: '#dc2626', fontSize: '13px', display: 'flex' }}
+                                                                        onClick={() => supprimerCreneau(c.id)}
+                                                                    >
+                                                                        <FaTrash />
+                                                                    </span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     )}
-                                    <p className={styles.voir_tous} onClick={() => setSectionActive('creneaux')}>
+                                    <p className={styles.voir_tous} onClick={() => allerVersSection('creneaux')}>
                                         Voir tous les créneaux
                                     </p>
                                 </div>
@@ -1055,109 +1095,111 @@ function Admin() {
                                     {termeRdv === '' ? 'Aucun rendez-vous pour le moment.' : 'Aucun rendez-vous ne correspond à cette recherche.'}
                                 </p>
                             ) : (
-                                <table className={styles.tableau}>
-                                    <thead>
-                                        <tr>
-                                            <th>N°</th>
-                                            <th>Nom</th>
-                                            <th>Téléphone</th>
-                                            <th>Catégorie</th>
-                                            <th>Destination</th>
-                                            <th>Date</th>
-                                            <th>Heure</th>
-                                            <th>Statut</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {rendezVousFiltres.map((r) => {
-                                            const peutConfirmerColis = r.statut === 'Confirmé';
-                                            const paysCreneauRdv = r.creneauPays || 'CI';
-                                            return (
-                                                <tr key={r.id}>
-                                                    <td>
-                                                        <span
-                                                            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#6b7280' }}
-                                                            title={r.id}
-                                                        >
-                                                            <FaHashtag size={9} />
-                                                            {numeroCommandeAffiche(r)}
-                                                        </span>
-                                                    </td>
-                                                    <td>{r.nomComplet}</td>
-                                                    <td>{r.telephone}</td>
-                                                    <td>{libelleCategorie(r.categorieService)}</td>
-                                                    <td>
-                                                        <div className={styles.destination_avec_drapeau}>
-                                                            {r.destination === 'France' ? (
-                                                                <FR title="France" className={styles.drapeau_mini} />
-                                                            ) : (
-                                                                <CI title="Côte d'Ivoire" className={styles.drapeau_mini} />
-                                                            )}
-                                                            {r.destination}
-                                                        </div>
-                                                    </td>
-                                                    <td>{r.date}</td>
-                                                    <td>
-                                                        <div className={styles.heure_avec_drapeau}>
-                                                            {paysCreneauRdv === 'FR' ? (
-                                                                <FR title="France" className={styles.drapeau_mini} />
-                                                            ) : (
-                                                                <CI title="Côte d'Ivoire" className={styles.drapeau_mini} />
-                                                            )}
-                                                            {r.heureDebut} - {r.heureFin}
-                                                        </div>
-                                                        <div className={styles.heure_fuseau_secondaire}>
-                                                            {paysCreneauRdv === 'FR' ? (
-                                                                <CI title="Côte d'Ivoire" className={styles.drapeau_mini} />
-                                                            ) : (
-                                                                <FR title="France" className={styles.drapeau_mini} />
-                                                            )}
-                                                            {heureDansAutrePays(r.date, r.heureDebut, paysCreneauRdv)} - {heureDansAutrePays(r.date, r.heureFin, paysCreneauRdv)}
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        <span
-                                                            className={`${styles.badge} ${classeBadgeStatutRdv(r.statut)}`}
-                                                            style={{ cursor: 'pointer' }}
-                                                            title="Cliquer pour faire avancer le statut"
-                                                            onClick={() => avancerStatutRendezVous(r)}
-                                                        >
-                                                            {r.statut}
-                                                        </span>
-                                                    </td>
-                                                    <td>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                            {peutConfirmerColis && (
+                                <div className={styles.conteneur_tableau_scroll}>
+                                    <table className={styles.tableau}>
+                                        <thead>
+                                            <tr>
+                                                <th>N°</th>
+                                                <th>Nom</th>
+                                                <th>Téléphone</th>
+                                                <th>Catégorie</th>
+                                                <th>Destination</th>
+                                                <th>Date</th>
+                                                <th>Heure</th>
+                                                <th>Statut</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {rendezVousFiltres.map((r) => {
+                                                const peutConfirmerColis = r.statut === 'Confirmé';
+                                                const paysCreneauRdv = r.creneauPays || 'CI';
+                                                return (
+                                                    <tr key={r.id}>
+                                                        <td>
+                                                            <span
+                                                                style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#6b7280' }}
+                                                                title={r.id}
+                                                            >
+                                                                <FaHashtag size={9} />
+                                                                {numeroCommandeAffiche(r)}
+                                                            </span>
+                                                        </td>
+                                                        <td>{r.nomComplet}</td>
+                                                        <td>{r.telephone}</td>
+                                                        <td>{libelleCategorie(r.categorieService)}</td>
+                                                        <td>
+                                                            <div className={styles.destination_avec_drapeau}>
+                                                                {r.destination === 'France' ? (
+                                                                    <FR title="France" className={styles.drapeau_mini} />
+                                                                ) : (
+                                                                    <CI title="Côte d'Ivoire" className={styles.drapeau_mini} />
+                                                                )}
+                                                                {r.destination}
+                                                            </div>
+                                                        </td>
+                                                        <td>{r.date}</td>
+                                                        <td>
+                                                            <div className={styles.heure_avec_drapeau}>
+                                                                {paysCreneauRdv === 'FR' ? (
+                                                                    <FR title="France" className={styles.drapeau_mini} />
+                                                                ) : (
+                                                                    <CI title="Côte d'Ivoire" className={styles.drapeau_mini} />
+                                                                )}
+                                                                {r.heureDebut} - {r.heureFin}
+                                                            </div>
+                                                            <div className={styles.heure_fuseau_secondaire}>
+                                                                {paysCreneauRdv === 'FR' ? (
+                                                                    <CI title="Côte d'Ivoire" className={styles.drapeau_mini} />
+                                                                ) : (
+                                                                    <FR title="France" className={styles.drapeau_mini} />
+                                                                )}
+                                                                {heureDansAutrePays(r.date, r.heureDebut, paysCreneauRdv)} - {heureDansAutrePays(r.date, r.heureFin, paysCreneauRdv)}
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <span
+                                                                className={`${styles.badge} ${classeBadgeStatutRdv(r.statut)}`}
+                                                                style={{ cursor: 'pointer' }}
+                                                                title="Cliquer pour faire avancer le statut"
+                                                                onClick={() => avancerStatutRendezVous(r)}
+                                                            >
+                                                                {r.statut}
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                                {peutConfirmerColis && (
+                                                                    <span
+                                                                        title={libelleConfirmationColis(r.categorieService)}
+                                                                        style={{ cursor: 'pointer', color: '#2563eb', fontSize: '14px', display: 'flex' }}
+                                                                        onClick={() => confirmerColisTraite(r)}
+                                                                    >
+                                                                        <FaBoxOpen />
+                                                                    </span>
+                                                                )}
                                                                 <span
-                                                                    title={libelleConfirmationColis(r.categorieService)}
-                                                                    style={{ cursor: 'pointer', color: '#2563eb', fontSize: '14px', display: 'flex' }}
-                                                                    onClick={() => confirmerColisTraite(r)}
+                                                                    title="Annuler"
+                                                                    style={{ cursor: 'pointer', color: '#f97316', fontSize: '13px', display: 'flex' }}
+                                                                    onClick={() => annulerRendezVous(r.id)}
                                                                 >
-                                                                    <FaBoxOpen />
+                                                                    <FaTimes />
                                                                 </span>
-                                                            )}
-                                                            <span
-                                                                title="Annuler"
-                                                                style={{ cursor: 'pointer', color: '#f97316', fontSize: '13px', display: 'flex' }}
-                                                                onClick={() => annulerRendezVous(r.id)}
-                                                            >
-                                                                <FaTimes />
-                                                            </span>
-                                                            <span
-                                                                title="Supprimer"
-                                                                style={{ cursor: 'pointer', color: '#dc2626', fontSize: '13px', display: 'flex' }}
-                                                                onClick={() => supprimerRendezVous(r.id)}
-                                                            >
-                                                                <FaTrash />
-                                                            </span>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
+                                                                <span
+                                                                    title="Supprimer"
+                                                                    style={{ cursor: 'pointer', color: '#dc2626', fontSize: '13px', display: 'flex' }}
+                                                                    onClick={() => supprimerRendezVous(r.id)}
+                                                                >
+                                                                    <FaTrash />
+                                                                </span>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
                             )}
                         </div>
                     )}
@@ -1178,72 +1220,74 @@ function Admin() {
                             ) : creneaux.length === 0 ? (
                                 <p className={styles.sous_texte_stat}>Aucun créneau pour le moment.</p>
                             ) : (
-                                <table className={styles.tableau}>
-                                    <thead>
-                                        <tr>
-                                            <th>Date</th>
-                                            <th>Type</th>
-                                            <th>Heure</th>
-                                            <th>Max.</th>
-                                            <th>Statut</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {creneaux.map((c) => (
-                                            <tr key={c.id}>
-                                                <td>{c.date}</td>
-                                                <td>{c.type}</td>
-                                                <td>
-                                                    <div className={styles.heure_avec_drapeau}>
-                                                        {(c.pays || 'CI') === 'FR' ? (
-                                                            <FR title="Heure de Paris" className={styles.drapeau_mini} />
-                                                        ) : (
-                                                            <CI title="Heure d'Abidjan" className={styles.drapeau_mini} />
-                                                        )}
-                                                        {c.heureDebut} - {c.heureFin}
-                                                    </div>
-                                                </td>
-                                                <td>Max. {c.max}</td>
-                                                <td>
-                                                    <span
-                                                        className={`${styles.badge} ${c.statut === 'Actif' ? styles.badge_vert : styles.badge_orange}`}
-                                                        style={{ cursor: 'pointer' }}
-                                                        title="Cliquer pour changer le statut"
-                                                        onClick={() => toggleStatutCreneau(c)}
-                                                    >
-                                                        {c.statut}
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <div className={styles.conteneur_tableau_scroll}>
+                                    <table className={styles.tableau}>
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Type</th>
+                                                <th>Heure</th>
+                                                <th>Max.</th>
+                                                <th>Statut</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {creneaux.map((c) => (
+                                                <tr key={c.id}>
+                                                    <td>{c.date}</td>
+                                                    <td>{c.type}</td>
+                                                    <td>
+                                                        <div className={styles.heure_avec_drapeau}>
+                                                            {(c.pays || 'CI') === 'FR' ? (
+                                                                <FR title="Heure de Paris" className={styles.drapeau_mini} />
+                                                            ) : (
+                                                                <CI title="Heure d'Abidjan" className={styles.drapeau_mini} />
+                                                            )}
+                                                            {c.heureDebut} - {c.heureFin}
+                                                        </div>
+                                                    </td>
+                                                    <td>Max. {c.max}</td>
+                                                    <td>
                                                         <span
-                                                            title={c.statut === 'Actif' ? 'Désactiver' : 'Activer'}
-                                                            style={{ cursor: 'pointer', color: c.statut === 'Actif' ? '#16a34a' : '#9ca3af', fontSize: '18px', display: 'flex' }}
+                                                            className={`${styles.badge} ${c.statut === 'Actif' ? styles.badge_vert : styles.badge_orange}`}
+                                                            style={{ cursor: 'pointer' }}
+                                                            title="Cliquer pour changer le statut"
                                                             onClick={() => toggleStatutCreneau(c)}
                                                         >
-                                                            {c.statut === 'Actif' ? <FaToggleOn /> : <FaToggleOff />}
+                                                            {c.statut}
                                                         </span>
-                                                        <span
-                                                            title="Modifier"
-                                                            style={{ cursor: 'pointer', color: '#6b7280', fontSize: '13px', display: 'flex' }}
-                                                            onClick={() => ouvrirModalEdition(c)}
-                                                        >
-                                                            <FaPen />
-                                                        </span>
-                                                        <span
-                                                            title="Supprimer"
-                                                            style={{ cursor: 'pointer', color: '#dc2626', fontSize: '13px', display: 'flex' }}
-                                                            onClick={() => supprimerCreneau(c.id)}
-                                                        >
-                                                            <FaTrash />
-                                                        </span>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                                    </td>
+                                                    <td>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                            <span
+                                                                title={c.statut === 'Actif' ? 'Désactiver' : 'Activer'}
+                                                                style={{ cursor: 'pointer', color: c.statut === 'Actif' ? '#16a34a' : '#9ca3af', fontSize: '18px', display: 'flex' }}
+                                                                onClick={() => toggleStatutCreneau(c)}
+                                                            >
+                                                                {c.statut === 'Actif' ? <FaToggleOn /> : <FaToggleOff />}
+                                                            </span>
+                                                            <span
+                                                                title="Modifier"
+                                                                style={{ cursor: 'pointer', color: '#6b7280', fontSize: '13px', display: 'flex' }}
+                                                                onClick={() => ouvrirModalEdition(c)}
+                                                            >
+                                                                <FaPen />
+                                                            </span>
+                                                            <span
+                                                                title="Supprimer"
+                                                                style={{ cursor: 'pointer', color: '#dc2626', fontSize: '13px', display: 'flex' }}
+                                                                onClick={() => supprimerCreneau(c.id)}
+                                                            >
+                                                                <FaTrash />
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             )}
                         </div>
                     )}
@@ -1266,26 +1310,28 @@ function Admin() {
                                     {termeClient === '' ? 'Aucun client pour le moment.' : 'Aucun client ne correspond à cette recherche.'}
                                 </p>
                             ) : (
-                                <table className={styles.tableau}>
-                                    <thead>
-                                        <tr>
-                                            <th>Nom</th>
-                                            <th>Téléphone</th>
-                                            <th>Email</th>
-                                            <th>Rendez-vous</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {clientsFiltres.map((c, i) => (
-                                            <tr key={i}>
-                                                <td>{c.nom}</td>
-                                                <td>{c.telephone}</td>
-                                                <td>{c.email}</td>
-                                                <td>{c.nbRendezVous}</td>
+                                <div className={styles.conteneur_tableau_scroll}>
+                                    <table className={styles.tableau}>
+                                        <thead>
+                                            <tr>
+                                                <th>Nom</th>
+                                                <th>Téléphone</th>
+                                                <th>Email</th>
+                                                <th>Rendez-vous</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody>
+                                            {clientsFiltres.map((c, i) => (
+                                                <tr key={i}>
+                                                    <td>{c.nom}</td>
+                                                    <td>{c.telephone}</td>
+                                                    <td>{c.email}</td>
+                                                    <td>{c.nbRendezVous}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             )}
                         </div>
                     )}

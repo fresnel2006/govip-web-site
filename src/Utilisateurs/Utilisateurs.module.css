@@ -1109,6 +1109,7 @@
     position: relative;
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 12px;
     width: 100%;
     background: #fff;
@@ -1230,12 +1231,14 @@
     flex-shrink: 0;
 }
 
-/* ── Note explicative : apparaît au clic sur une carte (desktop + mobile) ── */
+/* ── Note explicative : apparaît au clic sur une carte ──
+   Mobile (par défaut ci-dessous) : bloc dans le flux normal, pleine largeur,
+   sous l'icône/le texte de la carte (grâce à flex-wrap sur .carte_option) —
+   ça pousse la carte suivante au lieu de la recouvrir.
+   Desktop (≥768px, voir plus bas) : redevient une bulle flottante avec flèche. ── */
 .carte_note {
-    position: absolute;
-    top: calc(100% + 10px);
-    left: 12px;
-    right: 12px;
+    position: static;
+    width: 100%;
     z-index: 30;
     display: flex;
     align-items: flex-start;
@@ -1246,22 +1249,13 @@
     border-radius: 10px;
     font-size: 12px;
     line-height: 1.45;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
     cursor: default;
     animation: apparition_note 0.18s ease;
 }
 
-/* Petite flèche pointant vers la carte qui a été cliquée */
+/* Pas de flèche sur mobile : la note est directement rattachée au flux, pas besoin de pointer vers la carte */
 .carte_note::before {
-    content: '';
-    position: absolute;
-    bottom: 100%;
-    left: 24px;
-    width: 0;
-    height: 0;
-    border-left: 7px solid transparent;
-    border-right: 7px solid transparent;
-    border-bottom: 7px solid #111827;
+    content: none;
 }
 
 .carte_note_texte {
@@ -1320,13 +1314,25 @@
    quand la carte est étroite et centrée (texte centré dans la carte) ── */
 @media (min-width: 768px) {
     .carte_note {
+        position: absolute;
+        top: calc(100% + 10px);
         left: 16px;
         right: 16px;
+        width: auto;
         text-align: left;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
     }
 
     .carte_note::before {
+        content: '';
+        position: absolute;
+        bottom: 100%;
         left: 28px;
+        width: 0;
+        height: 0;
+        border-left: 7px solid transparent;
+        border-right: 7px solid transparent;
+        border-bottom: 7px solid #111827;
     }
 }
 

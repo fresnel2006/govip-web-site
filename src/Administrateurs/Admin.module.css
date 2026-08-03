@@ -181,6 +181,7 @@
     align-items: center;
     justify-content: space-between;
     margin-bottom: 16px;
+    gap: 10px;
 }
 
 .titre_tableau {
@@ -198,6 +199,13 @@
    TABLEAU
 ════════════════════════════ */
 
+/* Conteneur qui permet le défilement horizontal du tableau sur petit écran */
+.conteneur_tableau_scroll {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
 .tableau {
     width: 100%;
     border-collapse: collapse;
@@ -214,6 +222,7 @@
     font-size: 12px;
     font-weight: 600;
     color: #374151;
+    white-space: nowrap;
 }
 
 .tableau td {
@@ -237,6 +246,7 @@
     border-radius: 20px;
     font-size: 11px;
     font-weight: 600;
+    white-space: nowrap;
 }
 
 .badge_vert {
@@ -298,6 +308,7 @@
     align-items: center;
     justify-content: center;
     z-index: 1000;
+    padding: 16px;
 }
 
 .fenetre_modal {
@@ -306,6 +317,8 @@
     padding: 24px;
     width: 380px;
     max-width: 90vw;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
 .entete_modal {
@@ -377,7 +390,6 @@
 
 /* ════════════════════════════
    Badges supplémentaires pour les statuts de rendez-vous
-   Colle ce bloc à la fin de ton Admin.module.css
 ════════════════════════════ */
 
 .badge_gris {
@@ -392,8 +404,6 @@
 
 /* ════════════════════════════
    FUSEAUX HORAIRES (Côte d'Ivoire / France)
-   Les rendez-vous sont saisis à l'heure d'Abidjan ; quand la destination
-   est la France, on affiche en plus l'heure équivalente à Paris.
 ════════════════════════════ */
 
 .drapeau_mini {
@@ -414,6 +424,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
+    white-space: nowrap;
 }
 
 .apercu_conversion {
@@ -433,4 +444,176 @@
     margin-top: 3px;
     font-size: 11px;
     color: #6b7280;
+    white-space: nowrap;
+}
+
+/* ══════════════════════════════════════════════════════════
+   VERSION MOBILE / RESPONSIVE
+   Barre latérale = menu coulissant (off-canvas) déclenché par
+   un bouton "hamburger" dans une barre d'en-tête mobile.
+══════════════════════════════════════════════════════════ */
+
+/* En-tête mobile : caché par défaut (visible seulement en dessous de 900px) */
+.entete_mobile {
+    display: none;
+}
+
+/* Voile sombre derrière le menu quand il est ouvert sur mobile */
+.voile_mobile {
+    display: none;
+}
+
+@media (max-width: 900px) {
+
+    .disposition {
+        position: relative;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    /* La barre latérale devient un panneau qui glisse depuis la gauche */
+    .barre_laterale {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+        z-index: 300;
+        box-shadow: 6px 0 24px rgba(0, 0, 0, 0.25);
+    }
+
+    .barre_laterale_ouverte {
+        transform: translateX(0);
+    }
+
+    /* Voile sombre cliquable pour fermer le menu */
+    .voile_mobile {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        z-index: 250;
+    }
+
+    /* Barre d'en-tête visible seulement sur mobile */
+    .entete_mobile {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #fff;
+        border-bottom: 1px solid #e5e7eb;
+        padding: 12px 16px;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        flex-shrink: 0;
+    }
+
+    .entete_mobile_logo {
+        height: 28px;
+        object-fit: contain;
+    }
+
+    .bouton_hamburger {
+        background: none;
+        border: none;
+        color: #16a34a;
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 6px;
+        border-radius: 8px;
+    }
+
+    .bouton_hamburger:hover {
+        background: #f3f4f6;
+    }
+
+    .contenu_principal {
+        padding: 16px;
+        gap: 16px;
+        height: auto;
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    .titre_page {
+        font-size: 18px;
+    }
+
+    /* 2 cartes stats par ligne sur tablette / mobile large */
+    .grille_stats {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .carte_stat {
+        padding: 14px 16px;
+    }
+
+    .valeur_stat {
+        font-size: 24px;
+    }
+
+    /* Les deux tableaux du dashboard s'empilent */
+    .ligne_tableaux {
+        grid-template-columns: 1fr;
+    }
+
+    .carte_tableau {
+        padding: 16px 14px 12px;
+    }
+
+    .entete_carte_tableau {
+        flex-wrap: wrap;
+    }
+
+    /* Le tableau garde sa largeur normale mais défile horizontalement */
+    .tableau {
+        min-width: 640px;
+    }
+
+    .fenetre_modal {
+        width: 100%;
+        padding: 18px;
+    }
+
+    .ligne_modal {
+        flex-direction: column;
+        gap: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+
+    .grille_stats {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .contenu_principal {
+        padding: 12px;
+        gap: 12px;
+    }
+
+    .valeur_stat {
+        font-size: 20px;
+    }
+
+    .libelle_stat {
+        font-size: 11px;
+    }
+
+    .titre_page {
+        font-size: 16px;
+    }
+
+    .bouton_ajouter {
+        padding: 7px 10px;
+        font-size: 11px;
+    }
 }
