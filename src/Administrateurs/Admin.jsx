@@ -1,13 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
 import styles from './Admin.module.css';
-import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, push, onValue, serverTimestamp, update, remove } from 'firebase/database';
 import {
-    getAuth,
-    onAuthStateChanged,
-    signInWithEmailAndPassword,
-    signOut,
-} from 'firebase/auth';
+    ecouterCreneaux,
+    ajouterCreneau as fbAjouterCreneau,
+    modifierCreneau as fbModifierCreneau,
+    supprimerCreneau as fbSupprimerCreneau,
+    ecouterRendezVous,
+    mettreAJourRendezVous,
+    supprimerRendezVous as fbSupprimerRendezVous,
+    ecouterEtatAuth,
+    connexionAdmin,
+    deconnexionAdmin,
+    serverTimestamp,
+} from '../firebase/firebase.js';
 import {
     FaHome, FaCalendarAlt, FaClock, FaUsers,
     FaCheck, FaBoxOpen, FaPlus, FaArrowRight, FaTimes, FaPen, FaTrash, FaToggleOn, FaToggleOff, FaHashtag, FaSearch,
@@ -16,22 +21,6 @@ import {
 import { FiPackage } from 'react-icons/fi';
 import { CI, FR } from 'country-flag-icons/react/3x2';
 import logo from '../assets/logo_entreprise.png'; // ← ajuste le chemin si besoin
-
-// ── Connexion à Firebase ──
-const firebaseConfig = {
-    apiKey: "AIzaSyAzEog53jnWZksBq5SXo41mVvGMjhuqwV8",
-    authDomain: "govip-parcels-appointments.firebaseapp.com",
-    databaseURL: "https://govip-parcels-appointments-default-rtdb.firebaseio.com",
-    projectId: "govip-parcels-appointments",
-    storageBucket: "govip-parcels-appointments.firebasestorage.app",
-    messagingSenderId: "5781132822",
-    appId: "1:5781132822:web:906072edda7ad4b72d0737",
-    measurementId: "G-WDLCTNFMW1"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const auth = getAuth(app);
 
 // ── Durée d'inactivité avant déconnexion automatique de l'admin ──
 const DELAI_INACTIVITE_MS = 10 * 60 * 1000; // 10 minutes
@@ -223,7 +212,7 @@ function PageConnexionAdmin({ messageInfo }) {
 
         setChargement(true);
         try {
-            await signInWithEmailAndPassword(auth, emailPropre, motDePasse);
+            await connexionAdmin(emailPropre, motDePasse);
         } catch (err) {
             console.error('Erreur de connexion admin :', err.code);
             setErreur(messageErreur(err.code));
@@ -527,7 +516,7 @@ function Admin() {
     const [menuMobileOuvert, setMenuMobileOuvert] = useState(false);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
+        const unsubscribe = ecouterEtatAuth((user) => {
             setUtilisateur(user);
             setChargementAuth(false);
         });
@@ -536,7 +525,7 @@ function Admin() {
 
     const deconnexion = async () => {
         if (!window.confirm('Se déconnecter ?')) return;
-        await signOut(auth);
+        await deconnexionAdmin();
     };
 
     // ── Déconnexion automatique après DELAI_INACTIVITE_MS sans aucune activité
@@ -553,7 +542,7 @@ function Admin() {
                 clearTimeout(minuteurInactiviteRef.current);
             }
             minuteurInactiviteRef.current = setTimeout(() => {
-                signOut(auth);
+                deconnexionAdmin();
                 setMessageDeconnexionAuto('Vous avez été déconnecté après 10 minutes d\'inactivité.');
             }, DELAI_INACTIVITE_MS);
         };
@@ -598,21 +587,11 @@ function Admin() {
     useEffect(() => {
         if (!utilisateur) return;
 
-        const creneauxRef = ref(db, 'creneaux');
-
-        const unsubscribe = onValue(creneauxRef, (snapshot) => {
-            const data = snapshot.val() || {};
-            const liste = Object.entries(data).map(([id, val]) => ({
-                id,
-                ...val,
-            }));
-
-            liste.sort((a, b) => (a.date > b.date ? 1 : -1));
-
-            setCreneaux(liste);
+        const unsubscribe = ecouterCreneaux((liste) => {
+            const listeTriee = [...liste].sort((a, b) => (a.date > b.date ? 1 : -1));
+            setCreneaux(listeTriee);
             setLoadingCreneaux(false);
-        }, (error) => {
-            console.error("Erreur lecture créneaux :", error);
+        }, () => {
             setLoadingCreneaux(false);
         });
 
@@ -623,24 +602,15 @@ function Admin() {
     useEffect(() => {
         if (!utilisateur) return;
 
-        const rendezVousRef = ref(db, 'rendezVous');
-
-        const unsubscribe = onValue(rendezVousRef, (snapshot) => {
-            const data = snapshot.val() || {};
-            const liste = Object.entries(data).map(([id, val]) => ({
-                id,
-                ...val,
-            }));
-
-            liste.sort((a, b) => {
+        const unsubscribe = ecouterRendezVous((liste) => {
+            const listeTriee = [...liste].sort((a, b) => {
                 if (a.date !== b.date) return a.date > b.date ? -1 : 1;
                 return (b.dateCreation || 0) - (a.dateCreation || 0);
             });
 
-            setRendezVous(liste);
+            setRendezVous(listeTriee);
             setLoadingRendezVous(false);
-        }, (error) => {
-            console.error("Erreur lecture rendez-vous :", error);
+        }, () => {
             setLoadingRendezVous(false);
         });
 
@@ -649,45 +619,36 @@ function Admin() {
 
     // ── Ajout d'un créneau dans Firebase ──
     const ajouterCreneau = async (nouveauCreneau) => {
-        const creneauxRef = ref(db, 'creneaux');
-        await push(creneauxRef, {
-            ...nouveauCreneau,
-            createdAt: serverTimestamp(),
-        });
+        await fbAjouterCreneau(nouveauCreneau);
     };
 
     // ── Modification complète d'un créneau (formulaire) ──
     const modifierCreneau = async (id, donnees) => {
-        const creneauRef = ref(db, `creneaux/${id}`);
-        await update(creneauRef, donnees);
+        await fbModifierCreneau(id, donnees);
     };
 
     // ── Bascule rapide Actif / Inactif ──
     const toggleStatutCreneau = async (creneau) => {
         const nouveauStatut = creneau.statut === 'Actif' ? 'Inactif' : 'Actif';
-        const creneauRef = ref(db, `creneaux/${creneau.id}`);
-        await update(creneauRef, { statut: nouveauStatut });
+        await fbModifierCreneau(creneau.id, { statut: nouveauStatut });
     };
 
     // ── Suppression d'un créneau ──
     const supprimerCreneau = async (id) => {
         if (!window.confirm('Supprimer ce créneau ?')) return;
-        const creneauRef = ref(db, `creneaux/${id}`);
-        await remove(creneauRef);
+        await fbSupprimerCreneau(id);
     };
 
     // ── Fait avancer le statut d'un rendez-vous (En attente → Confirmé → En expédition → Terminé → ...) ──
     const avancerStatutRendezVous = async (rdv) => {
         const nouveauStatut = prochainStatutRdv(rdv.statut);
-        const rdvRef = ref(db, `rendezVous/${rdv.id}`);
-        await update(rdvRef, { statut: nouveauStatut });
+        await mettreAJourRendezVous(rdv.id, { statut: nouveauStatut });
     };
 
     // ── Confirme que le colis a été déposé / récupéré → passe le rendez-vous "En expédition" ──
     const confirmerColisTraite = async (rdv) => {
         if (!window.confirm(messageConfirmationColis(rdv.categorieService))) return;
-        const rdvRef = ref(db, `rendezVous/${rdv.id}`);
-        await update(rdvRef, {
+        await mettreAJourRendezVous(rdv.id, {
             statut: 'En expédition',
             colisConfirmeLe: serverTimestamp(),
         });
@@ -696,15 +657,13 @@ function Admin() {
     // ── Annule un rendez-vous ──
     const annulerRendezVous = async (id) => {
         if (!window.confirm('Annuler ce rendez-vous ?')) return;
-        const rdvRef = ref(db, `rendezVous/${id}`);
-        await update(rdvRef, { statut: 'Annulé' });
+        await mettreAJourRendezVous(id, { statut: 'Annulé' });
     };
 
     // ── Supprime définitivement un rendez-vous ──
     const supprimerRendezVous = async (id) => {
         if (!window.confirm('Supprimer définitivement ce rendez-vous ?')) return;
-        const rdvRef = ref(db, `rendezVous/${id}`);
-        await remove(rdvRef);
+        await fbSupprimerRendezVous(id);
     };
 
     const ouvrirModalAjout = () => {

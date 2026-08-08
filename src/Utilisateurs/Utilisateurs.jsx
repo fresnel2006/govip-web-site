@@ -14,23 +14,13 @@ import {
 import { FiPackage } from 'react-icons/fi'
 import { Bs1CircleFill, Bs2CircleFill, Bs3CircleFill, Bs4CircleFill } from "react-icons/bs";
 import { CI, FR } from 'country-flag-icons/react/3x2';
-import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, onValue, push, set, update, get, query, orderByChild, equalTo } from 'firebase/database';
-
-// ── Connexion à Firebase ──
-const firebaseConfig = {
-    apiKey: "AIzaSyAzEog53jnWZksBq5SXo41mVvGMjhuqwV8",
-    authDomain: "govip-parcels-appointments.firebaseapp.com",
-    databaseURL: "https://govip-parcels-appointments-default-rtdb.firebaseio.com",
-    projectId: "govip-parcels-appointments",
-    storageBucket: "govip-parcels-appointments.firebasestorage.app",
-    messagingSenderId: "5781132822",
-    appId: "1:5781132822:web:906072edda7ad4b72d0737",
-    measurementId: "G-WDLCTNFMW1"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+import {
+    ecouterCreneaux,
+    ecouterRendezVousParId,
+    rechercherRendezVousParTelephone,
+    creerRendezVous,
+    mettreAJourRendezVous,
+} from '../firebase/firebase.js';
 
 // ── Formate un objet Date en "YYYY-MM-DD" (même format que stocké dans Firebase) ──
 function formatDateISO(date) {
@@ -559,7 +549,7 @@ function SuiviRendezVous({ rdv, onAnnuler, onNouvelleDemande, onVoirListe, annul
 
         setSauvegardeEnCours(true);
         try {
-            await update(ref(db, `rendezVous/${rdv.id}`), {
+            await mettreAJourRendezVous(rdv.id, {
                 nomComplet: formEdition.nomComplet.trim(),
                 telephone: `${INDICATIFS_PAYS[formEdition.paysTelephone].indicatif} ${formEdition.telephoneLocal.trim()}`,
                 paysTelephone: formEdition.paysTelephone,
@@ -823,7 +813,7 @@ function SuiviRendezVous({ rdv, onAnnuler, onNouvelleDemande, onVoirListe, annul
 
                 <div className={styles.s2_whatsapp}>
                     <FaWhatsapp size={16} color="#16a34a" />
-                    <p>+225 07 49 49 49 49</p>
+                    <p>+33 75 81 45 54 6</p>
                 </div>
             </div>
         </div>
@@ -937,12 +927,7 @@ function MesRendezVous({ onRetour, onSelectionnerRdv }) {
         const telephoneComplet = `${INDICATIFS_PAYS[paysRecherche].indicatif} ${telephoneLocal.trim()}`;
 
         try {
-            const rdvRequete = query(ref(db, 'rendezVous'), orderByChild('telephone'), equalTo(telephoneComplet));
-            const snapshot = await get(rdvRequete);
-            const data = snapshot.val() || {};
-            const liste = Object.entries(data)
-                .map(([id, val]) => ({ id, ...val }))
-                .sort((a, b) => (b.dateCreation || 0) - (a.dateCreation || 0));
+            const liste = await rechercherRendezVousParTelephone(telephoneComplet);
 
             setRdvsTrouves(liste);
             setRechercheEffectuee(true);
@@ -1134,11 +1119,9 @@ function Utilisateur() {
             return;
         }
 
-        const rdvRef = ref(db, `rendezVous/${tokenRdv}`);
-        const unsubscribe = onValue(rdvRef, (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                setRdvExistant({ id: tokenRdv, ...data });
+        const unsubscribe = ecouterRendezVousParId(tokenRdv, (rdv) => {
+            if (rdv) {
+                setRdvExistant(rdv);
             } else {
                 try { localStorage.removeItem(CLE_TOKEN_RDV); } catch { }
                 setTokenRdv(null);
@@ -1156,7 +1139,7 @@ function Utilisateur() {
         if (!tokenRdv) return;
         setAnnulationEnCours(true);
         try {
-            await update(ref(db, `rendezVous/${tokenRdv}`), { statut: 'Annulé' });
+            await mettreAJourRendezVous(tokenRdv, { statut: 'Annulé' });
         } catch (error) {
             console.error("Erreur lors de l'annulation :", error);
         } finally {
@@ -1187,19 +1170,10 @@ function Utilisateur() {
     const refContact = useRef(null);
 
     useEffect(() => {
-        const creneauxRef = ref(db, 'creneaux');
-
-        const unsubscribe = onValue(creneauxRef, (snapshot) => {
-            const data = snapshot.val() || {};
-            const liste = Object.entries(data).map(([id, val]) => ({
-                id,
-                ...val,
-            }));
-
+        const unsubscribe = ecouterCreneaux((liste) => {
             setCreneaux(liste);
             setLoadingCreneaux(false);
-        }, (error) => {
-            console.error("Erreur lecture créneaux :", error);
+        }, () => {
             setLoadingCreneaux(false);
         });
 
@@ -1224,13 +1198,11 @@ function Utilisateur() {
 
     const choisirDepot = (id) => {
         setDepotSelectionne(id);
-        setCreneauSelectionne(null);
         setErreurDepot(false);
     };
 
     const choisirRecuperation = (id) => {
         setRecuperationSelectionnee(id);
-        setCreneauSelectionne(null);
         setErreurRecuperation(false);
     };
 
@@ -1312,11 +1284,9 @@ function Utilisateur() {
 
         setEnvoiEnCours(true);
         try {
-            const rendezVousRef = ref(db, 'rendezVous');
-            const nouvelleEntreeRef = push(rendezVousRef);
             const numeroCommande = genererNumeroCommande();
 
-            await set(nouvelleEntreeRef, {
+            const nouvelleCle = await creerRendezVous({
                 numeroCommande,
                 nomComplet: formData.nomComplet.trim(),
                 telephone: `${INDICATIFS_PAYS[paysTelephone].indicatif} ${formData.telephone.trim()}`,
@@ -1345,8 +1315,8 @@ function Utilisateur() {
                 texte: `Votre rendez-vous a bien été enregistré ! Votre numéro de commande est ${numeroCommande}. Nous vous contacterons sur WhatsApp pour confirmer.`,
             });
 
-            try { localStorage.setItem(CLE_TOKEN_RDV, nouvelleEntreeRef.key); } catch { }
-            setTokenRdv(nouvelleEntreeRef.key);
+            try { localStorage.setItem(CLE_TOKEN_RDV, nouvelleCle); } catch { }
+            setTokenRdv(nouvelleCle);
 
             setFormData(FORMULAIRE_VIDE);
             setDateSelectionnee(null);

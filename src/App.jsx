@@ -10,7 +10,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/utilisateurs" element={<Utilisateur />} />
+        <Route path="/" element={<Utilisateur />} />
         <Route path="/administrateurs" element={<Admin />} />
       </Routes>
     </BrowserRouter>
