@@ -9,8 +9,9 @@ const API_URL =
 const API_BASE_URL = API_URL.replace(/\/api\/referentiel\/statut\/?$/, "");
 const MANUAL_EVENT_URL = `${API_BASE_URL}/api/evenements/manuel`;
 
-const REFRESH_INTERVAL_MS = 30000; // Rafraîchissement des données depuis l'API
-const TICK_INTERVAL_MS = 30000; // Recalcul visuel des comptes à rebours (sans appel réseau)
+// Plus aucun rafraîchissement automatique : le chargement des données et le
+// recalcul des comptes à rebours n'ont lieu qu'au montage initial et quand
+// l'utilisateur clique sur "Rafraîchir".
 
 const SEVERITY_LABEL = {
   critical: "Critique",
@@ -42,11 +43,10 @@ function isInvalidZone(zone) {
 }
 
 // ---------------------------------------------------------------------------
-// Compte à rebours — désormais basé sur `expire_at` renvoyé par le backend
-// (calculé et stocké une seule fois côté serveur), et non plus recalculé
-// localement à partir du texte de durée. Ça évite tout redémarrage du
-// compteur si le texte de l'événement change légèrement d'un rafraîchissement
-// à l'autre, et garantit que tous les visiteurs voient le même temps restant.
+// Compte à rebours — basé sur `expire_at` renvoyé par le backend (calculé et
+// stocké une seule fois côté serveur). Il n'est recalculé côté client qu'au
+// chargement initial ou lors d'un clic sur "Rafraîchir" (plus de minuteur
+// automatique).
 // ---------------------------------------------------------------------------
 function formatMsToDuree(ms) {
   if (ms == null || ms <= 0) return null;
@@ -110,9 +110,9 @@ export default function GvipRiskDashboard() {
   const load = useCallback(async ({ silent = false } = {}) => {
     setStatus((prev) => (silent && prev === "ready" ? "refreshing" : "loading"));
     try {
-      // cache: "no-store" force une vraie requête réseau à chaque fois —
-      // sans ça, le tableau pouvait rester bloqué sur une ancienne réponse
-      // mise en cache par le navigateur.
+      // cache: "no-store" force une vraie requête réseau — sans ça, le
+      // tableau pouvait rester bloqué sur une ancienne réponse mise en
+      // cache par le navigateur.
       const res = await fetch(API_URL, { cache: "no-store" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
@@ -150,22 +150,19 @@ export default function GvipRiskDashboard() {
       );
       setStatus("ready");
       setLastUpdated(new Date());
+      // Recalcule aussi les durées restantes affichées au moment du chargement.
+      setTick((t) => t + 1);
     } catch (err) {
       console.error("Erreur de chargement GVIP:", err);
       setStatus("error");
     }
   }, []);
 
+  // Chargement initial uniquement — plus aucun setInterval. L'utilisateur
+  // déclenche lui-même les rechargements suivants via le bouton "Rafraîchir".
   useEffect(() => {
     load();
-    const interval = setInterval(() => load({ silent: true }), REFRESH_INTERVAL_MS);
-    return () => clearInterval(interval);
   }, [load]);
-
-  useEffect(() => {
-    const interval = setInterval(() => setTick((t) => t + 1), TICK_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, []);
 
   const displayZones = useMemo(() => {
     const now = Date.now();
@@ -310,6 +307,7 @@ export default function GvipRiskDashboard() {
 
   const totalLabel = totalFirebase ?? displayZones.length;
   const updatedAtLabel = formatUpdatedAt(lastUpdated);
+  const isRefreshing = status === "refreshing" || status === "loading";
   const hasImpactInfo =
     modalZone &&
     (modalZone.consequence || modalZone.suggestion || modalZone.villesVoisinesImpactees?.length > 0);
@@ -320,7 +318,8 @@ export default function GvipRiskDashboard() {
         <div className={styles.eyebrow}>GVIP MOBILITY INTELLIGENCE</div>
         <h1 className={styles.title}>Zones sous surveillance</h1>
         <p className={styles.subtitle}>
-          Communes et départements classés par intensité d'impact sur la mobilité, mis à jour en continu.
+          Communes et départements classés par intensité d'impact sur la mobilité. Cliquez sur
+          "Rafraîchir" pour recharger les données.
         </p>
       </header>
 
@@ -381,7 +380,16 @@ export default function GvipRiskDashboard() {
         </div>
 
         <div className={styles.metaWrap}>
-          {status === "refreshing" && <span className={styles.refreshingDot} aria-hidden="true" />}
+          <button
+            type="button"
+            className={styles.refreshBtn}
+            onClick={() => load({ silent: true })}
+            disabled={isRefreshing}
+            aria-label="Rafraîchir les données"
+          >
+            <span className={isRefreshing ? styles.refreshingDot : undefined} aria-hidden="true" />
+            {isRefreshing ? "Rafraîchissement…" : "Rafraîchir"}
+          </button>
           {updatedAtLabel && (
             <span className={styles.updatedAt}>Mis à jour à {updatedAtLabel}</span>
           )}
@@ -609,10 +617,10 @@ export default function GvipRiskDashboard() {
                 disabled={submitState === "submitting" || submitState === "success"}
               />
               <p className={styles.formHint}>
-                Si une durée reconnue est indiquée, le temps restant affiché diminuera
-                automatiquement et l'événement disparaîtra du tableau une fois ce délai passé.
-                La conséquence et la suggestion de contournement seront déduites automatiquement
-                du texte de l'événement.
+                Si une durée reconnue est indiquée, le temps restant affiché sera recalculé à
+                chaque rafraîchissement manuel, et l'événement disparaîtra du tableau une fois ce
+                délai passé. La conséquence et la suggestion de contournement seront déduites
+                automatiquement du texte de l'événement.
               </p>
 
               <label className={styles.formLabel} htmlFor="gvip-score">

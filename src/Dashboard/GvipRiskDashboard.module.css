@@ -973,3 +973,32 @@
     vertical-align: middle;
     margin-left: 2px;
 }
+/* À ajouter dans GvipRiskDashboard.module.css, juste après .updatedAt par exemple */
+
+.refreshBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: var(--text);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+    white-space: nowrap;
+}
+
+.refreshBtn:hover:not(:disabled) {
+    border-color: var(--green);
+    color: var(--green);
+}
+
+.refreshBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
