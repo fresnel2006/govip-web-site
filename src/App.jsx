@@ -10,6 +10,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/dashboard" element={<GvipRiskDashboard />} />
         <Route path="/" element={<Utilisateur />} />
         <Route path="/administrateurs" element={<Admin />} />
       </Routes>

@@ -2,28 +2,21 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import styles from "./GvipRiskDashboard.module.css";
 
 // Endpoint FastAPI exposé par main.py (/api/referentiel/statut)
-// ⚠️ En prod, VITE_GVIP_API_URL doit être défini dans les Environment Variables
-// du projet Vercel du FRONTEND (pas celui du backend), sinon on retombe sur
-// l'URL de déploiement backend en dur ci-dessous.
 const API_URL =
   import.meta.env?.VITE_GVIP_API_URL ||
   "https://fastapi-backend-go.vercel.app/api/referentiel/statut";
 
-// On dérive l'URL de base de l'API (sans le suffixe /api/referentiel/statut)
-// pour pouvoir appeler les autres routes du backend, comme la saisie manuelle.
 const API_BASE_URL = API_URL.replace(/\/api\/referentiel\/statut\/?$/, "");
 const MANUAL_EVENT_URL = `${API_BASE_URL}/api/evenements/manuel`;
 
 const REFRESH_INTERVAL_MS = 30000; // Rafraîchissement des données depuis l'API
-const TICK_INTERVAL_MS = 60000; // Rafraîchissement "visuel" des comptes à rebours (sans appel réseau)
+const TICK_INTERVAL_MS = 30000; // Recalcul visuel des comptes à rebours (sans appel réseau)
 
 const SEVERITY_LABEL = {
   critical: "Critique",
   medium: "Modéré",
   low: "Faible",
 };
-
-const SEVERITY_ORDER = { critical: 0, medium: 1, low: 2 };
 
 const SEVERITY_FILTERS = [
   { key: "all", label: "Toutes" },
@@ -32,14 +25,6 @@ const SEVERITY_FILTERS = [
   { key: "low", label: "Faible" },
 ];
 
-// ---------------------------------------------------------------------------
-// Filtrage des zones "placeholder" sans événement réel
-// ---------------------------------------------------------------------------
-// L'API renvoie parfois des zones dont un champ (événement OU durée) vaut
-// quelque chose comme "EXISTE PAS/AUCUNE MENTION" (dans une casse quelconque :
-// majuscule, minuscule, mélangée...). Ces zones ne servent à rien à afficher,
-// on les exclut donc systématiquement, peu importe le champ concerné ou la
-// casse utilisée par le backend.
 const INVALID_VALUE_PATTERNS = [
   "existe pas/aucune mention",
   "existe pas",
@@ -52,50 +37,17 @@ function isInvalidValue(value) {
   return INVALID_VALUE_PATTERNS.some((pattern) => normalized.includes(pattern));
 }
 
-// Une zone est invalide si SON événement OU SA durée correspond à un des
-// motifs "placeholder" ci-dessus.
 function isInvalidZone(zone) {
   return isInvalidValue(zone.evenement) || isInvalidValue(zone.rawDuree);
 }
 
 // ---------------------------------------------------------------------------
-// Calcul de la durée / compte à rebours
+// Compte à rebours — désormais basé sur `expire_at` renvoyé par le backend
+// (calculé et stocké une seule fois côté serveur), et non plus recalculé
+// localement à partir du texte de durée. Ça évite tout redémarrage du
+// compteur si le texte de l'événement change légèrement d'un rafraîchissement
+// à l'autre, et garantit que tous les visiteurs voient le même temps restant.
 // ---------------------------------------------------------------------------
-// On parse un texte libre du type "3 jours", "2 semaines", "5 heures", "1 mois"
-// pour en tirer une durée en millisecondes. Cette durée sert à calculer une
-// échéance (maintenant + durée) la toute première fois qu'on voit une zone
-// avec ce texte de durée précis. Cette échéance est ensuite :
-//  1) envoyée au backend dans le champ `expire_at` pour les saisies manuelles
-//     (au cas où la base de données saurait quoi en faire),
-//  2) stockée localement (localStorage) pour que le dashboard calcule
-//     lui-même, à chaque rendu, le temps restant réel (qui diminue tout seul)
-//     et masque l'événement une fois ce délai dépassé.
-function parseDureeToMs(duree) {
-  if (!duree) return null;
-  const normalized = duree.toString().trim().toLowerCase();
-  const match = normalized.match(
-    /(\d+(?:[.,]\d+)?)\s*(heures?|h|jours?|j|semaines?|sem|mois|ans?|ann[ée]es?)/
-  );
-  if (!match) return null;
-
-  const value = parseFloat(match[1].replace(",", "."));
-  if (Number.isNaN(value)) return null;
-
-  const unit = match[2];
-  const MINUTE = 60 * 1000;
-  const HOUR = 60 * MINUTE;
-  const DAY = 24 * HOUR;
-
-  if (unit.startsWith("h")) return value * HOUR;
-  if (unit.startsWith("j")) return value * DAY;
-  if (unit.startsWith("sem")) return value * 7 * DAY;
-  if (unit.startsWith("mois")) return value * 30 * DAY;
-  if (unit.startsWith("an")) return value * 365 * DAY;
-  return null;
-}
-
-// Reconvertit un nombre de millisecondes restantes en texte lisible,
-// ex: "2 j 5 h", "3 h 12 min", "< 1 min". Retourne null si le temps est écoulé.
 function formatMsToDuree(ms) {
   if (ms == null || ms <= 0) return null;
 
@@ -119,42 +71,12 @@ function formatMsToDuree(ms) {
   return "< 1 min";
 }
 
-// Clé de stockage local unique par couple commune/événement.
-const TRACKING_STORAGE_KEY = "gvip_zone_countdowns";
-
-function loadTrackingMap() {
-  try {
-    const raw = window.localStorage.getItem(TRACKING_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-}
-
-function saveTrackingMap(map) {
-  try {
-    window.localStorage.setItem(TRACKING_STORAGE_KEY, JSON.stringify(map));
-  } catch {
-    // Stockage indisponible (navigation privée, quota dépassé…) : on continue
-    // sans persister, le compte à rebours ne survivra juste pas à un rechargement.
-  }
-}
-
-function trackingKey(commune, evenement) {
-  return `${commune}::${evenement}`.toString().toLowerCase();
-}
-
-// Seuils partagés avec le backend (routes.py::score_to_level) : on les
-// applique aussi côté client pour l'aperçu en direct dans le formulaire de
-// saisie manuelle, et comme repli pour les zones dont impact_mobilite est absent.
 function severityFromScore(score) {
   if (score >= 80) return "critical";
   if (score >= 50) return "medium";
   return "low";
 }
 
-// L'API renvoie impact_mobilite en LOW / MEDIUM / CRITICAL (ou HIGH en saisie
-// manuelle). On se fie d'abord à cette valeur, le score ne sert que de repli.
 function resolveSeverity(rawImpact, score) {
   const normalized = (rawImpact ?? "").toString().trim().toUpperCase();
   if (normalized === "CRITICAL" || normalized === "HIGH") return "critical";
@@ -171,97 +93,46 @@ function formatUpdatedAt(date) {
 const EMPTY_FORM = { evenement: "", duree: "", score: "" };
 
 export default function GvipRiskDashboard() {
-  // `zones` contient les données "brutes" (avec rawDuree = texte original
-  // renvoyé par l'API). L'affichage réel (duree qui décompte) est calculé
-  // séparément dans `displayZones`, recalculé à chaque tick.
   const [zones, setZones] = useState([]);
-  const [trackingMap, setTrackingMap] = useState(() => loadTrackingMap());
   const [totalFirebase, setTotalFirebase] = useState(null);
   const [status, setStatus] = useState("loading"); // loading | ready | refreshing | error
   const [query, setQuery] = useState("");
   const [severityFilter, setSeverityFilter] = useState("all");
   const [sort, setSort] = useState({ key: "score", dir: "desc" });
   const [lastUpdated, setLastUpdated] = useState(null);
-  const [tick, setTick] = useState(0); // force le recalcul des comptes à rebours
+  const [tick, setTick] = useState(0);
 
-  // ---------- Modal "ajouter un événement" ----------
-  const [modalZone, setModalZone] = useState(null); // null = fermé, sinon la zone cliquée
+  const [modalZone, setModalZone] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
-  const [submitState, setSubmitState] = useState("idle"); // idle | submitting | success | error
+  const [submitState, setSubmitState] = useState("idle");
   const [submitError, setSubmitError] = useState(null);
 
   const load = useCallback(async ({ silent = false } = {}) => {
     setStatus((prev) => (silent && prev === "ready" ? "refreshing" : "loading"));
     try {
-      const res = await fetch(API_URL);
+      // cache: "no-store" force une vraie requête réseau à chaque fois —
+      // sans ça, le tableau pouvait rester bloqué sur une ancienne réponse
+      // mise en cache par le navigateur.
+      const res = await fetch(API_URL, { cache: "no-store" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
 
-      const rawList = (data.tracked_zones || []).map((z) => {
-        const score = Number(z.score_importance) || 0;
-        return {
-          commune: z.commune || "INCONNUE",
-          region: z.region || "INCONNUE",
-          evenement: z.evenement_actif || "—",
-          rawDuree: z.duree || null,
-          score,
-          severity: resolveSeverity(z.impact_mobilite, score),
-        };
-      });
+      const rawList = (data.tracked_zones || [])
+        .map((z) => {
+          const score = Number(z.score_importance) || 0;
+          return {
+            commune: z.commune || "INCONNUE",
+            region: z.region || "INCONNUE",
+            evenement: z.evenement_actif || "—",
+            rawDuree: z.duree || null,
+            expireAt: z.expire_at || null, // source de vérité pour le décompte
+            score,
+            severity: resolveSeverity(z.impact_mobilite, score),
+          };
+        })
+        .filter((z) => !isInvalidZone(z));
 
-      // On écarte d'abord les zones "placeholder" (événement ou durée = texte
-      // du type "EXISTE PAS/AUCUNE MENTION").
-      const candidateList = rawList.filter((z) => !isInvalidZone(z));
-
-      // ---- Mise à jour du suivi des comptes à rebours ----
-      const now = Date.now();
-      const currentTracking = loadTrackingMap();
-      const nextTracking = { ...currentTracking };
-
-      candidateList.forEach((z) => {
-        const key = trackingKey(z.commune, z.evenement);
-        if (!z.rawDuree) return;
-
-        const existing = nextTracking[key];
-        // Nouvelle zone, ou texte de durée différent de celui déjà suivi
-        // (le backend a mis à jour l'événement) : on (re)démarre le compte
-        // à rebours à partir de maintenant.
-        if (!existing || existing.rawDuree !== z.rawDuree) {
-          const durationMs = parseDureeToMs(z.rawDuree);
-          if (durationMs) {
-            nextTracking[key] = {
-              rawDuree: z.rawDuree,
-              expiresAt: new Date(now + durationMs).toISOString(),
-            };
-          } else {
-            // Durée non reconnue : pas de compte à rebours possible.
-            delete nextTracking[key];
-          }
-        }
-      });
-
-      // Purge de toutes les échéances déjà dépassées.
-      Object.keys(nextTracking).forEach((key) => {
-        const expiresAtMs = new Date(nextTracking[key].expiresAt).getTime();
-        if (!Number.isFinite(expiresAtMs) || expiresAtMs <= now) {
-          delete nextTracking[key];
-        }
-      });
-
-      saveTrackingMap(nextTracking);
-      setTrackingMap(nextTracking);
-
-      // On masque immédiatement toute zone dont la durée était reconnue mais
-      // dont le compte à rebours vient d'être purgé (= déjà expiré).
-      const list = candidateList.filter((z) => {
-        if (!z.rawDuree) return true;
-        const durationMs = parseDureeToMs(z.rawDuree);
-        if (!durationMs) return true; // durée non reconnue -> affichée telle quelle, sans expiration
-        const key = trackingKey(z.commune, z.evenement);
-        return Boolean(nextTracking[key]);
-      });
-
-      setZones(list);
+      setZones(rawList);
       setTotalFirebase(
         typeof data.total_impacted_zones_firebase === "number"
           ? data.total_impacted_zones_firebase
@@ -281,34 +152,26 @@ export default function GvipRiskDashboard() {
     return () => clearInterval(interval);
   }, [load]);
 
-  // Tick régulier (indépendant du réseau) pour que le texte de durée affiché
-  // continue de décompter entre deux rafraîchissements de l'API, et pour
-  // masquer en direct une zone dont le compte à rebours vient d'atteindre zéro.
   useEffect(() => {
     const interval = setInterval(() => setTick((t) => t + 1), TICK_INTERVAL_MS);
     return () => clearInterval(interval);
   }, []);
 
-  // Zones réellement affichées : on y injecte le texte de durée recalculé
-  // (qui diminue au fil du temps) et on masque celles dont le compte à
-  // rebours est retombé à zéro depuis le dernier chargement réseau.
   const displayZones = useMemo(() => {
     const now = Date.now();
-    return zones
-      .map((z) => {
-        const key = trackingKey(z.commune, z.evenement);
-        const tracked = trackingMap[key];
-        if (tracked) {
-          const remaining = new Date(tracked.expiresAt).getTime() - now;
-          if (remaining <= 0) return null; // expiré depuis le dernier fetch -> masqué
-          return { ...z, duree: formatMsToDuree(remaining) };
-        }
-        return { ...z, duree: z.rawDuree || "—" };
-      })
-      .filter(Boolean);
-    // `tick` n'est pas utilisé dans le corps mais force le recalcul périodique.
+    return zones.map((z) => {
+      if (z.expireAt) {
+        const remainingMs = new Date(z.expireAt).getTime() - now;
+        return {
+          ...z,
+          duree: remainingMs > 0 ? formatMsToDuree(remainingMs) : null,
+          remainingMs,
+        };
+      }
+      return { ...z, duree: z.rawDuree || "—", remainingMs: Infinity };
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [zones, trackingMap, tick]);
+  }, [zones, tick]);
 
   const counts = useMemo(() => {
     const base = { critical: 0, medium: 0, low: 0 };
@@ -336,7 +199,7 @@ export default function GvipRiskDashboard() {
     return [...list].sort((a, b) => {
       if (sort.key === "commune") return a.commune.localeCompare(b.commune) * dir;
       if (sort.key === "duree") {
-        return (a.duree || "").localeCompare(b.duree || "") * dir;
+        return (a.remainingMs - b.remainingMs) * dir;
       }
       return (a.score - b.score) * dir;
     });
@@ -348,8 +211,6 @@ export default function GvipRiskDashboard() {
       return { key, dir: "desc" };
     });
   }
-
-  // ---------- Gestion du modal ----------
 
   function openModal(zone) {
     setModalZone(zone);
@@ -369,8 +230,6 @@ export default function GvipRiskDashboard() {
     }
   }
 
-  // Aperçu du niveau déduit du score en cours de saisie (affiché en direct
-  // sous le champ, avant même l'envoi au backend qui fait le même calcul).
   const scorePreviewSeverity =
     form.score !== "" && !Number.isNaN(Number(form.score))
       ? severityFromScore(Number(form.score))
@@ -397,12 +256,7 @@ export default function GvipRiskDashboard() {
     setSubmitState("submitting");
     setSubmitError(null);
 
-    // Calcul de l'échéance à partir de la durée saisie (ex: "3 jours").
-    // Si le texte n'est pas reconnu, on n'envoie pas d'expiration (pas de
-    // disparition automatique, l'événement reste affiché indéfiniment).
     const dureeSaisie = form.duree.trim() || null;
-    const durationMs = parseDureeToMs(dureeSaisie);
-    const expiresAtIso = durationMs ? new Date(Date.now() + durationMs).toISOString() : null;
 
     try {
       const res = await fetch(MANUAL_EVENT_URL, {
@@ -413,9 +267,8 @@ export default function GvipRiskDashboard() {
           evenement,
           duree: dureeSaisie,
           score_importance: scoreNum,
-          // Champ envoyé en plus pour que le backend/la base de données
-          // puisse, si elle le prend en charge, gérer elle-même l'expiration.
-          expire_at: expiresAtIso,
+          // expire_at n'est plus calculé côté client : le backend s'en charge.
+          expire_at: null,
         }),
       });
 
@@ -430,23 +283,10 @@ export default function GvipRiskDashboard() {
         throw new Error(detail);
       }
 
-      // On enregistre localement l'échéance de ce nouvel événement pour que
-      // le dashboard fasse décompter puis disparaître l'événement lui-même,
-      // indépendamment de ce que fait (ou non) le backend avec `expire_at`.
-      if (expiresAtIso) {
-        const key = trackingKey(modalZone.commune, evenement);
-        const current = loadTrackingMap();
-        const next = {
-          ...current,
-          [key]: { rawDuree: dureeSaisie, expiresAt: expiresAtIso },
-        };
-        saveTrackingMap(next);
-        setTrackingMap(next);
-      }
-
       setSubmitState("success");
-      // On recharge le référentiel en arrière-plan pour refléter le nouvel événement.
-      load({ silent: true });
+      // Rechargement immédiat (pas "silent") pour voir tout de suite le
+      // nouvel événement, avec son expire_at calculé par le backend.
+      load();
       setTimeout(() => {
         setModalZone(null);
       }, 900);
@@ -659,11 +499,7 @@ export default function GvipRiskDashboard() {
       </div>
 
       {modalZone && (
-        <div
-          className={styles.modalOverlay}
-          onClick={closeModal}
-          role="presentation"
-        >
+        <div className={styles.modalOverlay} onClick={closeModal} role="presentation">
           <div
             className={styles.modalBox}
             onClick={(e) => e.stopPropagation()}
