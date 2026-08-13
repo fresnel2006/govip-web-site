@@ -128,6 +128,16 @@ export default function GvipRiskDashboard() {
             expireAt: z.expire_at || null, // source de vérité pour le décompte
             score,
             severity: resolveSeverity(z.impact_mobilite, score),
+            // Conséquence probable + suggestion de contournement, déduites
+            // par Claude ou par le dictionnaire de secours côté backend
+            // (voir Services/consequencesEvenement.py).
+            consequence: z.consequence || "",
+            suggestion: z.suggestion || "",
+            // Communes/départements voisins potentiellement impactés par
+            // ricochet (trafic dévié, affluence reportée, etc.).
+            villesVoisinesImpactees: Array.isArray(z.villes_voisines_impactees)
+              ? z.villes_voisines_impactees
+              : [],
           };
         })
         .filter((z) => !isInvalidZone(z));
@@ -285,7 +295,8 @@ export default function GvipRiskDashboard() {
 
       setSubmitState("success");
       // Rechargement immédiat (pas "silent") pour voir tout de suite le
-      // nouvel événement, avec son expire_at calculé par le backend.
+      // nouvel événement, avec son expire_at et sa conséquence/suggestion
+      // calculés par le backend.
       load();
       setTimeout(() => {
         setModalZone(null);
@@ -299,6 +310,9 @@ export default function GvipRiskDashboard() {
 
   const totalLabel = totalFirebase ?? displayZones.length;
   const updatedAtLabel = formatUpdatedAt(lastUpdated);
+  const hasImpactInfo =
+    modalZone &&
+    (modalZone.consequence || modalZone.suggestion || modalZone.villesVoisinesImpactees?.length > 0);
 
   return (
     <div className={styles.page}>
@@ -460,13 +474,21 @@ export default function GvipRiskDashboard() {
                   onKeyDown={(e) => handleRowKeyDown(e, z)}
                   tabIndex={0}
                   role="button"
-                  aria-label={`Ajouter un événement pour ${z.commune}`}
+                  aria-label={`Voir les détails et ajouter un événement pour ${z.commune}`}
                 >
                   <td className={styles.rank} data-label="#">
                     {i + 1}
                   </td>
                   <td className={styles.commune} data-label="Commune">
                     {z.commune}
+                    {z.villesVoisinesImpactees.length > 0 && (
+                      <span
+                        className={styles.neighborsHint}
+                        title={`Communes voisines potentiellement impactées : ${z.villesVoisinesImpactees.join(", ")}`}
+                      >
+                        +{z.villesVoisinesImpactees.length}
+                      </span>
+                    )}
                   </td>
                   <td className={styles.thHideMobile} data-label="Région">
                     {z.region}
@@ -516,11 +538,48 @@ export default function GvipRiskDashboard() {
               ×
             </button>
 
-            <div className={styles.modalEyebrow}>SAISIE MANUELLE</div>
+            <div className={styles.modalEyebrow}>
+              {hasImpactInfo ? "ANALYSE D'IMPACT" : "SAISIE MANUELLE"}
+            </div>
             <h2 id="gvip-modal-title" className={styles.modalTitle}>
               {modalZone.commune}
             </h2>
             <p className={styles.modalSubtitle}>{modalZone.region}</p>
+
+            {hasImpactInfo && (
+              <div className={styles.impactPanel}>
+                {modalZone.evenement && modalZone.evenement !== "—" && (
+                  <p className={styles.impactEvent}>{modalZone.evenement}</p>
+                )}
+                {modalZone.consequence && (
+                  <div className={styles.impactRow}>
+                    <span className={styles.impactLabel}>Conséquence probable</span>
+                    <p className={styles.impactText}>{modalZone.consequence}</p>
+                  </div>
+                )}
+                {modalZone.suggestion && (
+                  <div className={styles.impactRow}>
+                    <span className={styles.impactLabel}>Suggestion</span>
+                    <p className={styles.impactText}>{modalZone.suggestion}</p>
+                  </div>
+                )}
+                {modalZone.villesVoisinesImpactees.length > 0 && (
+                  <div className={styles.impactRow}>
+                    <span className={styles.impactLabel}>Communes voisines potentiellement impactées</span>
+                    <div className={styles.neighborsList}>
+                      {modalZone.villesVoisinesImpactees.map((ville) => (
+                        <span key={ville} className={styles.neighborChip}>
+                          {ville}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className={styles.modalDivider} />
+            <div className={styles.modalSectionLabel}>Ajouter / mettre à jour un événement</div>
 
             <form onSubmit={handleSubmit} className={styles.modalForm}>
               <label className={styles.formLabel} htmlFor="gvip-evenement">
@@ -552,6 +611,8 @@ export default function GvipRiskDashboard() {
               <p className={styles.formHint}>
                 Si une durée reconnue est indiquée, le temps restant affiché diminuera
                 automatiquement et l'événement disparaîtra du tableau une fois ce délai passé.
+                La conséquence et la suggestion de contournement seront déduites automatiquement
+                du texte de l'événement.
               </p>
 
               <label className={styles.formLabel} htmlFor="gvip-score">
@@ -600,7 +661,7 @@ export default function GvipRiskDashboard() {
                   className={styles.modalSubmitBtn}
                   disabled={submitState === "submitting" || submitState === "success"}
                 >
-                  {submitState === "submitting" ? "Enregistrement…" : "Enregistrer"}
+                  {submitState === "submitting" ? "Analyse en cours…" : "Enregistrer"}
                 </button>
               </div>
             </form>

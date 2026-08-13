@@ -395,6 +395,26 @@
     transition: color 0.12s ease;
 }
 
+/* Petit badge indiquant que des communes voisines sont potentiellement
+   impactées par ricochet (ex: trafic dévié). Le détail apparaît dans la
+   modale au clic sur la ligne. */
+.neighborsHint {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 8px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--amber);
+    background: var(--amber-soft);
+    border: 1px solid rgba(183, 121, 31, 0.2);
+    border-radius: 999px;
+    padding: 2px 7px;
+    vertical-align: middle;
+    cursor: help;
+}
+
 .event {
     color: var(--text-muted);
     font-size: 13px;
@@ -590,6 +610,8 @@
     padding: 32px;
     width: 100%;
     max-width: 420px;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
     box-shadow: 0 20px 60px rgba(15, 25, 19, 0.25);
     animation: modalIn 0.18s ease;
 }
@@ -646,6 +668,80 @@
     font-size: 13px;
     color: var(--text-muted);
     margin: 0 0 22px;
+}
+
+/* ---------- Panneau "Analyse d'impact" (conséquence / suggestion / voisins) ---------- */
+
+.impactPanel {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.impactEvent {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #0f1913;
+}
+
+.impactRow {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.impactLabel {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.impactText {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text);
+}
+
+.neighborsList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.neighborChip {
+    font-size: 12px;
+    font-weight: 500;
+    color: #0f1913;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px 10px;
+}
+
+.modalDivider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0 16px;
+}
+
+.modalSectionLabel {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
 }
 
 .modalForm {
