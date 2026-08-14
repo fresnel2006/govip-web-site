@@ -146,6 +146,10 @@ export default function GvipRiskDashboard() {
             villesVoisinesImpactees: Array.isArray(z.villes_voisines_impactees)
               ? z.villes_voisines_impactees
               : [],
+            // Distingue un événement direct d'un effet de ricochet propagé
+            // depuis une commune voisine (score réduit automatiquement).
+            impactIndirect: Boolean(z.impact_indirect),
+            communeSource: z.commune_source || null,
           };
         })
         .filter((z) => !isInvalidZone(z));
@@ -229,7 +233,14 @@ export default function GvipRiskDashboard() {
 
   function openModal(zone) {
     setModalZone(zone);
-    setForm(EMPTY_FORM);
+    // Pré-remplit avec les valeurs actuelles de la zone (au lieu d'un
+    // formulaire vide) pour que la durée existante soit visible et
+    // modifiable directement, sans avoir à tout retaper à l'aveugle.
+    setForm({
+      evenement: zone.evenement && zone.evenement !== "—" ? zone.evenement : "",
+      duree: zone.rawDuree || "",
+      score: zone.score != null ? String(zone.score) : "",
+    });
     setSubmitState("idle");
     setSubmitError(null);
   }
@@ -573,6 +584,18 @@ export default function GvipRiskDashboard() {
                         +{z.villesVoisinesImpactees.length}
                       </span>
                     )}
+                    {z.impactIndirect && (
+                      <span
+                        className={styles.neighborsHint}
+                        title={
+                          z.communeSource
+                            ? `Impact indirect (ricochet depuis ${z.communeSource})`
+                            : "Impact indirect (ricochet)"
+                        }
+                      >
+                        ricochet
+                      </span>
+                    )}
                   </td>
                   <td className={styles.thHideMobile} data-label="Région">
                     {z.region}
@@ -623,12 +646,21 @@ export default function GvipRiskDashboard() {
             </button>
 
             <div className={styles.modalEyebrow}>
-              {hasImpactInfo ? "ANALYSE D'IMPACT" : "SAISIE MANUELLE"}
+              {modalZone.impactIndirect
+                ? "IMPACT INDIRECT (RICOCHET)"
+                : hasImpactInfo
+                ? "ANALYSE D'IMPACT"
+                : "SAISIE MANUELLE"}
             </div>
             <h2 id="gvip-modal-title" className={styles.modalTitle}>
               {modalZone.commune}
             </h2>
-            <p className={styles.modalSubtitle}>{modalZone.region}</p>
+            <p className={styles.modalSubtitle}>
+              {modalZone.region}
+              {modalZone.impactIndirect && modalZone.communeSource && (
+                <> · effet reporté depuis {modalZone.communeSource}</>
+              )}
+            </p>
 
             {hasImpactInfo && (
               <div className={styles.impactPanel}>
@@ -665,6 +697,15 @@ export default function GvipRiskDashboard() {
             <div className={styles.modalDivider} />
             <div className={styles.modalSectionLabel}>Ajouter / mettre à jour un événement</div>
 
+            {(modalZone.rawDuree || modalZone.duree) && (
+              <p className={styles.formHint} style={{ marginBottom: 10 }}>
+                Durée actuellement enregistrée : <strong>{modalZone.rawDuree || "—"}</strong>
+                {modalZone.expireAt && (
+                  <> · temps restant calculé : <strong>{modalZone.duree || "expiré"}</strong></>
+                )}
+              </p>
+            )}
+
             <form onSubmit={handleSubmit} className={styles.modalForm}>
               <label className={styles.formLabel} htmlFor="gvip-evenement">
                 Événement <span className={styles.required}>*</span>
@@ -699,6 +740,33 @@ export default function GvipRiskDashboard() {
                 automatiquement du texte de l'événement.
               </p>
 
+              <label className={styles.formLabel} htmlFor="gvip-niveau">
+                Niveau d'impact
+              </label>
+              <select
+                id="gvip-niveau"
+                className={styles.formSelect}
+                value={scorePreviewSeverity || ""}
+                onChange={(e) => {
+                  const preset = IMPACT_LEVEL_PRESET_SCORE[e.target.value];
+                  if (preset != null) {
+                    setForm((f) => ({ ...f, score: String(preset) }));
+                  }
+                }}
+                disabled={submitState === "submitting" || submitState === "success"}
+              >
+                <option value="" disabled>
+                  Choisir un niveau…
+                </option>
+                <option value="low">Faible</option>
+                <option value="medium">Modéré</option>
+                <option value="critical">Critique</option>
+              </select>
+              <p className={styles.formHint}>
+                Choisir un niveau règle le score ci-dessous automatiquement (Faible = 25, Modéré
+                = 65, Critique = 90) ; tu peux aussi ajuster le chiffre précis toi-même.
+              </p>
+
               <label className={styles.formLabel} htmlFor="gvip-score">
                 Score d'impact (0-100) <span className={styles.required}>*</span>
               </label>
@@ -728,7 +796,7 @@ export default function GvipRiskDashboard() {
                 <p className={styles.formError}>{submitError}</p>
               )}
               {submitState === "success" && (
-                <p className={styles.formSuccess}>Événement enregistré ✅</p>
+                <p className={styles.formSuccess}>Durée / événement mis à jour ✅</p>
               )}
 
               <div className={styles.modalActions}>
@@ -745,7 +813,7 @@ export default function GvipRiskDashboard() {
                   className={styles.modalSubmitBtn}
                   disabled={submitState === "submitting" || submitState === "success"}
                 >
-                  {submitState === "submitting" ? "Analyse en cours…" : "Enregistrer"}
+                  {submitState === "submitting" ? "Enregistrement…" : "Mettre à jour"}
                 </button>
               </div>
             </form>
