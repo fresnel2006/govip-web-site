@@ -33,6 +33,16 @@ const INVALID_VALUE_PATTERNS = [
   "aucune mention",
 ];
 
+// Valeurs de durée à traiter comme "pas de durée connue" (Claude ou une
+// saisie manuelle peuvent renvoyer littéralement "aucune"/"aucun" — ce mot
+// ne doit jamais s'afficher tel quel dans le tableau).
+const EMPTY_DUREE_VALUES = new Set(["aucune", "aucun", "n/a", "na", "-", "—"]);
+
+function isEmptyDuree(valeur) {
+  if (!valeur) return true;
+  return EMPTY_DUREE_VALUES.has(valeur.toString().trim().toLowerCase());
+}
+
 function isInvalidValue(value) {
   if (!value) return false;
   const normalized = value.toString().trim().toLowerCase();
@@ -187,7 +197,13 @@ export default function GvipRiskDashboard() {
           remainingMs,
         };
       }
-      return { ...z, duree: z.rawDuree || "—", remainingMs: Infinity };
+      // Pas d'expire_at connu : on affiche "—" plutôt que le mot brut
+      // "aucune"/"aucun" que Claude ou une saisie manuelle peuvent renvoyer.
+      return {
+        ...z,
+        duree: isEmptyDuree(z.rawDuree) ? "—" : z.rawDuree,
+        remainingMs: Infinity,
+      };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [zones, tick]);
@@ -238,7 +254,7 @@ export default function GvipRiskDashboard() {
     // modifiable directement, sans avoir à tout retaper à l'aveugle.
     setForm({
       evenement: zone.evenement && zone.evenement !== "—" ? zone.evenement : "",
-      duree: zone.rawDuree || "",
+      duree: isEmptyDuree(zone.rawDuree) ? "" : zone.rawDuree || "",
       score: zone.score != null ? String(zone.score) : "",
     });
     setSubmitState("idle");
@@ -697,7 +713,7 @@ export default function GvipRiskDashboard() {
             <div className={styles.modalDivider} />
             <div className={styles.modalSectionLabel}>Ajouter / mettre à jour un événement</div>
 
-            {(modalZone.rawDuree || modalZone.duree) && (
+            {(modalZone.rawDuree || modalZone.duree) && !isEmptyDuree(modalZone.rawDuree) && (
               <p className={styles.formHint} style={{ marginBottom: 10 }}>
                 Durée actuellement enregistrée : <strong>{modalZone.rawDuree || "—"}</strong>
                 {modalZone.expireAt && (
@@ -891,7 +907,7 @@ export default function GvipRiskDashboard() {
                     <div className={styles.neighborsList}>
                       {textResult.villes_detectees.map((v, idx) => (
                         <span key={`${v.commune}-${idx}`} className={styles.neighborChip}>
-                          {v.commune} · {v.duree || "durée inconnue"}
+                          {v.commune} · {isEmptyDuree(v.duree) ? "durée inconnue" : v.duree}
                         </span>
                       ))}
                     </div>
