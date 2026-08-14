@@ -8,6 +8,7 @@ const API_URL =
 
 const API_BASE_URL = API_URL.replace(/\/api\/referentiel\/statut\/?$/, "");
 const MANUAL_EVENT_URL = `${API_BASE_URL}/api/evenements/manuel`;
+const TEXTE_LIBRE_URL = `${API_BASE_URL}/api/evenements/texte-libre`;
 
 // Plus aucun rafraîchissement automatique : le chargement des données et le
 // recalcul des comptes à rebours n'ont lieu qu'au montage initial et quand
@@ -106,6 +107,13 @@ export default function GvipRiskDashboard() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [submitState, setSubmitState] = useState("idle");
   const [submitError, setSubmitError] = useState(null);
+
+  // ---- Saisie libre (texte analysé par Claude) ----
+  const [showTextModal, setShowTextModal] = useState(false);
+  const [textInput, setTextInput] = useState("");
+  const [textSubmitState, setTextSubmitState] = useState("idle"); // idle | submitting | success | error
+  const [textSubmitError, setTextSubmitError] = useState(null);
+  const [textResult, setTextResult] = useState(null);
 
   const load = useCallback(async ({ silent = false } = {}) => {
     setStatus((prev) => (silent && prev === "ready" ? "refreshing" : "loading"));
@@ -230,6 +238,18 @@ export default function GvipRiskDashboard() {
     setModalZone(null);
   }
 
+  function openTextModal() {
+    setTextInput("");
+    setTextSubmitState("idle");
+    setTextSubmitError(null);
+    setTextResult(null);
+    setShowTextModal(true);
+  }
+
+  function closeTextModal() {
+    setShowTextModal(false);
+  }
+
   function handleRowKeyDown(e, zone) {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
@@ -302,6 +322,54 @@ export default function GvipRiskDashboard() {
       console.error("Erreur de saisie manuelle GVIP:", err);
       setSubmitState("error");
       setSubmitError(err.message || "Une erreur est survenue.");
+    }
+  }
+
+  async function handleTextSubmit(e) {
+    e.preventDefault();
+
+    const texte = textInput.trim();
+    if (!texte) {
+      setTextSubmitState("error");
+      setTextSubmitError("Colle ou écris un texte décrivant l'événement.");
+      return;
+    }
+
+    setTextSubmitState("submitting");
+    setTextSubmitError(null);
+    setTextResult(null);
+
+    try {
+      const res = await fetch(TEXTE_LIBRE_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ texte, utiliser_web: false }),
+      });
+
+      if (!res.ok) {
+        let detail = `HTTP ${res.status}`;
+        try {
+          const errBody = await res.json();
+          if (errBody?.detail) detail = errBody.detail;
+        } catch {
+          // corps de réponse non-JSON, on garde le message HTTP générique
+        }
+        throw new Error(detail);
+      }
+
+      const data = await res.json();
+      setTextResult(data);
+      setTextSubmitState("success");
+
+      // Recharge le tableau si au moins un événement a été détecté et
+      // enregistré (sinon rien n'a changé côté Firebase, inutile).
+      if ((data.nombre_evenements_detectes || 0) > 0) {
+        load();
+      }
+    } catch (err) {
+      console.error("Erreur d'analyse texte libre GVIP:", err);
+      setTextSubmitState("error");
+      setTextSubmitError(err.message || "Une erreur est survenue.");
     }
   }
 
@@ -380,6 +448,14 @@ export default function GvipRiskDashboard() {
         </div>
 
         <div className={styles.metaWrap}>
+          <button
+            type="button"
+            className={styles.refreshBtn}
+            onClick={openTextModal}
+            aria-label="Analyser un texte libre avec Claude"
+          >
+            Analyser un texte
+          </button>
           <button
             type="button"
             className={styles.refreshBtn}
@@ -670,6 +746,106 @@ export default function GvipRiskDashboard() {
                   disabled={submitState === "submitting" || submitState === "success"}
                 >
                   {submitState === "submitting" ? "Analyse en cours…" : "Enregistrer"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showTextModal && (
+        <div className={styles.modalOverlay} onClick={closeTextModal} role="presentation">
+          <div
+            className={styles.modalBox}
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="gvip-text-modal-title"
+          >
+            <button
+              type="button"
+              className={styles.modalClose}
+              onClick={closeTextModal}
+              aria-label="Fermer"
+            >
+              ×
+            </button>
+
+            <div className={styles.modalEyebrow}>ANALYSE PAR CLAUDE</div>
+            <h2 id="gvip-text-modal-title" className={styles.modalTitle}>
+              Analyser un texte libre
+            </h2>
+            <p className={styles.modalSubtitle}>
+              Colle un article ou une description d'événement. Claude identifie la ou les
+              communes concernées, la durée, l'impact, et enregistre directement le résultat.
+            </p>
+
+            <form onSubmit={handleTextSubmit} className={styles.modalForm}>
+              <label className={styles.formLabel} htmlFor="gvip-texte-libre">
+                Texte de l'événement <span className={styles.required}>*</span>
+              </label>
+              <textarea
+                id="gvip-texte-libre"
+                className={styles.formInput}
+                rows={7}
+                placeholder="Ex : Route coupée à Bouaké suite à de fortes inondations ce mardi. La circulation est totalement paralysée sur l'axe principal, la situation devrait durer environ 6 heures…"
+                value={textInput}
+                onChange={(e) => setTextInput(e.target.value)}
+                disabled={textSubmitState === "submitting"}
+                required
+              />
+              <p className={styles.formHint}>
+                Claude déduit lui-même la commune, la durée, le score d'impact, la conséquence et
+                la suggestion de contournement. Si aucun événement lié à la mobilité n'est
+                détecté, rien n'est enregistré.
+              </p>
+
+              {textSubmitState === "error" && textSubmitError && (
+                <p className={styles.formError}>{textSubmitError}</p>
+              )}
+
+              {textSubmitState === "success" && textResult && (
+                <>
+                  {textResult.nombre_evenements_detectes > 0 ? (
+                    <p className={styles.formSuccess}>
+                      {textResult.nombre_evenements_detectes} événement
+                      {textResult.nombre_evenements_detectes > 1 ? "s" : ""} détecté
+                      {textResult.nombre_evenements_detectes > 1 ? "s" : ""} et enregistré
+                      {textResult.nombre_evenements_detectes > 1 ? "s" : ""} ✅
+                    </p>
+                  ) : (
+                    <p className={styles.formHint}>
+                      Aucun événement lié à la mobilité détecté dans ce texte — rien n'a été
+                      enregistré.
+                    </p>
+                  )}
+                  {textResult.villes_detectees?.length > 0 && (
+                    <div className={styles.neighborsList}>
+                      {textResult.villes_detectees.map((v, idx) => (
+                        <span key={`${v.commune}-${idx}`} className={styles.neighborChip}>
+                          {v.commune} · {v.duree || "durée inconnue"}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+
+              <div className={styles.modalActions}>
+                <button
+                  type="button"
+                  className={styles.modalCancelBtn}
+                  onClick={closeTextModal}
+                  disabled={textSubmitState === "submitting"}
+                >
+                  Fermer
+                </button>
+                <button
+                  type="submit"
+                  className={styles.modalSubmitBtn}
+                  disabled={textSubmitState === "submitting"}
+                >
+                  {textSubmitState === "submitting" ? "Analyse en cours…" : "Analyser et enregistrer"}
                 </button>
               </div>
             </form>
