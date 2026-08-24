@@ -36,15 +36,19 @@ import {
 } from 'firebase/auth';
 
 // ── Configuration du projet Firebase ──
+// Les valeurs viennent du fichier .env (VITE_FIREBASE_...).
+// Le "||" garde l'ancienne valeur en secours : si jamais une variable
+// n'est pas définie (ex. build Vercel actuel sans ces variables configurées),
+// le site continue de fonctionner exactement comme avant, sans rien casser.
 const firebaseConfig = {
-    apiKey: "AIzaSyAzEog53jnWZksBq5SXo41mVvGMjhuqwV8",
-    authDomain: "govip-parcels-appointments.firebaseapp.com",
-    databaseURL: "https://govip-parcels-appointments-default-rtdb.firebaseio.com",
-    projectId: "govip-parcels-appointments",
-    storageBucket: "govip-parcels-appointments.firebasestorage.app",
-    messagingSenderId: "5781132822",
-    appId: "1:5781132822:web:906072edda7ad4b72d0737",
-    measurementId: "G-WDLCTNFMW1",
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAzEog53jnWZksBq5SXo41mVvGMjhuqwV8",
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "govip-parcels-appointments.firebaseapp.com",
+    databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL || "https://govip-parcels-appointments-default-rtdb.firebaseio.com",
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "govip-parcels-appointments",
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "govip-parcels-appointments.firebasestorage.app",
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "5781132822",
+    appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:5781132822:web:906072edda7ad4b72d0737",
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-WDLCTNFMW1",
 };
 
 // ── Initialisation ──

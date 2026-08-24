@@ -1,8 +1,12 @@
 const {onValueCreated} = require("firebase-functions/v2/database");
 const nodemailer = require("nodemailer");
 
-// ⚠️ Mot de passe d'application Gmail en dur (à sécuriser plus tard).
-const GMAIL_APP_PASSWORD = "yhhretpaqemiwkgr";
+// Identifiants Gmail chargés depuis functions/.env
+// (Firebase CLI charge ce fichier automatiquement au "firebase deploy"
+// et pour l'émulateur — aucune config supplémentaire à faire, et ça ne
+// touche pas du tout à Vercel).
+const GMAIL_USER = process.env.GMAIL_USER;
+const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
 
 exports.notifierNouveauRendezVous = onValueCreated(
   {
@@ -14,7 +18,7 @@ exports.notifierNouveauRendezVous = onValueCreated(
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: "govipservice.sell@gmail.com",
+        user: GMAIL_USER,
         pass: GMAIL_APP_PASSWORD,
       },
     });
@@ -27,8 +31,8 @@ exports.notifierNouveauRendezVous = onValueCreated(
       : "N/A";
 
     await transporter.sendMail({
-      from: '"GVIP Notifications" <govipservice.sell@gmail.com>',
-      to: "govipservice.sell@gmail.com",
+      from: `"GVIP Notifications" <${GMAIL_USER}>`,
+      to: GMAIL_USER,
       subject: "Nouveau rendez-vous pris - GVIP",
       html: `
         <h2>Nouveau rendez-vous</h2>
