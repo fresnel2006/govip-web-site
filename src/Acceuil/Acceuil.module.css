@@ -1,22 +1,22 @@
-*{
+* {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    
 }
-.corps{
-    height: 1700px;
-    width: 110vw;
+
+.corps {
+    height: auto;
+    min-height: 100vh;
+    width: 1600px;
     display: flex;
     flex-direction: column;
     overflow-x: auto;
-    white-space: nowrap;
     overflow-y: auto;
-    flex-shrink: 0;
 }
-/*pour le header*/
-.header{
-    height: 6%;
+
+/* pour le header */
+.header {
+    height: auto;
     width: 100%;
     display: flex;
     align-items: center;
@@ -24,106 +24,201 @@
     border-color: rgba(0, 0, 0, 0.197);
     border-style: groove;
     border-left: none;
-    border-top:none ;
+    border-top: none;
     border-right: none;
+    padding: 10px 0;
+    white-space: nowrap;
+    flex-shrink: 0;
+    
 }
-.header .navigation{
+
+.header .navigation {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 25px;
     font-size: 14px;
     font-weight: 600;
+    flex-shrink: 0;
 }
 
-.logo_entreprise{
-    height: 100%;
+.logo_entreprise {
+    height: 60px;
     max-width: 150px;
     min-width: 50px;
 }
 
-.logo_entreprise img{
-height: 100%;
-width: 100%;
+.logo_entreprise img {
+    height: 100%;
+    width: 100%;
 }
-.demande_partenariat{
+
+.demande_partenariat {
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 15px;
     font-size: 14px;
-    border-color:rgba(0, 0, 0, 0.168) ;
+    border-color: rgba(0, 0, 0, 0.168);
     border-style: groove;
     padding-left: 30px;
-    padding-right:30px ;
-    height: 75%;
+    padding-right: 30px;
+    padding-top: 10px;
+    padding-bottom: 10px;
     border-top: none;
     border-bottom: none;
-
 }
-.bouton_header{
+
+.bouton_header {
     display: flex;
     gap: 5px;
-    height: 50%;
+    height: 40px;
     width: 300px;
 }
 
-.se_connecter button{
-height: 100%;
-width: 100%;
-border-radius: 10px;
-    border-color:rgb(39, 123, 48);
+.se_connecter button {
+    height: 100%;
+    width: 100%;
+    border-radius: 10px;
+    border-color: rgb(39, 123, 48);
     border-style: groove;
     color: rgb(39, 123, 48);
     font-weight: 800;
     background-color: white;
-    
-
-
 }
-.devenir_partenaire button{
+
+.devenir_partenaire button {
     height: 100%;
     width: 100%;
     border-radius: 10px;
-    border-color: gb(39, 123, 48);
+    border-color: rgb(39, 123, 48);
     border-style: groove;
     background-color: rgb(39, 123, 48);
     color: white;
     font-weight: 700;
 }
-.se_connecter ,.devenir_partenaire{
+
+.se_connecter,
+.devenir_partenaire {
     width: 50%;
-    
 }
 
-/*pour le body*/
-.body{
-    height: 100%;
+/* pour le body */
+.body {
+    height: auto;
     width: 100%;
     display: flex;
     flex-direction: column;
-    gap:30px ;
+    gap: 30px;
 }
-.acceuil_body{
-    height: 30%;
-    margin-top: 30px;
-    background-color: aqua;
-    width: 100%;
+
+.acceuil_body {
+    height: 400px;
+    display: flex;
+    position: relative;
 }
-.trouver_depart_body{
-    height: 20%;
-    background-color: aquamarine;
+
+.trouver_depart_body {
+    padding:20px ;
+    height: 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-radius: 20px;
+    border-style: groove;
+    border-color: black;
+    border-width: 1px;
+    margin: 5px;
 }
-.depart_recent_body{
-    height: 30%;
-    background-color: cadetblue;
+
+.trouver_depart_body select{
+    width: 300px;
+    height: 50px;
+    border-radius: 10px;
+    padding: 10px;
 }
-.comment_ca_marche_body{
-    height: 20%;
+.depart_recent_body {
+    height: auto;
+    min-height: 500px;
+    background-color: rgb(44, 53, 53);
+}
+
+.comment_ca_marche_body {
+    height: auto;
+    min-height: 300px;
     background-color: bisque;
 }
-.footer{
-    height: 30%;
-    margin-top: 30px;
+
+.footer {
+    height: auto;
+    min-height: 300px;
     background-color: black;
+}
+
+/* section accueil (hero) */
+.acceuil_body .description {
+    height: 100%;
+    width: 60%;
+    background-color: rgba(255, 255, 255, 0.816);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-left: 30px;
+}
+
+.acceuil_body .image_arriere1 {
+    height: 100%;
+    width: 40%;
+    background-image: url("../assets/arriere_plan1.png");
+    background-color: rgb(15, 149, 64);
+    background-size: cover;
+    background-position: center;
+}
+
+.image_arriere1 img {
+    height: 100%;
+    width: 100%;
+}
+
+.description1 {
+    font-weight: 700;
+    font-size: 40px;
+}
+
+.ecriture_verte {
+    color: green;
+}
+
+.description2 {
+    margin-top: 10px;
+}
+
+.description3 {
+    margin-top: 25px;
+    display: flex;
+    gap: 20px;
+}
+
+.info1 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border-color: rgba(38, 38, 38, 0.345);
+    border-style: groove;
+    padding: 10px;
+    border-radius: 10px;
+    border-width: 1.5px;
+}
+
+/* formulaire "trouver un depart" */
+.formulaire {
+    display: flex;
+    gap: 20px;
+}
+
+.champs {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
 }
