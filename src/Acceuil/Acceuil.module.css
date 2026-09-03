@@ -1,0 +1,129 @@
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    
+}
+.corps{
+    height: 1700px;
+    width: 110vw;
+    display: flex;
+    flex-direction: column;
+    overflow-x: auto;
+    white-space: nowrap;
+    overflow-y: auto;
+    flex-shrink: 0;
+}
+/*pour le header*/
+.header{
+    height: 6%;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    border-color: rgba(0, 0, 0, 0.197);
+    border-style: groove;
+    border-left: none;
+    border-top:none ;
+    border-right: none;
+}
+.header .navigation{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 25px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.logo_entreprise{
+    height: 100%;
+    max-width: 150px;
+    min-width: 50px;
+}
+
+.logo_entreprise img{
+height: 100%;
+width: 100%;
+}
+.demande_partenariat{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    font-size: 14px;
+    border-color:rgba(0, 0, 0, 0.168) ;
+    border-style: groove;
+    padding-left: 30px;
+    padding-right:30px ;
+    height: 75%;
+    border-top: none;
+    border-bottom: none;
+
+}
+.bouton_header{
+    display: flex;
+    gap: 5px;
+    height: 50%;
+    width: 300px;
+}
+
+.se_connecter button{
+height: 100%;
+width: 100%;
+border-radius: 10px;
+    border-color:rgb(39, 123, 48);
+    border-style: groove;
+    color: rgb(39, 123, 48);
+    font-weight: 800;
+    background-color: white;
+    
+
+
+}
+.devenir_partenaire button{
+    height: 100%;
+    width: 100%;
+    border-radius: 10px;
+    border-color: gb(39, 123, 48);
+    border-style: groove;
+    background-color: rgb(39, 123, 48);
+    color: white;
+    font-weight: 700;
+}
+.se_connecter ,.devenir_partenaire{
+    width: 50%;
+    
+}
+
+/*pour le body*/
+.body{
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap:30px ;
+}
+.acceuil_body{
+    height: 30%;
+    margin-top: 30px;
+    background-color: aqua;
+    width: 100%;
+}
+.trouver_depart_body{
+    height: 20%;
+    background-color: aquamarine;
+}
+.depart_recent_body{
+    height: 30%;
+    background-color: cadetblue;
+}
+.comment_ca_marche_body{
+    height: 20%;
+    background-color: bisque;
+}
+.footer{
+    height: 30%;
+    margin-top: 30px;
+    background-color: black;
+}
