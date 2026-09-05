@@ -433,8 +433,7 @@ function Acceuil(){
 </div>
 <div className={styles.footer_partie2}>
     <p style={{marginBottom:20,fontSize:21}}><strong>Navigation</strong></p>
-    <p>Navigation <br />
-Accueil <br />
+    <p>Accueil <br />
 Trouver un départ<br />
 Nos transporteurs<br />
 Comment ça marche<br />
@@ -443,8 +442,7 @@ Contact</p>
 </div>
 <div className={styles.footer_partie3}>
     <p style={{marginBottom:20,fontSize:21}}><strong>Espace partenaire</strong></p>
-    <p>Espace partenaire
-Se connecter<br />
+    <p>Se connecter<br />
 Devenir partenaire<br />
 Publier un départ<br />
 Tableau de bord</p>
