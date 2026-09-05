@@ -113,9 +113,70 @@
     padding: 8px;
 }
 
-/* boutons repris dans le menu mobile deroulant : caches en desktop */
+/* menu deroulant mobile/tablette : rendu par React uniquement quand isMobileOuTablette && menuOuvert,
+   donc le style s'applique en base, pas besoin de media query pour l'afficher/cacher */
+.navigation_ouverte {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background-color: white;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+    z-index: 20;
+    padding: 10px 20px 20px;
+}
+
+.navigation_ouverte > div {
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* boutons repris dans le menu mobile/tablette deroulant */
 .bouton_header_mobile {
-    display: none;
+    display: flex;
+    gap: 12px;
+    height: 48px;
+    margin-top: 18px;
+    padding: 0 2px;
+    border-bottom: none;
+}
+
+.bouton_header_mobile .se_connecter,
+.bouton_header_mobile .devenir_partenaire {
+    width: 50%;
+}
+
+.bouton_header_mobile .se_connecter button,
+.bouton_header_mobile .devenir_partenaire button {
+    height: 100%;
+    width: 100%;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.bouton_header_mobile .se_connecter button {
+    border: 1.5px solid rgb(39, 123, 48);
+    color: rgb(39, 123, 48);
+    background-color: white;
+}
+
+.bouton_header_mobile .devenir_partenaire button {
+    border: 1.5px solid rgb(39, 123, 48);
+    background-color: rgb(39, 123, 48);
+    color: white;
+    box-shadow: 0 3px 8px rgba(39, 123, 48, 0.3);
+}
+
+.bouton_header_mobile .se_connecter button:active,
+.bouton_header_mobile .devenir_partenaire button:active {
+    transform: scale(0.96);
 }
 
 /* pour le body */
@@ -150,12 +211,36 @@
 
 .trouver_depart_body select,
 .trouver_depart_body input {
-    width: 300px;
+    width: 100%;
+    max-width: 380px;
     height: 50px;
     border-radius: 10px;
     padding: 10px;
     border: 1px solid rgba(0, 0, 0, 0.2);
     font-family: inherit;
+    font-size: 14px;
+    background-color: white;
+    color: inherit;
+}
+
+.trouver_depart_body input::placeholder {
+    color: rgba(0, 0, 0, 0.4);
+}
+
+.trouver_depart_body input:focus,
+.trouver_depart_body select:focus {
+    outline: none;
+    border-color: rgb(39, 123, 48);
+}
+
+.trouver_depart_body input[type="date"] {
+    color: rgba(0, 0, 0, 0.7);
+    cursor: pointer;
+}
+
+.trouver_depart_body input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    filter: invert(45%) sepia(60%) saturate(500%) hue-rotate(90deg);
 }
 
 .depart_recent_body {
@@ -184,11 +269,14 @@
     display: flex;
     gap: 40px;
     align-items: center;
+    background-color: black;
+    color: white;
 }
 
 .footer_partie1 {
-    width: 400px;
+    width: 300px;
     height: 300px;
+    font-weight: 600;
 }
 
 .footer_partie2 {
@@ -575,6 +663,7 @@
     .champs select,
     .champs input {
         width: 100%;
+        max-width: none;
     }
 
     .container_des_compagnies {
@@ -622,39 +711,6 @@
 
     .header {
         flex-wrap: wrap;
-    }
-
-    .navigation_ouverte {
-        display: flex !important;
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0;
-        position: absolute;
-        top: 100%;
-        left: 0;
-        width: 100%;
-        background-color: white;
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
-        z-index: 20;
-        padding: 10px 20px 20px;
-    }
-
-    .navigation_ouverte > div {
-        padding: 12px 0;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-    }
-
-    .navigation_ouverte .bouton_header_mobile {
-        display: flex;
-        gap: 10px;
-        height: 40px;
-        margin-top: 14px;
-        border-bottom: none;
-    }
-
-    .navigation_ouverte .bouton_header_mobile .se_connecter,
-    .navigation_ouverte .bouton_header_mobile .devenir_partenaire {
-        width: 50%;
     }
 
     .demande_partenariat {
@@ -719,6 +775,7 @@
     .trouver_depart_body select,
     .trouver_depart_body input {
         width: 100%;
+        max-width: none;
     }
 
     .depart_recent_body {

@@ -143,7 +143,7 @@ function Acceuil(){
 </div>
 <div className={styles.mini_description}>
 <p style={{color:"green"}}><strong>Transporteurs verifies</strong></p>
-<p> Des partenaires de confiance</p>
+<p style={{fontWeight:700,fontSize:13}}> Des partenaires de confiance</p>
 </div>
 </div>
 
@@ -153,7 +153,7 @@ function Acceuil(){
 </div>
 <div className={styles.mini_description}>
 <p style={{color:"green"}}><strong>Depart reguliers</strong></p>
-<p>Chaque jour,chaque semaine</p>
+<p style={{fontWeight:700,fontSize:13}}>Chaque jour, chaque semaine</p>
 </div>
 </div>
 
@@ -163,7 +163,7 @@ function Acceuil(){
 </div>
 <div className={styles.mini_description}>
 <p style={{color:"green"}}><strong>Tarifs transparents</strong></p>
-<p>Comparez et choisissez</p>
+<p style={{fontWeight:700,fontSize:13}}>Comparez et choisissez</p>
 </div>
 </div>
 
@@ -189,11 +189,13 @@ function Acceuil(){
 <div className={styles.champs}>
       <p>Ville de depart</p>
 
-      <select>
-        <option value="">Pays de destination</option>
-        <option value="ci">Côte d'Ivoire</option>
-        <option value="fr">France</option>
-      </select>
+      
+      <input
+        type="text"
+        name="ville_depart"
+        placeholder="Ex : Abidjan, Yamoussoukro..."
+        autoComplete="off"
+      />
 </div>
       <div className={styles.champs}>
       <p>Pays de destination</p>
@@ -207,11 +209,11 @@ function Acceuil(){
       <div className={styles.champs}>
       <p >Date de depart</p>
 
-      <select>
-        <option value="">Pays de destination</option>
-        <option value="ci">Côte d'Ivoire</option>
-        <option value="fr">France</option>
-      </select>
+      <input
+        type="date"
+        name="date_depart"
+        min={new Date().toISOString().split('T')[0]}
+      />
 </div>
     </div>
 
