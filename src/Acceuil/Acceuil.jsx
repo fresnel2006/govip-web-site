@@ -1,10 +1,20 @@
-import { FaArrowRight, FaCalendar, FaClock, FaHourglass, FaSearch, FaStar, FaTag, FaTimes, FaTimesCircle, FaUsers,FaPaperPlane,FaRegCalendarAlt,FaCheckCircle } from 'react-icons/fa';
+import { useState } from 'react';
+import { useMediaQuery } from 'react-responsive';
+import { FaArrowRight, FaCalendar, FaClock, FaHourglass, FaSearch, FaStar, FaTag, FaTimes, FaTimesCircle, FaUsers,FaPaperPlane,FaRegCalendarAlt,FaCheckCircle, FaBars } from 'react-icons/fa';
 import styles from '../Acceuil/Acceuil.module.css'
 import logo_entreprise from '../assets/logo_entreprise.png'
 import { FaArrowLeft, FaHouseCircleCheck, FaMoneyBill, FaShield } from 'react-icons/fa6';
 import { CI, FR } from 'country-flag-icons/react/3x2';
 
 function Acceuil(){
+    const [menuOuvert, setMenuOuvert] = useState(false);
+
+    // breakpoints geres par react-responsive
+    const isMobile = useMediaQuery({ maxWidth: 640 });
+    const isTablette = useMediaQuery({ minWidth: 641, maxWidth: 1024 });
+    const isDesktop = useMediaQuery({ minWidth: 1025 });
+    const isMobileOuTablette = isMobile || isTablette;
+
     return(
 <>
 
@@ -20,11 +30,67 @@ function Acceuil(){
 <img src={logo_entreprise} alt="logo de l'entreprise" srcset="" />
             </div>
 
-            {/*les onglets de navigations de la page  */}
-
+            {/*les onglets de navigations de la page - caches sur mobile/tablette, remplaces par le burger */}
+            {isDesktop && (
             <div className={styles.navigation}>
+            <div className={styles.acceuil}>
+<p>Acceuil</p>
+            </div>
+            <div className={styles.trouver_depart}>
+<p>Trouver un depart</p>
+            </div>
+            <div className={styles.nos_transport}>
+<p>Nos transport</p>
+            </div>
+            <div className={styles.comment_ca_marche}>
+<p>Comment ca marche</p>
+            </div>
+            <div className={styles.a_propos}>
+<p>A propos</p>
+            </div>
+            <div className={styles.contact}>
+<p>Contact</p>
+            </div>
+        </div>
+            )}
 
-            
+        {/*message pour devemir partenaire */}
+
+        <div className={styles.demande_partenariat}>
+            <FaUsers size={isMobile ? 26 : 50} color='rgb(39, 123, 48)'/>
+            <div className={styles.descritpion}>
+<p><strong >Vous transporter aussi des colis ?</strong></p>
+<p>Alors devenez partenaire !</p>
+            </div>
+        </div>
+
+        {/*les boutons se connecter / devenir partenaire - visibles seulement en desktop */}
+        {isDesktop && (
+        <div className={styles.bouton_header}>
+<div className={styles.se_connecter}>
+    <button type='submit'>Se connecter</button>
+</div>
+<div className={styles.devenir_partenaire}>
+    <button type='submit'> Devenir partenaire</button>
+</div>
+        </div>
+        )}
+
+        {/* bouton burger - uniquement mobile/tablette */}
+        {isMobileOuTablette && (
+        <button
+            type="button"
+            className={styles.bouton_burger}
+            onClick={() => setMenuOuvert(!menuOuvert)}
+            aria-label="Ouvrir le menu"
+        >
+            {menuOuvert ? <FaTimes size={22} color="rgb(39,123,48)"/> : <FaBars size={22} color="rgb(39,123,48)"/>}
+        </button>
+        )}
+
+        {/* menu deroulant mobile/tablette - affiche seulement si ouvert */}
+        {isMobileOuTablette && menuOuvert && (
+            <div className={styles.navigation_ouverte}>
             <div className={styles.acceuil}>
 <p>Acceuil</p>
             </div>
@@ -44,29 +110,17 @@ function Acceuil(){
 <p>Contact</p>
             </div>
 
-        </div>
-
-        {/*message pour devemir partenaire */}
-
-
-        <div className={styles.demande_partenariat}>
-            <FaUsers size={50} color='rgb(39, 123, 48)'/>
-            <div className={styles.descritpion}>
-<p><strong >Vous transporter aussi des colis ?</strong></p>
-<p>Alors devenez partenaire !</p>
+            <div className={styles.bouton_header_mobile}>
+                <div className={styles.se_connecter}>
+                    <button type='submit'>Se connecter</button>
+                </div>
+                <div className={styles.devenir_partenaire}>
+                    <button type='submit'>Devenir partenaire</button>
+                </div>
             </div>
         </div>
+        )}
 
-        {/*les boutons permettant de se connecter ou de devenir partenaire */}
-
-        <div className={styles.bouton_header}>
-<div className={styles.se_connecter}>
-    <button type='submit'>Se connecter</button>
-</div>
-<div className={styles.devenir_partenaire}>
-    <button type='submit'> Devenir partenaire</button>
-</div>
-        </div>
         </div>
 
         <div className={styles.body}>
@@ -85,30 +139,30 @@ function Acceuil(){
 
 <div className={styles.info1}>
 <div className={styles.icone}>
-<FaShield size={30}/>
+<FaShield size={30} color="green"/>
 </div>
 <div className={styles.mini_description}>
-<p><strong>Transporteurs verifies</strong></p>
+<p style={{color:"green"}}><strong>Transporteurs verifies</strong></p>
 <p> Des partenaires de confiance</p>
 </div>
 </div>
 
 <div className={styles.info1}>
 <div className={styles.icone}>
-< FaCalendar size={30}/>
+< FaCalendar size={30} color="green"/>
 </div>
 <div className={styles.mini_description}>
-<p><strong>Depart reguliers</strong></p>
+<p style={{color:"green"}}><strong>Depart reguliers</strong></p>
 <p>Chaque jour,chaque semaine</p>
 </div>
 </div>
 
 <div className={styles.info1}>
 <div className={styles.icone}>
-<FaTag size={30}/>
+<FaTag size={30} style={{color:"green"}}/>
 </div>
 <div className={styles.mini_description}>
-<p> <strong>Tarifs transparents</strong></p>
+<p style={{color:"green"}}><strong>Tarifs transparents</strong></p>
 <p>Comparez et choisissez</p>
 </div>
 </div>
@@ -122,7 +176,7 @@ function Acceuil(){
                 </div>
             </div>
             <div className={styles.trouver_depart_body}>
-<p style={{fontSize:25}}> <strong>Trouvez un depart</strong></p>
+<p style={{fontSize: isMobile ? 20 : 25}}> <strong>Trouvez un depart</strong></p>
 <div className={styles.formulaire}>
     <div className={styles.champs}>
         <p>Pays de depart</p>
@@ -164,7 +218,7 @@ function Acceuil(){
 </div>
             </div>
             <div className={styles.depart_recent_body}>
-                <p style={{fontSize:30,fontWeight:800,marginBottom:20}}>Departs recents</p>
+                <p style={{fontSize: isMobile ? 20 : 30,fontWeight:800,marginBottom:20}}>Departs recents</p>
                 <div className={styles.container_des_compagnies}>
 
                 <div className={styles.compagnies}>
@@ -258,6 +312,7 @@ function Acceuil(){
 </div>
 
                     </div>
+                {!isMobile && (
                 <div className={styles.compagnies}>
                     <div className={styles.info_compagnie1}>
 <div className={styles.partie1}>
@@ -304,61 +359,63 @@ function Acceuil(){
 </div>
 
                     </div>
+                )}
                 </div>
                 
             </div>
             <div className={styles.comment_ca_marche_body}>
-<div class={styles.commentCaMarcheIntro}>
-    <p class={styles.commentCaMarcheTitre}>Comment ça marche ?</p>
-    <p class={styles.commentCaMarcheSousTitre}>Expédier votre colis en 4 étapes simples</p>
+<div className={styles.commentCaMarcheIntro}>
+    <p className={styles.commentCaMarcheTitre}>Comment ça marche ?</p>
+    <p className={styles.commentCaMarcheSousTitre}>Expédier votre colis en 4 étapes simples</p>
 </div>
-<FaArrowRight className={styles.etapeIcone}/>
-<FaSearch className={styles.etapeIcone}/>
-<div class={styles.etape}>
-      <div class={styles.etapeIconeConteneur}>
-        <p class={styles.etapeNumero}>1</p>
+<div className={styles.listeEtapes}>
+<div className={styles.etape}>
+      <div className={styles.etapeIconeConteneur}>
+        <FaSearch className={styles.etapeIcone}/>
+        <p className={styles.etapeNumero}>1</p>
       </div>
-      <div class={styles.etapeContenu}>
-        <p class={styles.etapeTitre}>Recherchez</p>
-        <p class={styles.etapeTexte}>Trouvez un départ selon votre destination et vos besoins</p>
+      <div className={styles.etapeContenu}>
+        <p className={styles.etapeTitre}>Recherchez</p>
+        <p className={styles.etapeTexte}>Trouvez un départ selon votre destination et vos besoins</p>
       </div>
     </div>
-<FaArrowRight />
-<div class={styles.etape}>
-      <div class={styles.etapeIconeConteneur}>
-        <p class={styles.etapeNumero}>2</p>
+<FaArrowRight className={styles.flecheEtape} style={isMobile ? {transform:'rotate(90deg)'} : {}}/>
+<div className={styles.etape}>
+      <div className={styles.etapeIconeConteneur}>
+        <p className={styles.etapeNumero}>2</p>
         <FaRegCalendarAlt className={styles.etapeIcone} />
       </div>
-      <div class={styles.etapeContenu}>
-        <p class={styles.etapeTitre}>Choisissez</p>
-        <p class={styles.etapeTexte}>Sélectionnez le transporteur et le départ qui vous convient</p>
+      <div className={styles.etapeContenu}>
+        <p className={styles.etapeTitre}>Choisissez</p>
+        <p className={styles.etapeTexte}>Sélectionnez le transporteur et le départ qui vous convient</p>
       </div>
     </div>
 
-    <FaArrowRight />
-    <div class={styles.etape}>
-      <div class={styles.etapeIconeConteneur}>
-        <p class={styles.etapeNumero}>3</p>
+    <FaArrowRight className={styles.flecheEtape} style={isMobile ? {transform:'rotate(90deg)'} : {}}/>
+    <div className={styles.etape}>
+      <div className={styles.etapeIconeConteneur}>
+        <p className={styles.etapeNumero}>3</p>
         <FaPaperPlane className={styles.etapeIcone} />
       </div>
-      <div class={styles.etapeContenu}>
-        <p class={styles.etapeTitre}>Envoyez votre demande</p>
-        <p class={styles.etapeTexte}>Remplissez le formulaire et envoyez votre demande</p>
+      <div className={styles.etapeContenu}>
+        <p className={styles.etapeTitre}>Envoyez votre demande</p>
+        <p className={styles.etapeTexte}>Remplissez le formulaire et envoyez votre demande</p>
       </div>
     </div>
 
-<FaArrowRight />
+<FaArrowRight className={styles.flecheEtape} style={isMobile ? {transform:'rotate(90deg)'} : {}}/>
 
-    <div class={styles.etape}>
-      <div class={styles.etapeIconeConteneur}>
-        <p class={styles.etapeNumero}>4</p>
+    <div className={styles.etape}>
+      <div className={styles.etapeIconeConteneur}>
+        <p className={styles.etapeNumero}>4</p>
         <FaCheckCircle className={styles.etapeIcone} />
       </div>
-      <div class={styles.etapeContenu}>
-        <p class={styles.etapeTitre}>Confirmez et expédiez</p>
-        <p class={styles.etapeTexte}>Le transporteur vous contacte et récupère votre colis</p>
+      <div className={styles.etapeContenu}>
+        <p className={styles.etapeTitre}>Confirmez et expédiez</p>
+        <p className={styles.etapeTexte}>Le transporteur vous contacte et récupère votre colis</p>
       </div>
     </div>
+</div>
             </div>
 
         </div>

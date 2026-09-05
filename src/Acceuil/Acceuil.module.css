@@ -8,12 +8,11 @@
     height: auto;
     min-height: 100vh;
     width: 1600px;
+    max-width: 100%;
     display: flex;
     flex-direction: column;
-    overflow-x: auto;
+    overflow-x: hidden;
     overflow-y: auto;
-    display: flex;
-    
 }
 
 /* pour le header */
@@ -31,7 +30,7 @@
     padding: 10px 0;
     white-space: nowrap;
     flex-shrink: 0;
-    
+    position: relative;
 }
 
 .header .navigation {
@@ -105,6 +104,20 @@
     width: 50%;
 }
 
+/* bouton burger : caché par defaut, affiche seulement en mobile/tablette */
+.bouton_burger {
+    display: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+}
+
+/* boutons repris dans le menu mobile deroulant : caches en desktop */
+.bouton_header_mobile {
+    display: none;
+}
+
 /* pour le body */
 .body {
     height: auto;
@@ -121,7 +134,7 @@
 }
 
 .trouver_depart_body {
-    padding:20px ;
+    padding: 20px;
     height: 200px;
     width: 90%;
     display: flex;
@@ -135,18 +148,21 @@
     margin-left: 20px;
 }
 
-.trouver_depart_body select{
+.trouver_depart_body select,
+.trouver_depart_body input {
     width: 300px;
     height: 50px;
     border-radius: 10px;
     padding: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    font-family: inherit;
 }
+
 .depart_recent_body {
     height: auto;
     min-height: 500px;
-    padding-top:20px;
-    padding-left: 14px;
     padding-top: 50px;
+    padding-left: 14px;
 }
 
 .comment_ca_marche_body {
@@ -155,6 +171,10 @@
     border-color: rgba(0, 0, 0, 0.353);
     border-style: groove;
     border-radius: 10px;
+    display: flex;
+    gap: 32px;
+    padding: 40px 24px;
+    flex-direction: column;
 }
 
 .footer {
@@ -165,30 +185,30 @@
     gap: 40px;
     align-items: center;
 }
-.footer_partie1{
+
+.footer_partie1 {
     width: 400px;
     height: 300px;
-    
 }
-.footer_partie2{
-    width: 200px;
 
-height: 300px;
-}
-.footer_partie3{
+.footer_partie2 {
     width: 200px;
-
-height: 300px;
+    height: 300px;
 }
-.footer_partie4{
+
+.footer_partie3 {
     width: 200px;
-
-height: 300px;
+    height: 300px;
 }
-.footer_partie5{
+
+.footer_partie4 {
+    width: 200px;
+    height: 300px;
+}
+
+.footer_partie5 {
     width: 400px;
-
-height: 300px;
+    height: 300px;
 }
 
 /* section accueil (hero) */
@@ -259,11 +279,11 @@ height: 300px;
     gap: 5px;
 }
 
-.info_compagnie1{
+.info_compagnie1 {
     padding: 10px;
     height: 180px;
     width: 450px;
-color: white;
+    color: white;
     border-top-left-radius: 15px;
     border-top-right-radius: 15px;
     display: flex;
@@ -274,8 +294,11 @@ color: white;
     border-width: 1px;
     border-color: rgba(0, 0, 0, 0.218);
     background-image: url("../assets/France image.jpg");
+    background-size: cover;
+    background-position: center;
 }
-.info_compagnie2{
+
+.info_compagnie2 {
     width: 450px;
     height: 80px;
     background-color: white;
@@ -283,7 +306,13 @@ color: white;
     border-top: none;
     border-style: groove;
     border-width: 1px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
 }
+
 .drapeau_mini {
     width: 16px;
     height: 12px;
@@ -291,45 +320,42 @@ color: white;
     flex-shrink: 0;
     object-fit: cover;
 }
-.partie1{
+
+.partie1 {
     display: flex;
     justify-content: space-around;
 }
-.partie2{
-    display: flex;
-    align-items: center;
-    justify-content: space-around;
-    
-    
-}
-.reference{
+
+.partie2 {
     display: flex;
     align-items: center;
     justify-content: space-around;
 }
-.info_compagnie2{
+
+.reference {
     display: flex;
-    justify-content: space-around;
     align-items: center;
-    border-bottom-left-radius: 15px;
-    border-bottom-right-radius: 15px;
+    justify-content: space-around;
 }
-.image_nom_des_compagnies{
-   display: flex;
-   align-items: center;
-   gap: 20px;
+
+.image_nom_des_compagnies {
+    display: flex;
+    align-items: center;
+    gap: 20px;
 }
-.images_compagines{
+
+.images_compagines {
     height: 40px;
     width: 40px;
     background-color: rgb(158, 111, 202);
     border-radius: 100px;
 }
-.information_sur_depart{
+
+.information_sur_depart {
     background-color: rgba(69, 178, 69, 0.716);
     padding-top: 4px;
     padding-bottom: 4px;
-    padding-left:12px ;
+    padding-left: 12px;
     padding-right: 12px;
     border-style: groove;
     border-color: rgba(0, 0, 0, 0.116);
@@ -340,7 +366,7 @@ color: white;
     color: white;
 }
 
-.bouton_voir_detail{
+.bouton_voir_detail {
     height: 40px;
     width: 140px;
     border-radius: 10px;
@@ -350,130 +376,115 @@ color: white;
     font-weight: 800;
     color: white;
 }
-.container_des_compagnies{
+
+.container_des_compagnies {
     display: flex;
     gap: 10px;
 }
-.comment_ca_marche_body {
-  display: flex;
-  
-  gap: 32px;
-  padding: 40px 24px;
 
+.compagnies {
+    flex-shrink: 0;
 }
 
-/* Intro (titre + sous-titre) */
+/* Intro (titre + sous-titre) de "comment ca marche" */
 .commentCaMarcheIntro {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .commentCaMarcheTitre {
-  font-size: 20px;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0;
 }
 
 .commentCaMarcheSousTitre {
-  font-size: 14px;
-  color: #6b7280;
-  margin: 0;
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0;
 }
 
 /* Liste des étapes */
 .listeEtapes {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
 }
 
 /* Une étape */
 .etape {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex: 1;
-  min-width: 180px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 180px;
 }
 
 .etapeIconeConteneur {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  min-width: 48px;
-  border-radius: 50%;
-  background-color: #e6f4ea;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    border-radius: 50%;
+    background-color: #e6f4ea;
 }
 
 .etapeIcone {
-  font-size: 20px;
-  color: #1a7a3c;
+    font-size: 20px;
+    color: #1a7a3c;
 }
 
 .etapeNumero {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background-color: #1a7a3c;
-  color: #ffffff;
-  font-size: 11px;
-  font-weight: 700;
-  margin: 0;
-  line-height: 1;
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: #1a7a3c;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1;
 }
 
 .etapeContenu {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
 .etapeTitre {
-  font-size: 14px;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0;
 }
 
 .etapeTexte {
-  font-size: 12px;
-  color: #6b7280;
-  margin: 0;
-  line-height: 1.4;
+    font-size: 12px;
+    color: #6b7280;
+    margin: 0;
+    line-height: 1.4;
 }
 
-/* Flèches entre les étapes (composants FaArrowRight) */
-.comment_ca_marche_body svg[data-icon="arrow-right"],
-.comment_ca_marche_body > svg {
-  color: #9ca3af;
-  font-size: 16px;
-  flex-shrink: 0;
+.flecheEtape {
+    color: #9ca3af;
+    font-size: 16px;
+    flex-shrink: 0;
 }
 
-/* Responsive : on empile en colonne sur mobile */
-@media (max-width: 640px) {
-  .listeEtapes {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .listeEtapes svg {
-    transform: rotate(90deg);
-  }
-}
 .image_entreprise {
     background-image: url("../assets/logo_entreprise.png");
     height: 110px;
@@ -482,4 +493,316 @@ color: white;
     background-position: center;
     background-repeat: no-repeat;
     object-fit: cover;
+}
+
+/* =========================================================
+   RESPONSIVE - TABLETTE (max-width: 1024px)
+   ========================================================= */
+@media (max-width: 1024px) {
+
+    .corps {
+        width: 100%;
+        padding: 0 16px;
+    }
+
+    .header {
+        justify-content: space-between;
+        padding: 10px 4px;
+        flex-wrap: wrap;
+    }
+
+    .bouton_burger {
+        display: flex;
+        align-items: center;
+    }
+
+    .demande_partenariat {
+        border: none;
+        padding: 8px 0;
+        gap: 10px;
+        font-size: 12px;
+        width: 100%;
+        order: 3;
+    }
+
+    .demande_partenariat svg {
+        width: 34px !important;
+        height: 34px !important;
+        flex-shrink: 0;
+    }
+
+    .acceuil_body {
+        height: auto;
+        flex-direction: column;
+    }
+
+    .acceuil_body .description,
+    .acceuil_body .image_arriere1 {
+        width: 100%;
+    }
+
+    .acceuil_body .image_arriere1 {
+        height: 260px;
+        order: -1;
+    }
+
+    .description1 {
+        font-size: 32px;
+    }
+
+    .description3 {
+        flex-wrap: wrap;
+    }
+
+    .info1 {
+        flex: 1 1 45%;
+    }
+
+    .trouver_depart_body {
+        width: 100%;
+        height: auto;
+        margin-left: 0;
+    }
+
+    .formulaire {
+        flex-wrap: wrap;
+    }
+
+    .champs {
+        flex: 1 1 45%;
+    }
+
+    .champs select,
+    .champs input {
+        width: 100%;
+    }
+
+    .container_des_compagnies {
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        scroll-padding-left: 16px;
+        padding-bottom: 10px;
+    }
+
+    .compagnies {
+        scroll-snap-align: start;
+    }
+
+    .footer {
+        flex-wrap: wrap;
+        margin-top: 80px;
+        gap: 24px;
+    }
+
+    .footer_partie1,
+    .footer_partie5 {
+        width: 45%;
+    }
+
+    .footer_partie2,
+    .footer_partie3,
+    .footer_partie4 {
+        width: 45%;
+        height: auto;
+    }
+}
+
+/* =========================================================
+   RESPONSIVE - MOBILE (max-width: 640px)
+   ========================================================= */
+@media (max-width: 640px) {
+
+    .corps {
+        padding: 0 12px;
+    }
+
+    .logo_entreprise {
+        height: 40px;
+    }
+
+    .header {
+        flex-wrap: wrap;
+    }
+
+    .navigation_ouverte {
+        display: flex !important;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        background-color: white;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+        z-index: 20;
+        padding: 10px 20px 20px;
+    }
+
+    .navigation_ouverte > div {
+        padding: 12px 0;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    .navigation_ouverte .bouton_header_mobile {
+        display: flex;
+        gap: 10px;
+        height: 40px;
+        margin-top: 14px;
+        border-bottom: none;
+    }
+
+    .navigation_ouverte .bouton_header_mobile .se_connecter,
+    .navigation_ouverte .bouton_header_mobile .devenir_partenaire {
+        width: 50%;
+    }
+
+    .demande_partenariat {
+        justify-content: flex-start;
+        gap: 8px;
+        font-size: 11px;
+    }
+
+    .demande_partenariat svg {
+        width: 26px !important;
+        height: 26px !important;
+    }
+
+    .body {
+        gap: 20px;
+    }
+
+    .acceuil_body .description {
+        padding-left: 0;
+        background-color: transparent;
+        text-align: left;
+    }
+
+    .description1 {
+        font-size: 26px;
+    }
+
+    .description2 p {
+        font-size: 14px;
+    }
+
+    .description3 {
+        flex-direction: column;
+        margin-top: 16px;
+        gap: 10px;
+    }
+
+    .info1 {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .acceuil_body .image_arriere1 {
+        height: 200px;
+        border-radius: 10px;
+    }
+
+    .trouver_depart_body {
+        margin: 0;
+        padding: 16px;
+    }
+
+    .formulaire {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .champs {
+        width: 100%;
+    }
+
+    .trouver_depart_body select,
+    .trouver_depart_body input {
+        width: 100%;
+    }
+
+    .depart_recent_body {
+        padding-left: 0;
+        padding-top: 30px;
+    }
+
+    .depart_recent_body p {
+        font-size: 20px !important;
+    }
+
+    /* carrousel mobile : chaque carte occupe (presque) toute la largeur visible */
+    .container_des_compagnies {
+        display: flex;
+        gap: 12px;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        scroll-padding-left: 12px;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 12px;
+        margin: 0 -12px;
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .compagnies {
+        scroll-snap-align: center;
+        flex: 0 0 calc(100vw - 48px);
+    }
+
+    .info_compagnie1,
+    .info_compagnie2 {
+        width: 100%;
+        max-width: none;
+    }
+
+    .info_compagnie1 {
+        height: auto;
+        gap: 10px;
+        padding: 14px;
+    }
+
+    .partie1,
+    .partie2,
+    .reference {
+        font-size: 13px;
+        flex-wrap: wrap;
+    }
+
+    .comment_ca_marche_body {
+        padding: 24px 16px;
+    }
+
+    .listeEtapes {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .flecheEtape {
+        margin-left: 24px;
+    }
+
+    .etape {
+        width: 100%;
+    }
+
+    .footer {
+        flex-direction: column;
+        align-items: flex-start;
+        margin-top: 50px;
+        gap: 30px;
+    }
+
+    .footer_partie1,
+    .footer_partie2,
+    .footer_partie3,
+    .footer_partie4,
+    .footer_partie5 {
+        width: 100%;
+        height: auto;
+    }
+
+    .image_entreprise {
+        height: 80px;
+        width: 130px;
+    }
 }
