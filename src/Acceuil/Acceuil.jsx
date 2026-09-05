@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMediaQuery } from 'react-responsive';
-import { FaArrowRight, FaCalendar, FaClock, FaHourglass, FaSearch, FaStar, FaTag, FaTimes, FaTimesCircle, FaUsers,FaPaperPlane,FaRegCalendarAlt,FaCheckCircle, FaBars } from 'react-icons/fa';
+import { FaArrowRight, FaCalendar, FaClock, FaHourglass, FaSearch, FaStar, FaTag, FaTimes, FaTimesCircle, FaUsers,FaPaperPlane,FaRegCalendarAlt,FaCheckCircle, FaBars, FaInstagram, FaTiktok, FaYoutube, FaWhatsapp } from 'react-icons/fa';
 import styles from '../Acceuil/Acceuil.module.css'
 import logo_entreprise from '../assets/logo_entreprise.png'
 import { FaArrowLeft, FaHouseCircleCheck, FaMoneyBill, FaShield } from 'react-icons/fa6';
@@ -459,7 +459,7 @@ Nous contacter</p>
 </div>
 <div className={styles.footer_partie5}>
     <p style={{marginBottom:20,fontSize:21}}><strong>Suivez-nous</strong></p>
-<p>(icônes : Instagram, TikTok, YouTube, WhatsApp)
+<p><FaInstagram/> <FaTiktok/> <FaYoutube/> <FaWhatsapp/> <br />
 
 Contact<br />
 contact@gvipcolis.com<br />

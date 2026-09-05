@@ -45,13 +45,18 @@
 
 .logo_entreprise {
     height: 60px;
+    width: auto;
     max-width: 150px;
     min-width: 50px;
+    display: flex;
+    align-items: center;
 }
 
 .logo_entreprise img {
     height: 100%;
-    width: 100%;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
 }
 
 .demande_partenariat {
@@ -816,6 +821,17 @@
         height: auto;
         gap: 10px;
         padding: 14px;
+    }
+
+    .info_compagnie2 {
+        height: auto;
+        min-height: 80px;
+        padding: 10px 14px;
+    }
+
+    .image_nom_des_compagnies {
+        flex-wrap: wrap;
+        gap: 12px;
     }
 
     .partie1,
