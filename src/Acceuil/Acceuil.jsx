@@ -15,6 +15,15 @@ function Acceuil(){
     const isDesktop = useMediaQuery({ minWidth: 1025 });
     const isMobileOuTablette = isMobile || isTablette;
 
+    // fait defiler la page en douceur jusqu'a la section demandee et ferme le menu mobile
+    const scrollVers = (id) => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        setMenuOuvert(false);
+    };
+
     return(
 <>
 
@@ -33,22 +42,22 @@ function Acceuil(){
             {/*les onglets de navigations de la page - caches sur mobile/tablette, remplaces par le burger */}
             {isDesktop && (
             <div className={styles.navigation}>
-            <div className={styles.acceuil}>
+            <div className={styles.acceuil} onClick={() => scrollVers('acceuil')}>
 <p>Acceuil</p>
             </div>
-            <div className={styles.trouver_depart}>
+            <div className={styles.trouver_depart} onClick={() => scrollVers('trouver-depart')}>
 <p>Trouver un depart</p>
             </div>
-            <div className={styles.nos_transport}>
+            <div className={styles.nos_transport} onClick={() => scrollVers('nos-transport')}>
 <p>Nos transport</p>
             </div>
-            <div className={styles.comment_ca_marche}>
+            <div className={styles.comment_ca_marche} onClick={() => scrollVers('comment-ca-marche')}>
 <p>Comment ca marche</p>
             </div>
-            <div className={styles.a_propos}>
+            <div className={styles.a_propos} onClick={() => scrollVers('a-propos')}>
 <p>A propos</p>
             </div>
-            <div className={styles.contact}>
+            <div className={styles.contact} onClick={() => scrollVers('contact')}>
 <p>Contact</p>
             </div>
         </div>
@@ -91,22 +100,22 @@ function Acceuil(){
         {/* menu deroulant mobile/tablette - affiche seulement si ouvert */}
         {isMobileOuTablette && menuOuvert && (
             <div className={styles.navigation_ouverte}>
-            <div className={styles.acceuil}>
+            <div className={styles.acceuil} onClick={() => scrollVers('acceuil')}>
 <p>Acceuil</p>
             </div>
-            <div className={styles.trouver_depart}>
+            <div className={styles.trouver_depart} onClick={() => scrollVers('trouver-depart')}>
 <p>Trouver un depart</p>
             </div>
-            <div className={styles.nos_transport}>
+            <div className={styles.nos_transport} onClick={() => scrollVers('nos-transport')}>
 <p>Nos transport</p>
             </div>
-            <div className={styles.comment_ca_marche}>
+            <div className={styles.comment_ca_marche} onClick={() => scrollVers('comment-ca-marche')}>
 <p>Comment ca marche</p>
             </div>
-            <div className={styles.a_propos}>
+            <div className={styles.a_propos} onClick={() => scrollVers('a-propos')}>
 <p>A propos</p>
             </div>
-            <div className={styles.contact}>
+            <div className={styles.contact} onClick={() => scrollVers('contact')}>
 <p>Contact</p>
             </div>
 
@@ -125,7 +134,7 @@ function Acceuil(){
 
         <div className={styles.body}>
 
-            <div className={styles.acceuil_body}>
+            <div className={styles.acceuil_body} id="acceuil">
                 <div className={styles.description}>
                     <div className={styles.description1}>
 <p>Trouvez le meilleur<br />depart pour <span className={styles.ecriture_verte}>vos colis</span></p>
@@ -175,7 +184,7 @@ function Acceuil(){
                 
                 </div>
             </div>
-            <div className={styles.trouver_depart_body}>
+            <div className={styles.trouver_depart_body} id="trouver-depart">
 <p style={{fontSize: isMobile ? 20 : 25}}> <strong>Trouvez un depart</strong></p>
 <div className={styles.formulaire}>
     <div className={styles.champs}>
@@ -215,12 +224,18 @@ function Acceuil(){
         min={new Date().toISOString().split('T')[0]}
       />
 </div>
+      
     </div>
 
 </div>
             </div>
-            <div className={styles.depart_recent_body}>
-                <p style={{fontSize: isMobile ? 20 : 30,fontWeight:800,marginBottom:20}}>Departs recents</p>
+            <div className={styles.depart_recent_body} id="nos-transport">
+                <div className={styles.depart_recent_entete}>
+                <p style={{fontSize: isMobile ? 20 : 30,fontWeight:800}}>Departs recents</p>
+                <button type='button' className={styles.lien_voir_tout}>
+                    Voir tous les departs <FaArrowRight size={13}/>
+                </button>
+                </div>
                 <div className={styles.container_des_compagnies}>
 
                 <div className={styles.compagnies}>
@@ -365,7 +380,7 @@ function Acceuil(){
                 </div>
                 
             </div>
-            <div className={styles.comment_ca_marche_body}>
+            <div className={styles.comment_ca_marche_body} id="comment-ca-marche">
 <div className={styles.commentCaMarcheIntro}>
     <p className={styles.commentCaMarcheTitre}>Comment ça marche ?</p>
     <p className={styles.commentCaMarcheSousTitre}>Expédier votre colis en 4 étapes simples</p>
@@ -422,7 +437,7 @@ function Acceuil(){
 
         </div>
         <div className={styles.footer}>
-<div className={styles.footer_partie1}>
+<div className={styles.footer_partie1} id="a-propos">
     <div className={styles.image_entreprise}>
 
     </div>
@@ -455,7 +470,7 @@ Mentions légales<br />
 FAQ<br />
 Nous contacter</p>
 </div>
-<div className={styles.footer_partie5}>
+<div className={styles.footer_partie5} id="contact">
     <p style={{marginBottom:20,fontSize:21}}><strong>Suivez-nous</strong></p>
 <p><FaInstagram/> <FaTiktok/> <FaYoutube/> <FaWhatsapp/> <br />
 
