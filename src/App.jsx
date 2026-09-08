@@ -4,6 +4,7 @@ import Utilisateur from './Utilisateurs/Utilisateurs.jsx'
 import Admin from './Administrateurs/Admin.jsx'
 import GvipRiskDashboard from './Dashboard/GvipRiskDashboard.jsx'
 import Acceuil from './Acceuil/Acceuil.jsx'
+import Dashboard from './Partenaire/Dashboard.jsx'
 
 function App() {
 
@@ -11,7 +12,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/Acceuil" element={<Acceuil />} />
+        <Route path="/espace_partenaire" element={<Dashboard />} />
         <Route path="/dashboard" element={<GvipRiskDashboard />} />
         <Route path="/" element={<Utilisateur />} />
         <Route path="/administrateurs" element={<Admin />} />
