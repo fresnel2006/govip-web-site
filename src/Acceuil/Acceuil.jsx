@@ -1,10 +1,18 @@
 import { useState } from 'react';
 import { useMediaQuery } from 'react-responsive';
-import { FaArrowRight, FaCalendar, FaClock, FaHourglass, FaSearch, FaStar, FaTag, FaTimes, FaTimesCircle, FaUsers,FaPaperPlane,FaRegCalendarAlt,FaCheckCircle, FaBars, FaInstagram, FaTiktok, FaYoutube, FaWhatsapp } from 'react-icons/fa';
+import { FaArrowRight, FaCalendar, FaClock, FaSearch, FaStar, FaTag, FaTimes, FaUsers, FaPaperPlane, FaRegCalendarAlt, FaCheckCircle, FaBars, FaInstagram, FaTiktok, FaYoutube, FaWhatsapp, FaBus } from 'react-icons/fa';
 import styles from '../Acceuil/Acceuil.module.css'
 import logo_entreprise from '../assets/logo_entreprise.png'
-import { FaArrowLeft, FaHouseCircleCheck, FaMoneyBill, FaShield } from 'react-icons/fa6';
+import { FaMoneyBill, FaShield } from 'react-icons/fa6';
 import { CI, FR } from 'country-flag-icons/react/3x2';
+
+// etat initial du formulaire "devenir partenaire" - uniquement transporteurs de colis
+const ETAT_INITIAL_PARTENAIRE = {
+    nom: '',
+    prenom: '',
+    email: '',
+    telephone: '',
+};
 
 function Acceuil(){
     const [menuOuvert, setMenuOuvert] = useState(false);
@@ -15,6 +23,11 @@ function Acceuil(){
     const isDesktop = useMediaQuery({ minWidth: 1025 });
     const isMobileOuTablette = isMobile || isTablette;
 
+    // etats du modal "devenir partenaire"
+    const [modalPartenaireOuvert, setModalPartenaireOuvert] = useState(false);
+    const [formPartenaire, setFormPartenaire] = useState(ETAT_INITIAL_PARTENAIRE);
+    const [demandeEnvoyee, setDemandeEnvoyee] = useState(false);
+
     // fait defiler la page en douceur jusqu'a la section demandee et ferme le menu mobile
     const scrollVers = (id) => {
         const element = document.getElementById(id);
@@ -22,6 +35,30 @@ function Acceuil(){
             element.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
         setMenuOuvert(false);
+    };
+
+    // ouvre le modal "devenir partenaire" et ferme le menu mobile si besoin
+    const ouvrirModalPartenaire = () => {
+        setModalPartenaireOuvert(true);
+        setMenuOuvert(false);
+    };
+
+    // ferme le modal et remet le formulaire a zero
+    const fermerModalPartenaire = () => {
+        setModalPartenaireOuvert(false);
+        setFormPartenaire(ETAT_INITIAL_PARTENAIRE);
+        setDemandeEnvoyee(false);
+    };
+
+    const majChampPartenaire = (champ, valeur) => {
+        setFormPartenaire((precedent) => ({ ...precedent, [champ]: valeur }));
+    };
+
+    const envoyerDemandePartenaire = (e) => {
+        e.preventDefault();
+        // TODO : remplacer par un enregistrement Firebase (ex: push dans "demandesPartenaires")
+        console.log('Nouvelle demande de partenariat transporteur :', formPartenaire);
+        setDemandeEnvoyee(true);
     };
 
     return(
@@ -68,7 +105,7 @@ function Acceuil(){
         <div className={styles.demande_partenariat}>
             <FaUsers size={isMobile ? 26 : 50} color='rgb(39, 123, 48)'/>
             <div className={styles.descritpion}>
-<p><strong >Vous transporter aussi des colis ?</strong></p>
+<p><strong >Vous transportez aussi des colis ?</strong></p>
 <p>Alors devenez partenaire !</p>
             </div>
         </div>
@@ -80,7 +117,7 @@ function Acceuil(){
     <button type='submit'>Se connecter</button>
 </div>
 <div className={styles.devenir_partenaire}>
-    <button type='submit'> Devenir partenaire</button>
+    <button type='submit' onClick={ouvrirModalPartenaire}> Devenir partenaire</button>
 </div>
         </div>
         )}
@@ -124,7 +161,7 @@ function Acceuil(){
                     <button type='submit'>Se connecter</button>
                 </div>
                 <div className={styles.devenir_partenaire}>
-                    <button type='submit'>Devenir partenaire</button>
+                    <button type='submit' onClick={ouvrirModalPartenaire}>Devenir partenaire</button>
                 </div>
             </div>
         </div>
@@ -480,6 +517,106 @@ contact@gvipcolis.com<br />
 Lun - Ven : 9h00 - 18h00</p>
 </div>
         </div>
+
+{/* modal "devenir partenaire" - transporteurs de colis uniquement, formulaire simplifie */}
+{modalPartenaireOuvert && (
+    <div className={styles.overlayPartenaire} onClick={fermerModalPartenaire}>
+        <div className={styles.fenetrePartenaire} onClick={(e) => e.stopPropagation()}>
+
+            <div className={styles.entetePartenaire}>
+                <p className={styles.titrePartenaire}>
+                    {demandeEnvoyee ? 'Demande envoyee' : 'Devenir partenaire transporteur'}
+                </p>
+                <button
+                    type="button"
+                    className={styles.boutonFermerPartenaire}
+                    onClick={fermerModalPartenaire}
+                    aria-label="Fermer"
+                >
+                    <FaTimes size={18} />
+                </button>
+            </div>
+
+            {demandeEnvoyee ? (
+                <div className={styles.confirmationPartenaire}>
+                    <FaCheckCircle size={50} color="rgb(39, 123, 48)" />
+                    <p className={styles.confirmationPartenaireTitre}>
+                        Merci, {formPartenaire.prenom || 'votre demande'} !
+                    </p>
+                    <p className={styles.confirmationPartenaireTexte}>
+                        Votre demande de partenariat a bien ete enregistree. Notre equipe
+                        vous contactera sous peu a l'adresse {formPartenaire.email}.
+                    </p>
+                    <button type="button" className={styles.boutonPrincipalPartenaire} onClick={fermerModalPartenaire}>
+                        Fermer
+                    </button>
+                </div>
+            ) : (
+                <form className={styles.corpsFormulairePartenaire} onSubmit={envoyerDemandePartenaire}>
+
+                    <div className={styles.contenuEtapePartenaire}>
+                        <div className={styles.choixTypePartenaire}>
+                            <div className={styles.carteChoixPartenaireActive} style={{ flexDirection: 'row', gap: 10, justifyContent: 'center' }}>
+                                <FaBus size={22} color="rgb(39, 123, 48)" />
+                                <p><strong>Compagnie de transport de colis</strong></p>
+                            </div>
+                        </div>
+
+                        <p className={styles.sousTitrePartenaire}>Vos informations</p>
+                        <div className={styles.grilleChampsPartenaire}>
+                            <div className={styles.champPartenaire}>
+                                <label>Nom</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={formPartenaire.nom}
+                                    onChange={(e) => majChampPartenaire('nom', e.target.value)}
+                                    placeholder="Ex : Kouassi"
+                                />
+                            </div>
+                            <div className={styles.champPartenaire}>
+                                <label>Prenom</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={formPartenaire.prenom}
+                                    onChange={(e) => majChampPartenaire('prenom', e.target.value)}
+                                    placeholder="Ex : Jean"
+                                />
+                            </div>
+                            <div className={styles.champPartenaire}>
+                                <label>Email</label>
+                                <input
+                                    type="email"
+                                    required
+                                    value={formPartenaire.email}
+                                    onChange={(e) => majChampPartenaire('email', e.target.value)}
+                                    placeholder="contact@structure.com"
+                                />
+                            </div>
+                            <div className={styles.champPartenaire}>
+                                <label>Numero de telephone</label>
+                                <input
+                                    type="tel"
+                                    required
+                                    value={formPartenaire.telephone}
+                                    onChange={(e) => majChampPartenaire('telephone', e.target.value)}
+                                    placeholder="+225 07 00 00 00 00"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className={styles.piedFormulairePartenaire}>
+                        <button type="submit" className={styles.boutonPrincipalPartenaire}>
+                            Envoyer ma demande
+                        </button>
+                    </div>
+                </form>
+            )}
+        </div>
+    </div>
+)}
 
 </>
     )

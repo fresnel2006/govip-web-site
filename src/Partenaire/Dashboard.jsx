@@ -4,30 +4,30 @@ import styles from "./Dashboard.module.css";
 const navItems = [
   { label: "Tableau de bord", icon: "home", active: true },
   { label: "Mes expéditions", icon: "package" },
-  { label: "Mes livraisons", icon: "truck" },
   { label: "Mes revenus", icon: "wallet" },
   { label: "Mon profil", icon: "user" },
   { label: "Support", icon: "headset" },
 ];
 
-const stats = [
-  { label: "Expéditions en cours", value: "5", delta: "+2 cette semaine", icon: "package" },
-  { label: "Total des revenus", value: "1 240 €", delta: "+18% ce mois", icon: "coin" },
-  { label: "Colis livrés", value: "12", delta: "+4 cette semaine", icon: "truck" },
-  { label: "Note moyenne", value: "4,8/5", delta: "+0,2 cette semaine", icon: "star" },
-];
+const statusStyles = {
+  "En cours": "statusInProgress",
+  "À récupérer": "statusPickup",
+  "Planifié": "statusPlanned",
+};
 
-const shipments = [
+const initialShipments = [
   { date: "07 mai 2025", from: "Paris", to: "Abidjan", weight: "10 kg", status: "En cours" },
   { date: "08 mai 2025", from: "Lille", to: "Abidjan", weight: "5 kg", status: "À récupérer" },
   { date: "10 mai 2025", from: "Rennes", to: "Abidjan", weight: "20 kg", status: "Planifié" },
   { date: "12 mai 2025", from: "Paris", to: "Abidjan", weight: "15 kg", status: "Planifié" },
 ];
 
-const statusStyles = {
-  "En cours": styles.statusInProgress,
-  "À récupérer": styles.statusPickup,
-  "Planifié": styles.statusPlanned,
+const initialForm = {
+  date: "",
+  from: "",
+  to: "Abidjan",
+  weight: "",
+  status: "Planifié",
 };
 
 const news = [
@@ -101,12 +101,6 @@ function Icon({ name, className }) {
     star: (
       <path d="M12 3.5l2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 10l6.1-.9L12 3.5Z" />
     ),
-    bell: (
-      <>
-        <path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6Z" />
-        <path d="M10 19a2 2 0 0 0 4 0" />
-      </>
-    ),
     chevronRight: <path d="m9 6 6 6-6 6" />,
     chevronDown: <path d="m6 9 6 6 6-6" />,
     arrowUp: <path d="M12 19V5M6 11l6-6 6 6" />,
@@ -133,6 +127,7 @@ function Icon({ name, className }) {
     plane: <path d="M2 16l7-2 4-9 2 .6-2 8.4 6-1.4.6 2-6 3-1 4-2-.4 1-3.6-6 1.6-2-1.6Z" />,
     menu: <path d="M4 6h16M4 12h16M4 18h16" />,
     close: <path d="m6 6 12 12M18 6 6 18" />,
+    plus: <path d="M12 5v14M5 12h14" />,
   };
   return (
     <svg
@@ -168,6 +163,27 @@ function buildChartPath(points, width, height) {
 export default function Dashboard() {
   const { line, area, coords } = buildChartPath(chartPoints, 320, 110);
   const [navOpen, setNavOpen] = useState(false);
+  const [shipments, setShipments] = useState(initialShipments);
+  const [modalOuvert, setModalOuvert] = useState(false);
+  const [formExpedition, setFormExpedition] = useState(initialForm);
+
+  const majChampExpedition = (champ, valeur) => {
+    setFormExpedition((prec) => ({ ...prec, [champ]: valeur }));
+  };
+
+  const ouvrirModal = () => setModalOuvert(true);
+
+  const fermerModal = () => {
+    setModalOuvert(false);
+    setFormExpedition(initialForm);
+  };
+
+  const ajouterExpedition = (e) => {
+    e.preventDefault();
+    if (!formExpedition.date || !formExpedition.from || !formExpedition.weight) return;
+    setShipments((prec) => [formExpedition, ...prec]);
+    fermerModal();
+  };
 
   return (
     <div className={styles.app}>
@@ -229,17 +245,12 @@ export default function Dashboard() {
             <Icon name="menu" className={styles.navIcon} />
           </button>
           <div className={styles.searchSpace} />
-          <button className={styles.bellButton}>
-            <Icon name="bell" className={styles.bellIcon} />
-            <span className={styles.bellDot} />
-          </button>
           <div className={styles.profile}>
             <span className={styles.avatar}>JD</span>
             <span className={styles.profileText}>
               <strong>Jean Dupont</strong>
               <small>Transporteur partenaire</small>
             </span>
-            <Icon name="chevronDown" className={styles.profileChevron} />
           </div>
         </header>
 
@@ -271,30 +282,73 @@ export default function Dashboard() {
               </section>
 
               <section className={styles.statsGrid}>
-                {stats.map((s) => (
-                  <div className={styles.statCard} key={s.label}>
-                    <span className={styles.statIcon}>
-                      <Icon name={s.icon} className={styles.statIconSvg} />
-                    </span>
-                    <div>
-                      <p className={styles.statValue}>{s.value}</p>
-                      <p className={styles.statLabel}>{s.label}</p>
-                      <p className={styles.statDelta}>
-                        <Icon name="arrowUp" className={styles.statDeltaIcon} />
-                        {s.delta}
-                      </p>
-                    </div>
+                <div className={styles.statCard}>
+                  <span className={styles.statIcon}>
+                    <Icon name="package" className={styles.statIconSvg} />
+                  </span>
+                  <div>
+                    <p className={styles.statValue}>{shipments.filter(s => s.status === "En cours").length}</p>
+                    <p className={styles.statLabel}>Expéditions en cours</p>
+                    <p className={styles.statDelta}>
+                      <Icon name="arrowUp" className={styles.statDeltaIcon} />
+                      +2 cette semaine
+                    </p>
                   </div>
-                ))}
+                </div>
+                <div className={styles.statCard}>
+                  <span className={styles.statIcon}>
+                    <Icon name="coin" className={styles.statIconSvg} />
+                  </span>
+                  <div>
+                    <p className={styles.statValue}>1 240 €</p>
+                    <p className={styles.statLabel}>Total des revenus</p>
+                    <p className={styles.statDelta}>
+                      <Icon name="arrowUp" className={styles.statDeltaIcon} />
+                      +18% ce mois
+                    </p>
+                  </div>
+                </div>
+                <div className={styles.statCard}>
+                  <span className={styles.statIcon}>
+                    <Icon name="truck" className={styles.statIconSvg} />
+                  </span>
+                  <div>
+                    <p className={styles.statValue}>12</p>
+                    <p className={styles.statLabel}>Colis livrés</p>
+                    <p className={styles.statDelta}>
+                      <Icon name="arrowUp" className={styles.statDeltaIcon} />
+                      +4 cette semaine
+                    </p>
+                  </div>
+                </div>
+                <div className={styles.statCard}>
+                  <span className={styles.statIcon}>
+                    <Icon name="star" className={styles.statIconSvg} />
+                  </span>
+                  <div>
+                    <p className={styles.statValue}>4,8/5</p>
+                    <p className={styles.statLabel}>Note moyenne</p>
+                    <p className={styles.statDelta}>
+                      <Icon name="arrowUp" className={styles.statDeltaIcon} />
+                      +0,2 cette semaine
+                    </p>
+                  </div>
+                </div>
               </section>
 
               <section className={styles.panelsGrid}>
                 <div className={styles.panel}>
                   <div className={styles.panelHeader}>
                     <h3>Mes expéditions récentes</h3>
-                    <a href="#" className={styles.panelLink}>
-                      Voir toutes <Icon name="arrowRight" className={styles.linkIcon} />
-                    </a>
+                    <div className={styles.panelHeaderActions}>
+                      <button className={styles.addButton} onClick={ouvrirModal}>
+                        <Icon name="plus" className={styles.linkIcon} />
+                        Ajouter une expédition
+                      </button>
+                      <a href="#" className={styles.panelLink}>
+                        Voir toutes <Icon name="arrowRight" className={styles.linkIcon} />
+                      </a>
+                    </div>
                   </div>
                   <div className={styles.tableScroll}>
                   <table className={styles.table}>
@@ -308,8 +362,8 @@ export default function Dashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {shipments.map((row) => (
-                        <tr key={row.date + row.to}>
+                      {shipments.map((row, i) => (
+                        <tr key={row.date + row.to + i}>
                           <td className={styles.dateCell}>
                             <Icon name="package" className={styles.rowIcon} />
                             {row.date}
@@ -319,7 +373,7 @@ export default function Dashboard() {
                           </td>
                           <td>{row.weight}</td>
                           <td>
-                            <span className={`${styles.badge} ${statusStyles[row.status]}`}>
+                            <span className={`${styles.badge} ${styles[statusStyles[row.status]]}`}>
                               {row.status}
                             </span>
                           </td>
@@ -388,7 +442,7 @@ export default function Dashboard() {
                   <h3>Gérer vos expéditions</h3>
                   <p>Suivez, modifiez ou planifiez vos prochaines livraisons en toute simplicité.</p>
                 </div>
-                <button className={styles.ctaButton}>Voir mes expéditions</button>
+                <button className={styles.ctaButton} onClick={ouvrirModal}>Ajouter une expédition</button>
               </section>
 
               <section className={styles.newsSection}>
@@ -513,6 +567,83 @@ export default function Dashboard() {
           </div>
         </footer>
       </div>
+
+      {modalOuvert && (
+        <div className={styles.overlay} onClick={fermerModal}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3>Ajouter une expédition</h3>
+              <button className={styles.modalClose} onClick={fermerModal} aria-label="Fermer">
+                <Icon name="close" className={styles.navIcon} />
+              </button>
+            </div>
+            <form className={styles.modalForm} onSubmit={ajouterExpedition}>
+              <div className={styles.modalField}>
+                <label>Date</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex : 14 septembre 2026"
+                  value={formExpedition.date}
+                  onChange={(e) => majChampExpedition("date", e.target.value)}
+                />
+              </div>
+              <div className={styles.modalRow}>
+                <div className={styles.modalField}>
+                  <label>Ville de départ</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex : Paris"
+                    value={formExpedition.from}
+                    onChange={(e) => majChampExpedition("from", e.target.value)}
+                  />
+                </div>
+                <div className={styles.modalField}>
+                  <label>Ville d'arrivée</label>
+                  <input
+                    type="text"
+                    required
+                    value={formExpedition.to}
+                    onChange={(e) => majChampExpedition("to", e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className={styles.modalRow}>
+                <div className={styles.modalField}>
+                  <label>Poids</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex : 10 kg"
+                    value={formExpedition.weight}
+                    onChange={(e) => majChampExpedition("weight", e.target.value)}
+                  />
+                </div>
+                <div className={styles.modalField}>
+                  <label>Statut</label>
+                  <select
+                    value={formExpedition.status}
+                    onChange={(e) => majChampExpedition("status", e.target.value)}
+                  >
+                    <option value="Planifié">Planifié</option>
+                    <option value="En cours">En cours</option>
+                    <option value="À récupérer">À récupérer</option>
+                  </select>
+                </div>
+              </div>
+              <div className={styles.modalActions}>
+                <button type="button" className={styles.modalCancel} onClick={fermerModal}>
+                  Annuler
+                </button>
+                <button type="submit" className={styles.modalSubmit}>
+                  Ajouter
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

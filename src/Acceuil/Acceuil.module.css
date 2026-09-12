@@ -921,3 +921,299 @@
         width: 130px;
     }
 }
+
+/* =========================================================
+   MODAL "DEVENIR PARTENAIRE"
+   ========================================================= */
+
+.overlayPartenaire {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+}
+
+.fenetrePartenaire {
+    background-color: white;
+    width: 600px;
+    max-width: 100%;
+    max-height: 90vh;
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.entetePartenaire {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 24px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+}
+
+.titrePartenaire {
+    font-size: 18px;
+    font-weight: 800;
+    color: #1a1a1a;
+}
+
+.boutonFermerPartenaire {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #6b7280;
+    padding: 4px;
+    display: flex;
+}
+
+.progressionPartenaire {
+    display: flex;
+    gap: 8px;
+    padding: 16px 24px 0;
+    flex-shrink: 0;
+}
+
+.pointEtapePartenaire {
+    height: 5px;
+    flex: 1;
+    border-radius: 10px;
+    background-color: rgba(39, 123, 48, 0.15);
+    transition: background-color 0.2s ease;
+}
+
+.pointEtapePartenaireActif {
+    background-color: rgb(39, 123, 48);
+}
+
+.corpsFormulairePartenaire {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 20px 24px 24px;
+    gap: 20px;
+}
+
+.contenuEtapePartenaire {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.sousTitrePartenaire {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+.sousTitrePetitPartenaire {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1a1a;
+    line-height: 1.4;
+}
+
+.texteSecondairePartenaire {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.choixTypePartenaire {
+    display: flex;
+    gap: 14px;
+}
+
+.carteChoixPartenaire {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+    padding: 20px 12px;
+    border-radius: 12px;
+    border: 1.5px solid rgba(0, 0, 0, 0.15);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.carteChoixPartenaireActive {
+    border-color: rgb(39, 123, 48);
+    background-color: rgba(39, 123, 48, 0.06);
+}
+
+.grilleChampsPartenaire {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.champPartenaire {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.champPartenaire label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.champPleineLargeurPartenaire {
+    grid-column: 1 / -1;
+}
+
+.champPartenaire input,
+.champPartenaire select,
+.zoneTextePartenaire {
+    height: 42px;
+    border-radius: 8px;
+    padding: 8px 12px;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    font-family: inherit;
+    font-size: 13px;
+}
+
+.champPartenaire input[type="file"] {
+    padding: 6px 10px;
+    height: auto;
+}
+
+.champPartenaire input[type="checkbox"],
+.champPartenaire input[type="radio"] {
+    height: auto;
+}
+
+.zoneTextePartenaire {
+    height: auto;
+    resize: vertical;
+}
+
+.champPartenaire input:focus,
+.champPartenaire select:focus,
+.zoneTextePartenaire:focus {
+    outline: none;
+    border-color: rgb(39, 123, 48);
+}
+
+.listeCasesPartenaire {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.caseACocherPartenaire {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #374151;
+    cursor: pointer;
+}
+
+.blocVulnerablePartenaire {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+    border-radius: 10px;
+    background-color: rgba(39, 123, 48, 0.05);
+}
+
+.choixRadioPartenaire {
+    display: flex;
+    gap: 20px;
+    font-size: 13px;
+}
+
+.choixRadioPartenaire label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.piedFormulairePartenaire {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4px;
+}
+
+.boutonPrincipalPartenaire {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 42px;
+    padding: 0 20px;
+    border-radius: 10px;
+    border: none;
+    background-color: rgb(39, 123, 48);
+    color: white;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.boutonPrincipalPartenaire:disabled {
+    background-color: rgba(39, 123, 48, 0.4);
+    cursor: not-allowed;
+}
+
+.boutonSecondairePartenaire {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 42px;
+    padding: 0 18px;
+    border-radius: 10px;
+    border: 1.5px solid rgba(0, 0, 0, 0.2);
+    background-color: white;
+    color: #374151;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.confirmationPartenaire {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+    padding: 40px 30px 36px;
+}
+
+.confirmationPartenaireTitre {
+    font-size: 17px;
+    font-weight: 800;
+    color: #1a1a1a;
+}
+
+.confirmationPartenaireTexte {
+    font-size: 14px;
+    color: #6b7280;
+    line-height: 1.5;
+}
+
+/* modal responsive mobile */
+@media (max-width: 640px) {
+    .fenetrePartenaire {
+        max-height: 95vh;
+    }
+
+    .grilleChampsPartenaire,
+    .listeCasesPartenaire {
+        grid-template-columns: 1fr;
+    }
+
+    .choixTypePartenaire {
+        flex-direction: column;
+    }
+}

@@ -13,6 +13,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/espace_partenaire" element={<Dashboard />} />
+        <Route path="/Acceuil" element={<Acceuil />} />
         <Route path="/dashboard" element={<GvipRiskDashboard />} />
         <Route path="/" element={<Utilisateur />} />
         <Route path="/administrateurs" element={<Admin />} />
