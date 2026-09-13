@@ -1270,3 +1270,489 @@
     flex: 1 1 auto;
   }
 }
+/* ---------- Pages Expéditions / Revenus / Profil / Support ---------- */
+
+.headerRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.pageTitle {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--gray-900);
+}
+
+.pageSubtitle {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--gray-500);
+}
+
+.panelTitleStandalone {
+  margin: 0 0 16px;
+  font-size: 15.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--gray-100);
+}
+
+/* Expéditions */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.searchBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  min-width: 260px;
+  flex: 1;
+  max-width: 360px;
+}
+
+.searchBox input {
+  border: none;
+  outline: none;
+  font-size: 13.5px;
+  width: 100%;
+  font-family: inherit;
+}
+
+.searchIcon {
+  width: 16px;
+  height: 16px;
+  color: var(--gray-400);
+  flex-shrink: 0;
+}
+
+.filterChips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  border: 1px solid var(--gray-200);
+  background: var(--white);
+  color: var(--gray-700);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chipActive {
+  background: var(--green-600);
+  border-color: var(--green-600);
+  color: var(--white);
+}
+
+.refCell {
+  font-weight: 700;
+  color: var(--green-700);
+}
+
+.emptyCell {
+  text-align: center;
+  color: var(--gray-500);
+  padding: 30px 8px;
+  white-space: normal;
+}
+
+.statusDelivered {
+  background: #eafaf0;
+  color: #1f8a4c;
+}
+
+/* Revenus */
+
+.revStatsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.chartWide {
+  width: 100%;
+  height: 160px;
+  display: block;
+}
+
+.exportButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  color: var(--gray-700);
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.amountCell {
+  font-weight: 700;
+}
+
+.statusPaid {
+  background: var(--green-100);
+  color: var(--green-700);
+}
+
+.statusPending {
+  background: var(--gray-100);
+  color: var(--gray-500);
+}
+
+.available {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--gray-700);
+}
+
+/* Profil */
+
+.profileGrid {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.avatarPanel {
+  background: var(--white);
+  border: 1px solid var(--gray-100);
+  border-radius: var(--radius-lg);
+  padding: 26px 20px;
+  text-align: center;
+  box-shadow: var(--shadow-card);
+}
+
+.avatarWrap {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 14px;
+}
+
+.profileAvatar {
+  width: 84px;
+  height: 84px;
+  border-radius: 999px;
+  background: var(--green-500);
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.avatarEdit {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: var(--white);
+  border: 2px solid var(--green-500);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.avatarEditIcon {
+  width: 14px;
+  height: 14px;
+  color: var(--green-600);
+}
+
+.avatarPanel h3 {
+  margin: 0 0 2px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.profileRole {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  color: var(--gray-500);
+}
+
+.fieldGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 20px;
+}
+
+.fieldWide {
+  grid-column: 1 / -1;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--gray-500);
+}
+
+.field p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--gray-900);
+  font-weight: 500;
+}
+
+.field input,
+.field select,
+.field textarea {
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  border: 1px solid var(--gray-200);
+  font-family: inherit;
+  font-size: 13.5px;
+  color: var(--gray-900);
+  resize: vertical;
+}
+
+.field input,
+.field select {
+  height: 42px;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--green-500);
+}
+
+.securityRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.securityLabel {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.securityHint {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: var(--gray-500);
+}
+
+.securityButton {
+  background: var(--white);
+  border: 1px solid var(--green-500);
+  color: var(--green-600);
+  padding: 9px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Support */
+
+.contactGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.contactCard {
+  background: var(--white);
+  border: 1px solid var(--gray-100);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: var(--shadow-card);
+  text-decoration: none;
+  color: inherit;
+}
+
+.contactIcon {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  background: var(--green-50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.contactIconSvg {
+  width: 19px;
+  height: 19px;
+  color: var(--green-600);
+}
+
+.contactLabel {
+  margin: 0;
+  font-size: 12px;
+  color: var(--gray-500);
+}
+
+.contactValue {
+  margin: 2px 0 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.supportMainGrid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 20px;
+  align-items: start;
+  margin-bottom: 20px;
+}
+
+.faqList {
+  display: flex;
+  flex-direction: column;
+}
+
+.faqItem {
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.faqItem:last-child {
+  border-bottom: none;
+}
+
+.faqQuestion {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  padding: 14px 2px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+.faqIcon {
+  width: 16px;
+  height: 16px;
+  color: var(--gray-400);
+  flex-shrink: 0;
+}
+
+.faqAnswer {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--gray-500);
+  line-height: 1.6;
+}
+
+.successBanner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--green-50);
+  color: var(--green-700);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+
+.successIcon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.supportForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Responsive additions */
+
+@media (max-width: 1024px) {
+  .revStatsGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .profileGrid {
+    grid-template-columns: 1fr;
+  }
+  .contactGrid {
+    grid-template-columns: 1fr;
+  }
+  .supportMainGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .addButton {
+    width: 100%;
+    justify-content: center;
+  }
+  .searchBox {
+    max-width: none;
+    min-width: 0;
+  }
+  .revStatsGrid {
+    grid-template-columns: 1fr;
+  }
+  .fieldGrid {
+    grid-template-columns: 1fr;
+  }
+}
