@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMediaQuery } from 'react-responsive';
-import { FaArrowRight, FaCalendar, FaClock, FaSearch, FaStar, FaTag, FaTimes, FaUsers, FaPaperPlane, FaRegCalendarAlt, FaCheckCircle, FaBars, FaInstagram, FaTiktok, FaYoutube, FaWhatsapp, FaBus } from 'react-icons/fa';
+import { FaArrowRight, FaCalendar, FaClock, FaSearch, FaStar, FaTag, FaTimes, FaUsers, FaPaperPlane, FaRegCalendarAlt, FaCheckCircle, FaBars, FaInstagram, FaTiktok, FaYoutube, FaWhatsapp, FaBus, FaLock, FaEnvelope, FaEye, FaEyeSlash } from 'react-icons/fa';
 import styles from '../Acceuil/Acceuil.module.css'
 import logo_entreprise from '../assets/logo_entreprise.png'
 import { FaMoneyBill, FaShield } from 'react-icons/fa6';
@@ -12,6 +12,12 @@ const ETAT_INITIAL_PARTENAIRE = {
     prenom: '',
     email: '',
     telephone: '',
+};
+
+// etat initial du formulaire "se connecter"
+const ETAT_INITIAL_CONNEXION = {
+    email: '',
+    motDePasse: '',
 };
 
 function Acceuil(){
@@ -27,6 +33,13 @@ function Acceuil(){
     const [modalPartenaireOuvert, setModalPartenaireOuvert] = useState(false);
     const [formPartenaire, setFormPartenaire] = useState(ETAT_INITIAL_PARTENAIRE);
     const [demandeEnvoyee, setDemandeEnvoyee] = useState(false);
+
+    // etats du modal "se connecter"
+    const [modalConnexionOuvert, setModalConnexionOuvert] = useState(false);
+    const [formConnexion, setFormConnexion] = useState(ETAT_INITIAL_CONNEXION);
+    const [motDePasseVisible, setMotDePasseVisible] = useState(false);
+    const [erreurConnexion, setErreurConnexion] = useState('');
+    const [connexionEnCours, setConnexionEnCours] = useState(false);
 
     // fait defiler la page en douceur jusqu'a la section demandee et ferme le menu mobile
     const scrollVers = (id) => {
@@ -59,6 +72,46 @@ function Acceuil(){
         // TODO : remplacer par un enregistrement Firebase (ex: push dans "demandesPartenaires")
         console.log('Nouvelle demande de partenariat transporteur :', formPartenaire);
         setDemandeEnvoyee(true);
+    };
+
+    // ouvre le modal "se connecter" et ferme le menu mobile si besoin
+    const ouvrirModalConnexion = () => {
+        setModalConnexionOuvert(true);
+        setMenuOuvert(false);
+    };
+
+    // ferme le modal et remet le formulaire a zero
+    const fermerModalConnexion = () => {
+        setModalConnexionOuvert(false);
+        setFormConnexion(ETAT_INITIAL_CONNEXION);
+        setErreurConnexion('');
+        setMotDePasseVisible(false);
+        setConnexionEnCours(false);
+    };
+
+    const majChampConnexion = (champ, valeur) => {
+        setFormConnexion((precedent) => ({ ...precedent, [champ]: valeur }));
+        setErreurConnexion('');
+    };
+
+    const envoyerConnexion = (e) => {
+        e.preventDefault();
+        setErreurConnexion('');
+        setConnexionEnCours(true);
+
+        // TODO : remplacer par Firebase Auth, ex :
+        // signInWithEmailAndPassword(auth, formConnexion.email, formConnexion.motDePasse)
+        //   .then((cred) => { ... rediriger vers le tableau de bord ... })
+        //   .catch((err) => setErreurConnexion("Email ou mot de passe incorrect"))
+        //   .finally(() => setConnexionEnCours(false));
+
+        console.log('Tentative de connexion :', formConnexion);
+
+        // simulation temporaire en attendant le branchement Firebase Auth
+        setTimeout(() => {
+            setConnexionEnCours(false);
+            setErreurConnexion("Email ou mot de passe incorrect");
+        }, 800);
     };
 
     return(
@@ -114,7 +167,7 @@ function Acceuil(){
         {isDesktop && (
         <div className={styles.bouton_header}>
 <div className={styles.se_connecter}>
-    <button type='submit'>Se connecter</button>
+    <button type='submit' onClick={ouvrirModalConnexion}>Se connecter</button>
 </div>
 <div className={styles.devenir_partenaire}>
     <button type='submit' onClick={ouvrirModalPartenaire}> Devenir partenaire</button>
@@ -158,7 +211,7 @@ function Acceuil(){
 
             <div className={styles.bouton_header_mobile}>
                 <div className={styles.se_connecter}>
-                    <button type='submit'>Se connecter</button>
+                    <button type='submit' onClick={ouvrirModalConnexion}>Se connecter</button>
                 </div>
                 <div className={styles.devenir_partenaire}>
                     <button type='submit' onClick={ouvrirModalPartenaire}>Devenir partenaire</button>
@@ -517,6 +570,120 @@ contact@gvipcolis.com<br />
 Lun - Ven : 9h00 - 18h00</p>
 </div>
         </div>
+
+{/* modal "se connecter" */}
+{modalConnexionOuvert && (
+    <div className={styles.overlayPartenaire} onClick={fermerModalConnexion}>
+        <div className={styles.fenetrePartenaire} onClick={(e) => e.stopPropagation()} style={{ width: 420 }}>
+
+            <div className={styles.entetePartenaire}>
+                <p className={styles.titrePartenaire}>Se connecter</p>
+                <button
+                    type="button"
+                    className={styles.boutonFermerPartenaire}
+                    onClick={fermerModalConnexion}
+                    aria-label="Fermer"
+                >
+                    <FaTimes size={18} />
+                </button>
+            </div>
+
+            <form className={styles.corpsFormulairePartenaire} onSubmit={envoyerConnexion}>
+
+                <div className={styles.contenuEtapePartenaire}>
+
+                    <div className={styles.champPartenaire}>
+                        <label>Email</label>
+                        <div style={{ position: 'relative' }}>
+                            <FaEnvelope
+                                size={14}
+                                color="rgba(0,0,0,0.4)"
+                                style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }}
+                            />
+                            <input
+                                type="email"
+                                required
+                                value={formConnexion.email}
+                                onChange={(e) => majChampConnexion('email', e.target.value)}
+                                placeholder="contact@exemple.com"
+                                style={{ paddingLeft: 32 }}
+                            />
+                        </div>
+                    </div>
+
+                    <div className={styles.champPartenaire}>
+                        <label>Mot de passe</label>
+                        <div style={{ position: 'relative' }}>
+                            <FaLock
+                                size={14}
+                                color="rgba(0,0,0,0.4)"
+                                style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }}
+                            />
+                            <input
+                                type={motDePasseVisible ? 'text' : 'password'}
+                                required
+                                value={formConnexion.motDePasse}
+                                onChange={(e) => majChampConnexion('motDePasse', e.target.value)}
+                                placeholder="••••••••"
+                                style={{ paddingLeft: 32, paddingRight: 32 }}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setMotDePasseVisible((v) => !v)}
+                                aria-label={motDePasseVisible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                                style={{
+                                    position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+                                    background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(0,0,0,0.4)',
+                                    display: 'flex', padding: 0
+                                }}
+                            >
+                                {motDePasseVisible ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
+                            </button>
+                        </div>
+                    </div>
+
+                    {erreurConnexion && (
+                        <p style={{ color: '#c0392b', fontSize: 13, margin: 0 }}>{erreurConnexion}</p>
+                    )}
+
+                    <button
+                        type="button"
+                        style={{
+                            background: 'none', border: 'none', color: 'rgb(39, 123, 48)',
+                            fontSize: 13, fontWeight: 600, cursor: 'pointer', textAlign: 'right',
+                            padding: 0, alignSelf: 'flex-end'
+                        }}
+                        onClick={() => console.log('TODO : mot de passe oublie')}
+                    >
+                        Mot de passe oublié ?
+                    </button>
+                </div>
+
+                <div className={styles.piedFormulairePartenaire} style={{ flexDirection: 'column', gap: 10 }}>
+                    <button
+                        type="submit"
+                        className={styles.boutonPrincipalPartenaire}
+                        disabled={connexionEnCours}
+                        style={{ width: '100%', justifyContent: 'center' }}
+                    >
+                        {connexionEnCours ? 'Connexion...' : 'Se connecter'}
+                    </button>
+
+                    <p style={{ fontSize: 13, color: '#6b7280', textAlign: 'center', margin: 0 }}>
+                        Pas encore partenaire ?{' '}
+                        <button
+                            type="button"
+                            style={{ background: 'none', border: 'none', color: 'rgb(39, 123, 48)', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                            onClick={() => { fermerModalConnexion(); ouvrirModalPartenaire(); }}
+                        >
+                            Devenir partenaire
+                        </button>
+                    </p>
+                </div>
+            </form>
+        </div>
+    </div>
+)}
 
 {/* modal "devenir partenaire" - transporteurs de colis uniquement, formulaire simplifie */}
 {modalPartenaireOuvert && (
