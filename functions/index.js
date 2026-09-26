@@ -62,3 +62,51 @@ exports.notifierNouveauRendezVous = onValueCreated(
     console.log("Email de notification envoyé pour le rendez-vous", event.params.rendezvousId);
   }
 );
+
+// AJOUT : notification par email a chaque nouvelle demande de partenariat
+// transporteur (formulaire "devenir partenaire" sur la page d'accueil).
+// Se declenche automatiquement dès qu'une entree est creee sous
+// "/demandesPartenaires/{demandeId}" dans la Realtime Database.
+exports.notifierNouvelleDemandePartenaire = onValueCreated(
+  {
+    ref: "/demandesPartenaires/{demandeId}",
+  },
+  async (event) => {
+    const demande = event.data.val();
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: GMAIL_USER,
+        pass: GMAIL_APP_PASSWORD,
+      },
+    });
+
+    const dateDemande = demande.dateCreation
+      ? new Date(demande.dateCreation).toLocaleString("fr-FR", {
+          dateStyle: "long",
+          timeStyle: "short",
+        })
+      : "N/A";
+
+    await transporter.sendMail({
+      from: `"GVIP Notifications" <${GMAIL_USER}>`,
+      to: GMAIL_USER,
+      subject: "Nouvelle demande de partenariat - GVIP",
+      html: `
+        <h2>Nouvelle demande de partenariat transporteur</h2>
+        <p><strong>Nom :</strong> ${demande.nom || "N/A"}</p>
+        <p><strong>Prénom :</strong> ${demande.prenom || "N/A"}</p>
+        <p><strong>Email :</strong> ${demande.email || "N/A"}</p>
+        <p><strong>Téléphone :</strong> ${demande.telephone || "N/A"}</p>
+        <p><strong>Date de la demande :</strong> ${dateDemande}</p>
+
+        <h3>Documents</h3>
+        ${demande.logoUrl ? `<p><strong>Logo :</strong><br/><img src="${demande.logoUrl}" style="max-width:200px;border-radius:8px;" /></p>` : "<p><strong>Logo :</strong> non fourni</p>"}
+        ${demande.preuveUrl ? `<p><strong>Preuve d'activité :</strong> <a href="${demande.preuveUrl}">Voir le document</a></p>` : "<p><strong>Preuve d'activité :</strong> non fournie</p>"}
+      `,
+    });
+
+    console.log("Email de notification envoyé pour la demande partenaire", event.params.demandeId);
+  }
+);
