@@ -34,6 +34,9 @@ import {
     signInWithEmailAndPassword,
     signOut,
 } from 'firebase/auth';
+// AJOUT : Firebase Storage, utilise pour le logo + la preuve d'activite
+// deposes dans le formulaire "devenir partenaire".
+import { getStorage } from 'firebase/storage';
 
 // ── Configuration du projet Firebase ──
 // Les valeurs viennent du fichier .env (VITE_FIREBASE_...).
@@ -55,6 +58,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const db = getDatabase(app);
 export const auth = getAuth(app);
+// AJOUT : export de Storage, utilise dans Acceuil.jsx pour uploader
+// le logo et la preuve d'activite du formulaire partenaire.
+export const storage = getStorage(app);
 
 // ────────────────────────────────────────────────────────────────────────
 //  CRÉNEAUX  (branche "creneaux" de la base)

@@ -1,10 +1,16 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useMediaQuery } from 'react-responsive';
-import { FaArrowRight, FaCalendar, FaClock, FaSearch, FaStar, FaTag, FaTimes, FaUsers, FaPaperPlane, FaRegCalendarAlt, FaCheckCircle, FaBars, FaInstagram, FaTiktok, FaYoutube, FaWhatsapp, FaBus, FaLock, FaEnvelope, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaArrowRight, FaCalendar, FaClock, FaSearch, FaStar, FaTag, FaTimes, FaUsers, FaPaperPlane, FaRegCalendarAlt, FaCheckCircle, FaBars, FaInstagram, FaTiktok, FaYoutube, FaWhatsapp, FaBus, FaLock, FaEnvelope, FaEye, FaEyeSlash, FaCloudUploadAlt, FaFileAlt } from 'react-icons/fa';
 import styles from '../Acceuil/Acceuil.module.css'
 import logo_entreprise from '../assets/logo_entreprise.png'
 import { FaMoneyBill, FaShield } from 'react-icons/fa6';
 import { CI, FR } from 'country-flag-icons/react/3x2';
+// CORRECTION : on importe les fonctions deja pretes dans le fichier
+// Firebase partage (db, storage, connexionAdmin), au lieu d'appeler
+// firebase/database ou firebase/storage directement ou de simuler l'envoi.
+import { connexionAdmin, db, storage } from '../firebase/firebase';
+import { ref, push, set, serverTimestamp } from 'firebase/database';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 // etat initial du formulaire "devenir partenaire" - uniquement transporteurs de colis
 const ETAT_INITIAL_PARTENAIRE = {
@@ -14,11 +20,101 @@ const ETAT_INITIAL_PARTENAIRE = {
     telephone: '',
 };
 
+// etat initial des fichiers du formulaire "devenir partenaire"
+const ETAT_INITIAL_FICHIERS_PARTENAIRE = {
+    logo: null,
+    preuve: null,
+};
+
 // etat initial du formulaire "se connecter"
 const ETAT_INITIAL_CONNEXION = {
     email: '',
     motDePasse: '',
 };
+
+// CORRECTION : traduction des codes d'erreur Firebase Auth en messages lisibles,
+// identique à ce qui existe déjà dans Dashboard.jsx (partenaires).
+function traduireErreurConnexion(code) {
+    const messages = {
+        'auth/invalid-email': 'Adresse email invalide.',
+        'auth/user-not-found': 'Aucun compte trouvé avec cet email.',
+        'auth/wrong-password': 'Mot de passe incorrect.',
+        'auth/invalid-credential': 'Email ou mot de passe incorrect.',
+        'auth/too-many-requests': 'Trop de tentatives. Réessayez dans quelques minutes.',
+    };
+    return messages[code] || 'Une erreur est survenue, réessayez.';
+}
+
+// AJOUT : petit composant reutilisable pour une zone de depot de fichier (drag & drop + clic)
+function ZoneDepotFichier({ label, description, accept, fichier, onChange }) {
+    const [surSurvol, setSurSurvol] = useState(false);
+    const [apercu, setApercu] = useState(null);
+    const inputRef = useRef(null);
+
+    // genere un apercu image si le fichier depose est une image
+    useEffect(() => {
+        if (fichier && fichier.type.startsWith('image/')) {
+            const url = URL.createObjectURL(fichier);
+            setApercu(url);
+            return () => URL.revokeObjectURL(url);
+        }
+        setApercu(null);
+    }, [fichier]);
+
+    const gererDepot = (e) => {
+        e.preventDefault();
+        setSurSurvol(false);
+        const f = e.dataTransfer.files?.[0];
+        if (f) onChange(f);
+    };
+
+    return (
+        <div className={styles.champPartenaire}>
+            <label>{label}</label>
+            <div
+                className={`${styles.zoneDepot} ${surSurvol ? styles.zoneDepotActive : ''} ${fichier ? styles.zoneDepotRemplie : ''}`}
+                onDragOver={(e) => { e.preventDefault(); setSurSurvol(true); }}
+                onDragLeave={() => setSurSurvol(false)}
+                onDrop={gererDepot}
+                onClick={() => inputRef.current?.click()}
+            >
+                <input
+                    ref={inputRef}
+                    type="file"
+                    accept={accept}
+                    hidden
+                    onChange={(e) => { if (e.target.files?.[0]) onChange(e.target.files[0]); }}
+                />
+
+                {fichier ? (
+                    <div className={styles.zoneDepotApercu}>
+                        {apercu ? (
+                            <img src={apercu} alt="Aperçu" className={styles.zoneDepotImage} />
+                        ) : (
+                            <FaFileAlt size={26} color="rgb(39, 123, 48)" />
+                        )}
+                        <p className={styles.zoneDepotNomFichier}>{fichier.name}</p>
+                        <button
+                            type="button"
+                            className={styles.zoneDepotSupprimer}
+                            onClick={(e) => { e.stopPropagation(); onChange(null); }}
+                        >
+                            <FaTimes size={11} /> Retirer
+                        </button>
+                    </div>
+                ) : (
+                    <div className={styles.zoneDepotVide}>
+                        <FaCloudUploadAlt size={30} color="rgb(39, 123, 48)" />
+                        <p className={styles.zoneDepotTexte}>
+                            <strong>Glissez-déposez</strong> ou cliquez pour choisir
+                        </p>
+                        <p className={styles.zoneDepotHint}>{description}</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
 
 function Acceuil(){
     const [menuOuvert, setMenuOuvert] = useState(false);
@@ -32,7 +128,10 @@ function Acceuil(){
     // etats du modal "devenir partenaire"
     const [modalPartenaireOuvert, setModalPartenaireOuvert] = useState(false);
     const [formPartenaire, setFormPartenaire] = useState(ETAT_INITIAL_PARTENAIRE);
+    const [fichiersPartenaire, setFichiersPartenaire] = useState(ETAT_INITIAL_FICHIERS_PARTENAIRE);
     const [demandeEnvoyee, setDemandeEnvoyee] = useState(false);
+    const [envoiEnCours, setEnvoiEnCours] = useState(false);
+    const [erreurPartenaire, setErreurPartenaire] = useState('');
 
     // etats du modal "se connecter"
     const [modalConnexionOuvert, setModalConnexionOuvert] = useState(false);
@@ -60,18 +159,62 @@ function Acceuil(){
     const fermerModalPartenaire = () => {
         setModalPartenaireOuvert(false);
         setFormPartenaire(ETAT_INITIAL_PARTENAIRE);
+        setFichiersPartenaire(ETAT_INITIAL_FICHIERS_PARTENAIRE);
         setDemandeEnvoyee(false);
+        setErreurPartenaire('');
+        setEnvoiEnCours(false);
     };
 
     const majChampPartenaire = (champ, valeur) => {
         setFormPartenaire((precedent) => ({ ...precedent, [champ]: valeur }));
+        setErreurPartenaire('');
     };
 
-    const envoyerDemandePartenaire = (e) => {
+    // CORRECTION : enregistrement reel dans la Realtime Database (noeud
+    // "demandesPartenaires") + upload du logo et de la preuve d'activite
+    // dans Firebase Storage. Une Cloud Function (notifierNouvelleDemandePartenaire)
+    // se declenche automatiquement sur ce push() et envoie l'email de
+    // notification au proprietaire du site, avec les liens vers les documents.
+    const envoyerDemandePartenaire = async (e) => {
         e.preventDefault();
-        // TODO : remplacer par un enregistrement Firebase (ex: push dans "demandesPartenaires")
-        console.log('Nouvelle demande de partenariat transporteur :', formPartenaire);
-        setDemandeEnvoyee(true);
+        setErreurPartenaire('');
+
+        if (!fichiersPartenaire.logo || !fichiersPartenaire.preuve) {
+            setErreurPartenaire('Merci de fournir le logo et la preuve d\'activité.');
+            return;
+        }
+
+        setEnvoiEnCours(true);
+
+        try {
+            // on cree d'abord la reference (avec sa cle unique) avant d'ecrire quoi que ce soit,
+            // pour pouvoir ranger les fichiers dans un dossier Storage nomme avec cette meme cle
+            const nouvelleRef = push(ref(db, 'demandesPartenaires'));
+            const demandeId = nouvelleRef.key;
+
+            const refLogo = storageRef(storage, `demandesPartenaires/${demandeId}/logo-${fichiersPartenaire.logo.name}`);
+            const refPreuve = storageRef(storage, `demandesPartenaires/${demandeId}/preuve-${fichiersPartenaire.preuve.name}`);
+
+            await uploadBytes(refLogo, fichiersPartenaire.logo);
+            await uploadBytes(refPreuve, fichiersPartenaire.preuve);
+
+            const logoUrl = await getDownloadURL(refLogo);
+            const preuveUrl = await getDownloadURL(refPreuve);
+
+            await set(nouvelleRef, {
+                ...formPartenaire,
+                logoUrl,
+                preuveUrl,
+                dateCreation: serverTimestamp(),
+            });
+
+            setDemandeEnvoyee(true);
+        } catch (err) {
+            console.error('Erreur lors de l\'envoi de la demande de partenariat :', err);
+            setErreurPartenaire('Une erreur est survenue, veuillez réessayer.');
+        } finally {
+            setEnvoiEnCours(false);
+        }
     };
 
     // ouvre le modal "se connecter" et ferme le menu mobile si besoin
@@ -94,24 +237,25 @@ function Acceuil(){
         setErreurConnexion('');
     };
 
-    const envoyerConnexion = (e) => {
+    // CORRECTION : appel réel à Firebase Auth (email.trim() / motDePasse.trim()
+    // pour éviter tout espace parasite), au lieu de la simulation par setTimeout.
+    const envoyerConnexion = async (e) => {
         e.preventDefault();
         setErreurConnexion('');
         setConnexionEnCours(true);
 
-        // TODO : remplacer par Firebase Auth, ex :
-        // signInWithEmailAndPassword(auth, formConnexion.email, formConnexion.motDePasse)
-        //   .then((cred) => { ... rediriger vers le tableau de bord ... })
-        //   .catch((err) => setErreurConnexion("Email ou mot de passe incorrect"))
-        //   .finally(() => setConnexionEnCours(false));
-
-        console.log('Tentative de connexion :', formConnexion);
-
-        // simulation temporaire en attendant le branchement Firebase Auth
-        setTimeout(() => {
+        try {
+            await connexionAdmin(formConnexion.email.trim(), formConnexion.motDePasse.trim());
+            // Connexion réussie : on redirige vers l'espace partenaire.
+            // ⚠️ Adapte ce chemin si ta route vers Dashboard.jsx (dossier Partenaire)
+            // n'est pas exactement "/Partenaire" dans ton App.jsx / routeur.
+            window.location.href = '/espace_partenaire';
+        } catch (err) {
+            console.error('Erreur de connexion :', err);
+            setErreurConnexion(traduireErreurConnexion(err.code));
+        } finally {
             setConnexionEnCours(false);
-            setErreurConnexion("Email ou mot de passe incorrect");
-        }, 800);
+        }
     };
 
     return(
@@ -126,7 +270,7 @@ function Acceuil(){
             {/*le logo de l'entreprise */}
 
             <div className={styles.logo_entreprise}>
-<img src={logo_entreprise} alt="logo de l'entreprise" srcset="" />
+<img src={logo_entreprise} alt="logo de l'entreprise" />
             </div>
 
             {/*les onglets de navigations de la page - caches sur mobile/tablette, remplaces par le burger */}
@@ -772,11 +916,37 @@ Lun - Ven : 9h00 - 18h00</p>
                                 />
                             </div>
                         </div>
+
+                        <p className={styles.sousTitrePartenaire}>Documents</p>
+                        <div className={styles.grilleDepotPartenaire}>
+                            <ZoneDepotFichier
+                                label="Logo de l'entreprise"
+                                description="PNG ou JPG, max 2 Mo"
+                                accept="image/*"
+                                fichier={fichiersPartenaire.logo}
+                                onChange={(f) => setFichiersPartenaire((prec) => ({ ...prec, logo: f }))}
+                            />
+                            <ZoneDepotFichier
+                                label="Preuve d'activité (registre, agrément...)"
+                                description="PDF, PNG ou JPG, max 5 Mo"
+                                accept="application/pdf,image/*"
+                                fichier={fichiersPartenaire.preuve}
+                                onChange={(f) => setFichiersPartenaire((prec) => ({ ...prec, preuve: f }))}
+                            />
+                        </div>
+
+                        {erreurPartenaire && (
+                            <p style={{ color: '#c0392b', fontSize: 13, margin: 0 }}>{erreurPartenaire}</p>
+                        )}
                     </div>
 
                     <div className={styles.piedFormulairePartenaire}>
-                        <button type="submit" className={styles.boutonPrincipalPartenaire}>
-                            Envoyer ma demande
+                        <button
+                            type="submit"
+                            className={styles.boutonPrincipalPartenaire}
+                            disabled={envoiEnCours}
+                        >
+                            {envoiEnCours ? 'Envoi en cours...' : 'Envoyer ma demande'}
                         </button>
                     </div>
                 </form>
