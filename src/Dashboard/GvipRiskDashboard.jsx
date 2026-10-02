@@ -215,10 +215,9 @@ export default function GvipRiskDashboard() {
     });
     return base;
   }, [displayZones]);
-
   const filtered = useMemo(() => {
     let list = displayZones;
-
+    
     if (severityFilter !== "all") {
       list = list.filter((z) => z.severity === severityFilter);
     }
