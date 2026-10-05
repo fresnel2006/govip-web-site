@@ -1,16 +1,13 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useMediaQuery } from 'react-responsive';
-import { FaArrowRight, FaCalendar, FaClock, FaSearch, FaStar, FaTag, FaTimes, FaUsers, FaPaperPlane, FaRegCalendarAlt, FaCheckCircle, FaBars, FaInstagram, FaTiktok, FaYoutube, FaWhatsapp, FaBus, FaLock, FaEnvelope, FaEye, FaEyeSlash, FaCloudUploadAlt, FaFileAlt } from 'react-icons/fa';
+import { FaArrowRight, FaCalendar, FaClock, FaSearch, FaTag, FaTimes, FaUsers, FaPaperPlane, FaRegCalendarAlt, FaCheckCircle, FaBars, FaInstagram, FaTiktok, FaYoutube, FaWhatsapp, FaBus, FaLock, FaEnvelope, FaEye, FaEyeSlash, FaCloudUploadAlt, FaFileAlt } from 'react-icons/fa';
 import styles from '../Acceuil/Acceuil.module.css'
 import logo_entreprise from '../assets/logo_entreprise.png'
 import { FaMoneyBill, FaShield } from 'react-icons/fa6';
 import { CI, FR } from 'country-flag-icons/react/3x2';
-// CORRECTION : on importe les fonctions deja pretes dans le fichier
-// Firebase partage (db, storage, connexionAdmin), au lieu d'appeler
-// firebase/database ou firebase/storage directement ou de simuler l'envoi.
-import { connexionAdmin, db, storage } from '../firebase/firebase';
-import { ref, push, set, serverTimestamp } from 'firebase/database';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+// On passe uniquement par les fonctions du fichier Firebase partage,
+// sans appeler firebase/database ou firebase/storage directement.
+import { connexionAdmin, creerDemandePartenaire, ecouterToutesExpeditions, estDepartAffiche, prochaineDateDepart, libelleFrequence } from '../firebase/firebase';
 
 // etat initial du formulaire "devenir partenaire" - uniquement transporteurs de colis
 const ETAT_INITIAL_PARTENAIRE = {
@@ -116,6 +113,28 @@ function ZoneDepotFichier({ label, description, accept, fichier, onChange }) {
     );
 }
 
+// drapeau d'un pays de depart / d'arrivee
+function DrapeauPays({ pays }) {
+    if (pays === 'France') return <FR title="France" className={styles.drapeau_mini} />;
+    if (pays === "Côte d'Ivoire") return <CI title="Côte d'Ivoire" className={styles.drapeau_mini} />;
+    return null;
+}
+
+// "Sam. 10 oct."
+function formatDateCarte(date) {
+    if (!date) return '';
+    const texte = date.toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short' });
+    return texte.charAt(0).toUpperCase() + texte.slice(1);
+}
+
+function formatPrix(n) {
+    return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+}
+
+function initialesCompagnie(nom) {
+    return String(nom || 'G').trim().split(/\s+/).map((m) => m[0]).join('').slice(0, 2).toUpperCase();
+}
+
 function Acceuil(){
     const [menuOuvert, setMenuOuvert] = useState(false);
 
@@ -132,6 +151,33 @@ function Acceuil(){
     const [demandeEnvoyee, setDemandeEnvoyee] = useState(false);
     const [envoiEnCours, setEnvoiEnCours] = useState(false);
     const [erreurPartenaire, setErreurPartenaire] = useState('');
+
+    // departs = expeditions "Planifie" a venir ajoutees par les compagnies dans leur espace (temps reel)
+    const [departs, setDeparts] = useState([]);
+    const [chargementDeparts, setChargementDeparts] = useState(true);
+    const [voirTousDeparts, setVoirTousDeparts] = useState(false);
+    const [departOuvert, setDepartOuvert] = useState(null);
+
+    useEffect(() => {
+        return ecouterToutesExpeditions(
+            (liste) => {
+                setDeparts(liste);
+                setChargementDeparts(false);
+            },
+            () => setChargementDeparts(false)
+        );
+    }, []);
+
+    // prochains departs : expeditions planifiees a venir, compagnies non suspendues, du plus proche au plus lointain
+    const prochainsDeparts = useMemo(
+        () => departs
+            .filter(estDepartAffiche)
+            .map((d) => ({ ...d, prochaine: prochaineDateDepart(d) }))
+            .sort((a, b) => a.prochaine - b.prochaine || (a.heure || '').localeCompare(b.heure || '')),
+        [departs]
+    );
+    const nbDepartsApercu = isMobile ? 2 : 3;
+    const departsAffiches = voirTousDeparts ? prochainsDeparts : prochainsDeparts.slice(0, nbDepartsApercu);
 
     // etats du modal "se connecter"
     const [modalConnexionOuvert, setModalConnexionOuvert] = useState(false);
@@ -187,27 +233,7 @@ function Acceuil(){
         setEnvoiEnCours(true);
 
         try {
-            // on cree d'abord la reference (avec sa cle unique) avant d'ecrire quoi que ce soit,
-            // pour pouvoir ranger les fichiers dans un dossier Storage nomme avec cette meme cle
-            const nouvelleRef = push(ref(db, 'demandesPartenaires'));
-            const demandeId = nouvelleRef.key;
-
-            const refLogo = storageRef(storage, `demandesPartenaires/${demandeId}/logo-${fichiersPartenaire.logo.name}`);
-            const refPreuve = storageRef(storage, `demandesPartenaires/${demandeId}/preuve-${fichiersPartenaire.preuve.name}`);
-
-            await uploadBytes(refLogo, fichiersPartenaire.logo);
-            await uploadBytes(refPreuve, fichiersPartenaire.preuve);
-
-            const logoUrl = await getDownloadURL(refLogo);
-            const preuveUrl = await getDownloadURL(refPreuve);
-
-            await set(nouvelleRef, {
-                ...formPartenaire,
-                logoUrl,
-                preuveUrl,
-                dateCreation: serverTimestamp(),
-            });
-
+            await creerDemandePartenaire(formPartenaire, fichiersPartenaire);
             setDemandeEnvoyee(true);
         } catch (err) {
             console.error('Erreur lors de l\'envoi de la demande de partenariat :', err);
@@ -466,153 +492,69 @@ function Acceuil(){
             <div className={styles.depart_recent_body} id="nos-transport">
                 <div className={styles.depart_recent_entete}>
                 <p style={{fontSize: isMobile ? 20 : 30,fontWeight:800}}>Departs recents</p>
-                <button type='button' className={styles.lien_voir_tout}>
-                    Voir tous les departs <FaArrowRight size={13}/>
+                {prochainsDeparts.length > nbDepartsApercu && (
+                <button type='button' className={styles.lien_voir_tout} onClick={() => setVoirTousDeparts((v) => !v)}>
+                    {voirTousDeparts ? 'Voir moins' : `Voir tous les departs (${prochainsDeparts.length})`} <FaArrowRight size={13}/>
                 </button>
-                </div>
-                <div className={styles.container_des_compagnies}>
-
-                <div className={styles.compagnies}>
-                    <div className={styles.info_compagnie1}>
-<div className={styles.partie1}>
-<div className={styles.information_sur_depart}>
-    <p>Depart confirme</p>
-</div>
-<p><strong>Dim. 04 Mai</strong> </p>
-</div>
-<div className={styles.partie2}>
-
-<p><FR title="Côte d'Ivoire" className={styles.drapeau_mini}></FR>       France</p>
-<FaArrowRight/>
-<p><CI title="Côte d'Ivoire" className={styles.drapeau_mini}></CI>        Cote D'Ivoire</p>
-
-</div>
-<div className={styles.reference}>
-    <p><FaClock/>     Heures</p>
-    <p><FaCalendar/>     Frequence</p>
-    <p><FaClock/>     Limite</p>
-    <p><FaMoneyBill/>     Tarif</p>
-</div>
-<div className={styles.reference}>
-<p>17:00</p>
-    <p>Tous les samedis</p>
-    <p>30 KG</p>
-    <p>4,00</p>
-</div>
-
-                    </div>
-                    <div className={styles.info_compagnie2}>
-<div className={styles.image_nom_des_compagnies}>
-    
-<div className={styles.images_compagines}>
-
-</div>
-<div className={styles.nom_avis_compagnies}>
-<p><strong>Ivoire Express</strong></p>
-<p><FaStar color='yellow' />4.8(128 avis)</p>
-</div>
-</div>
-<div className={styles.voir_details}>
-<button type='submit' className={styles.bouton_voir_detail}>Voir les details</button>
-</div>
-</div>
-
-                    </div><div className={styles.compagnies}>
-                    <div className={styles.info_compagnie1}>
-<div className={styles.partie1}>
-<div className={styles.information_sur_depart}>
-    <p>Depart confirme</p>
-</div>
-<p><strong>Dim. 04 Mai</strong> </p>
-</div>
-<div className={styles.partie2}>
-
-<p><FR title="Côte d'Ivoire" className={styles.drapeau_mini}></FR>       France</p>
-<FaArrowRight/>
-<p><CI title="Côte d'Ivoire" className={styles.drapeau_mini}></CI>        Cote D'Ivoire</p>
-
-</div>
-<div className={styles.reference}>
-    <p><FaClock/>     Heures</p>
-    <p><FaCalendar/>     Frequence</p>
-    <p><FaClock/>     Limite</p>
-    <p><FaMoneyBill/>     Tarif</p>
-</div>
-<div className={styles.reference}>
-<p>17:00</p>
-    <p>Tous les samedis</p>
-    <p>30 KG</p>
-    <p>4,00</p>
-</div>
-
-                    </div>
-                    <div className={styles.info_compagnie2}>
-<div className={styles.image_nom_des_compagnies}>
-    
-<div className={styles.images_compagines}>
-
-</div>
-<div className={styles.nom_avis_compagnies}>
-<p><strong>Ivoire Express</strong></p>
-<p><FaStar color='yellow' />4.8(128 avis)</p>
-</div>
-</div>
-<div className={styles.voir_details}>
-<button type='submit' className={styles.bouton_voir_detail}>Voir les details</button>
-</div>
-</div>
-
-                    </div>
-                {!isMobile && (
-                <div className={styles.compagnies}>
-                    <div className={styles.info_compagnie1}>
-<div className={styles.partie1}>
-<div className={styles.information_sur_depart}>
-    <p>Depart confirme</p>
-</div>
-<p><strong>Dim. 04 Mai</strong> </p>
-</div>
-<div className={styles.partie2}>
-
-<p><FR title="Côte d'Ivoire" className={styles.drapeau_mini}></FR>       France</p>
-<FaArrowRight/>
-<p><CI title="Côte d'Ivoire" className={styles.drapeau_mini}></CI>        Cote D'Ivoire</p>
-
-</div>
-<div className={styles.reference}>
-    <p><FaClock/>     Heures</p>
-    <p><FaCalendar/>     Frequence</p>
-    <p><FaClock/>     Limite</p>
-    <p><FaMoneyBill/>     Tarif</p>
-</div>
-<div className={styles.reference}>
-<p>17:00</p>
-    <p>Tous les samedis</p>
-    <p>30 KG</p>
-    <p>4,00</p>
-</div>
-
-                    </div>
-                    <div className={styles.info_compagnie2}>
-<div className={styles.image_nom_des_compagnies}>
-    
-<div className={styles.images_compagines}>
-
-</div>
-<div className={styles.nom_avis_compagnies}>
-<p><strong>Ivoire Express</strong></p>
-<p><FaStar color='yellow' />4.8(128 avis)</p>
-</div>
-</div>
-<div className={styles.voir_details}>
-<button type='submit' className={styles.bouton_voir_detail}>Voir les details</button>
-</div>
-</div>
-
-                    </div>
                 )}
                 </div>
-                
+                {chargementDeparts ? (
+                    <p style={{ color: '#6b7280' }}>Chargement des departs...</p>
+                ) : prochainsDeparts.length === 0 ? (
+                    <p style={{ color: '#6b7280' }}>Aucun depart programme pour le moment. Revenez bientot !</p>
+                ) : (
+                <div className={styles.container_des_compagnies} style={voirTousDeparts && !isMobile ? { flexWrap: 'wrap' } : undefined}>
+                {departsAffiches.map((d) => (
+                <div key={d.id} className={styles.compagnies}>
+                    <div className={styles.info_compagnie1}>
+<div className={styles.partie1}>
+<div className={styles.information_sur_depart}>
+    <p>Depart confirme</p>
+</div>
+<p><strong>{formatDateCarte(d.prochaine)}</strong> </p>
+</div>
+<div className={styles.partie2}>
+
+<p><DrapeauPays pays={d.paysDepart} />       {d.paysDepart || d.villeDepart}</p>
+<FaArrowRight/>
+<p><DrapeauPays pays={d.paysArrivee} />        {d.paysArrivee || d.villeArrivee}</p>
+
+</div>
+<div className={styles.reference}>
+    <p><FaClock/>     Heure</p>
+    <p><FaCalendar/>     Frequence</p>
+    <p><FaClock/>     Limite</p>
+    <p><FaMoneyBill/>     Tarif</p>
+</div>
+<div className={styles.reference}>
+<p>{d.heure || '—'}</p>
+    <p>{libelleFrequence(d)}</p>
+    <p>{d.limiteKg ? `${d.limiteKg} KG` : '—'}</p>
+    <p>{d.tarifParKilo ? `${formatPrix(d.tarifParKilo)} €/kg` : '—'}</p>
+</div>
+
+                    </div>
+                    <div className={styles.info_compagnie2}>
+<div className={styles.image_nom_des_compagnies}>
+
+<div className={styles.images_compagines} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 14 }}>
+{initialesCompagnie(d.nomCompagnie)}
+</div>
+<div className={styles.nom_avis_compagnies}>
+<p><strong>{d.nomCompagnie || 'Compagnie GVIP'}</strong></p>
+<p>{d.villeDepart} → {d.villeArrivee}</p>
+</div>
+</div>
+<div className={styles.voir_details}>
+<button type='button' className={styles.bouton_voir_detail} onClick={() => setDepartOuvert(d)}>Voir les details</button>
+</div>
+</div>
+
+                    </div>
+                ))}
+                </div>
+                )}
+
             </div>
             <div className={styles.comment_ca_marche_body} id="comment-ca-marche">
 <div className={styles.commentCaMarcheIntro}>
@@ -714,6 +656,44 @@ contact@gvipcolis.com<br />
 Lun - Ven : 9h00 - 18h00</p>
 </div>
         </div>
+
+{/* modal "details d'un depart" */}
+{departOuvert && (
+    <div className={styles.overlayPartenaire} onClick={() => setDepartOuvert(null)}>
+        <div className={styles.fenetrePartenaire} onClick={(e) => e.stopPropagation()} style={{ width: 460 }}>
+            <div className={styles.entetePartenaire}>
+                <p className={styles.titrePartenaire}>{departOuvert.nomCompagnie || 'Depart'}</p>
+                <button
+                    type="button"
+                    className={styles.boutonFermerPartenaire}
+                    onClick={() => setDepartOuvert(null)}
+                    aria-label="Fermer"
+                >
+                    <FaTimes size={18} />
+                </button>
+            </div>
+            <div className={styles.corpsFormulairePartenaire}>
+                <p style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 16, margin: 0 }}>
+                    <DrapeauPays pays={departOuvert.paysDepart} /> {departOuvert.villeDepart}
+                    <FaArrowRight size={13} />
+                    <DrapeauPays pays={departOuvert.paysArrivee} /> {departOuvert.villeArrivee}
+                </p>
+                {[
+                    ['Prochain depart', `${formatDateCarte(departOuvert.prochaine)}${departOuvert.heure ? ` a ${departOuvert.heure}` : ''}`],
+                    ['Frequence', libelleFrequence(departOuvert)],
+                    ['Limite par client', departOuvert.limiteKg ? `${departOuvert.limiteKg} kg` : '—'],
+                    ['Tarif', departOuvert.tarifParKilo ? `${formatPrix(departOuvert.tarifParKilo)} € par kg` : '—'],
+                    ...(departOuvert.notes ? [['A savoir', departOuvert.notes]] : []),
+                ].map(([label, valeur]) => (
+                    <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, padding: '8px 0', borderBottom: '1px solid #eee', fontSize: 14 }}>
+                        <span style={{ color: '#6b7280' }}>{label}</span>
+                        <strong style={{ textAlign: 'right' }}>{valeur}</strong>
+                    </div>
+                ))}
+            </div>
+        </div>
+    </div>
+)}
 
 {/* modal "se connecter" */}
 {modalConnexionOuvert && (

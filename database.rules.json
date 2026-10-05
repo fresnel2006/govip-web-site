@@ -1,0 +1,54 @@
+{
+  "rules": {
+    "admins": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid"
+      }
+    },
+    "creneaux": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "rendezVous": {
+      ".indexOn": ["telephone"],
+      ".read": true,
+      ".write": true
+    },
+    "partenaires": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$uid": {
+        ".read": "auth != null && ($uid === auth.uid || root.child('admins').child(auth.uid).val() === true)",
+        ".write": "auth != null && ($uid === auth.uid || root.child('admins').child(auth.uid).val() === true)",
+        "statut": {
+          ".validate": "root.child('admins').child(auth.uid).val() === true || !data.exists() || newData.val() === data.val()"
+        },
+        "role": {
+          ".validate": "root.child('admins').child(auth.uid).val() === true || newData.val() === 'partenaire'"
+        }
+      }
+    },
+    "expeditions": {
+      ".indexOn": ["idPartenaire"],
+      ".read": true,
+      "$idExpedition": {
+        ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || ((!data.exists() || data.child('idPartenaire').val() === auth.uid) && (!newData.exists() || (newData.child('idPartenaire').val() === auth.uid && root.child('partenaires').child(auth.uid).child('statut').val() === 'actif'))))"
+      }
+    },
+    "ticketsSupport": {
+      ".indexOn": ["idPartenaire"],
+      ".read": "auth != null",
+      "$idTicket": {
+        ".write": "auth != null && (data.child('idPartenaire').val() === auth.uid || newData.child('idPartenaire').val() === auth.uid || root.child('admins').child(auth.uid).val() === true)"
+      }
+    },
+    "transactions": {
+      ".indexOn": ["idExpedition"],
+      ".read": "auth != null",
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+    },
+    "demandesPartenaires": {
+      ".read": "auth != null",
+      ".write": true
+    }
+  }
+}
