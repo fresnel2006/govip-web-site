@@ -1,0 +1,1314 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.corps {
+    height: auto;
+    min-height: 100vh;
+    width: 1600px;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+/* pour le header */
+.header {
+    height: auto;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    border-color: rgba(0, 0, 0, 0.197);
+    border-style: groove;
+    border-left: none;
+    border-top: none;
+    border-right: none;
+    padding: 10px 0;
+    white-space: nowrap;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.header .navigation {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 25px;
+    font-size: 14px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.logo_entreprise {
+    height: 60px;
+    width: auto;
+    max-width: 150px;
+    min-width: 50px;
+    display: flex;
+    align-items: center;
+}
+
+.logo_entreprise img {
+    height: 100%;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+}
+
+.demande_partenariat {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    font-size: 14px;
+    border-color: rgba(0, 0, 0, 0.168);
+    border-style: groove;
+    padding-left: 30px;
+    padding-right: 30px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    border-top: none;
+    border-bottom: none;
+}
+
+.bouton_header {
+    display: flex;
+    gap: 5px;
+    height: 40px;
+    width: 300px;
+}
+
+.se_connecter button {
+    height: 100%;
+    width: 100%;
+    border-radius: 10px;
+    border-color: rgb(39, 123, 48);
+    border-style: groove;
+    color: rgb(39, 123, 48);
+    font-weight: 800;
+    background-color: white;
+}
+
+.devenir_partenaire button {
+    height: 100%;
+    width: 100%;
+    border-radius: 10px;
+    border-color: rgb(39, 123, 48);
+    border-style: groove;
+    background-color: rgb(39, 123, 48);
+    color: white;
+    font-weight: 700;
+}
+
+.se_connecter,
+.devenir_partenaire {
+    width: 50%;
+}
+
+/* bouton burger : caché par defaut, affiche seulement en mobile/tablette */
+.bouton_burger {
+    display: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+}
+
+/* menu deroulant mobile/tablette : rendu par React uniquement quand isMobileOuTablette && menuOuvert,
+   donc le style s'applique en base, pas besoin de media query pour l'afficher/cacher */
+.navigation_ouverte {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background-color: white;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+    z-index: 20;
+    padding: 10px 20px 20px;
+}
+
+.navigation_ouverte > div {
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* boutons repris dans le menu mobile/tablette deroulant */
+.bouton_header_mobile {
+    display: flex;
+    gap: 12px;
+    height: 48px;
+    margin-top: 18px;
+    padding: 0 2px;
+    border-bottom: none;
+}
+
+.bouton_header_mobile .se_connecter,
+.bouton_header_mobile .devenir_partenaire {
+    width: 50%;
+}
+
+.bouton_header_mobile .se_connecter button,
+.bouton_header_mobile .devenir_partenaire button {
+    height: 100%;
+    width: 100%;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.bouton_header_mobile .se_connecter button {
+    border: 1.5px solid rgb(39, 123, 48);
+    color: rgb(39, 123, 48);
+    background-color: white;
+}
+
+.bouton_header_mobile .devenir_partenaire button {
+    border: 1.5px solid rgb(39, 123, 48);
+    background-color: rgb(39, 123, 48);
+    color: white;
+    box-shadow: 0 3px 8px rgba(39, 123, 48, 0.3);
+}
+
+.bouton_header_mobile .se_connecter button:active,
+.bouton_header_mobile .devenir_partenaire button:active {
+    transform: scale(0.96);
+}
+
+/* pour le body */
+.body {
+    height: auto;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.acceuil_body {
+    height: 400px;
+    display: flex;
+    position: relative;
+}
+
+/* section accueil (hero) */
+.acceuil_body .description {
+    height: 100%;
+    width: 60%;
+    background-color: rgba(255, 255, 255, 0.816);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-left: 30px;
+}
+
+.acceuil_body .image_arriere1 {
+    height: 100%;
+    width: 40%;
+    background-image: url("../assets/arriere_plan1.png");
+    background-color: rgb(15, 149, 64);
+    background-size: cover;
+    background-position: center;
+}
+
+.image_arriere1 img {
+    height: 100%;
+    width: 100%;
+}
+
+.description1 {
+    font-weight: 700;
+    font-size: 40px;
+}
+
+.ecriture_verte {
+    color: green;
+}
+
+.description2 {
+    margin-top: 10px;
+}
+
+.description3 {
+    margin-top: 25px;
+    display: flex;
+    gap: 20px;
+}
+
+.info1 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border-color: rgba(38, 38, 38, 0.345);
+    border-style: groove;
+    padding: 10px;
+    border-radius: 10px;
+    border-width: 1.5px;
+}
+
+/* le formulaire "trouver un depart" : espace explicite haut ET bas, bien visible */
+.trouver_depart_body {
+    padding-top: 32px;
+    padding-bottom: 40px;
+    padding-left: 28px;
+    padding-right: 28px;
+    height: auto;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    border-radius: 10px;
+    border-style: groove;
+    border-color: rgba(0, 0, 0, 0.192);
+    border-width: 1px;
+    
+}
+
+/* formulaire "trouver un depart" - champs repartis egalement, plus d'espace entre eux */
+.formulaire {
+    display: flex;
+    gap: 28px;
+    align-items: flex-end;
+    width: 100%;
+}
+
+.champs {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.champs select,
+.champs input,
+.trouver_depart_body select,
+.trouver_depart_body input {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    height: 50px;
+    border-radius: 10px;
+    padding: 10px 14px;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    font-family: inherit;
+    font-size: 14px;
+    background-color: white;
+    color: inherit;
+    box-sizing: border-box;
+}
+
+.trouver_depart_body input::placeholder {
+    color: rgba(0, 0, 0, 0.4);
+}
+
+.trouver_depart_body input:focus,
+.trouver_depart_body select:focus {
+    outline: none;
+    border-color: rgb(39, 123, 48);
+}
+
+.trouver_depart_body input[type="date"] {
+    color: rgba(0, 0, 0, 0.7);
+    cursor: pointer;
+}
+
+.trouver_depart_body input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    filter: invert(45%) sepia(60%) saturate(500%) hue-rotate(90deg);
+}
+
+/* section departs recents : entete avec le lien "voir tous" */
+.depart_recent_body {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    height: auto;
+    min-height: 0;
+    padding-top: 10px;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+.depart_recent_entete {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.lien_voir_tout {
+    background: none;
+    border: none;
+    color: rgb(39, 123, 48);
+    font-weight: 700;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+/* section "comment ca marche" : padding genereux sur les 4 cotes, comme pour trouver_depart_body */
+.comment_ca_marche_body {
+    height: auto;
+    min-height: 0;
+    border-color: rgba(0, 0, 0, 0.353);
+    border-style: groove;
+    border-radius: 10px;
+    display: flex;
+    gap: 32px;
+    padding-top: 36px;
+    padding-bottom: 40px;
+    padding-left: 32px;
+    padding-right: 32px;
+    margin: 40px 20px 0;
+    flex-direction: column;
+}
+
+/* footer : contenu centre */
+.footer {
+    margin-top: 60px;
+    height: auto;
+    min-height: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+    align-items: flex-start;
+    justify-content: center;
+    background-color: black;
+    color: white;
+    padding: 50px 60px;
+}
+
+.footer_partie1 {
+    width: 300px;
+    height: auto;
+    font-weight: 600;
+}
+
+.footer_partie2,
+.footer_partie3,
+.footer_partie4 {
+    width: 200px;
+    height: auto;
+}
+
+.footer_partie5 {
+    width: 300px;
+    height: auto;
+}
+
+.info_compagnie1 {
+    padding: 10px;
+    height: 180px;
+    width: 450px;
+    color: white;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    border-bottom: none;
+    border-style: groove;
+    border-width: 1px;
+    border-color: rgba(0, 0, 0, 0.218);
+    background-image: url("../assets/France image.jpg");
+    background-size: cover;
+    background-position: center;
+}
+
+.info_compagnie2 {
+    width: 450px;
+    height: 80px;
+    background-color: white;
+    border-color: rgba(0, 0, 0, 0.218);
+    border-top: none;
+    border-style: groove;
+    border-width: 1px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
+}
+
+.drapeau_mini {
+    width: 16px;
+    height: 12px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    object-fit: cover;
+}
+
+.partie1 {
+    display: flex;
+    justify-content: space-around;
+}
+
+.partie2 {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+}
+
+.reference {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+}
+
+.image_nom_des_compagnies {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.images_compagines {
+    height: 40px;
+    width: 40px;
+    background-color: rgb(158, 111, 202);
+    border-radius: 100px;
+}
+
+.information_sur_depart {
+    background-color: rgba(69, 178, 69, 0.716);
+    padding-top: 4px;
+    padding-bottom: 4px;
+    padding-left: 12px;
+    padding-right: 12px;
+    border-style: groove;
+    border-color: rgba(0, 0, 0, 0.116);
+    border-radius: 20px;
+    font-size: 12px;
+    border-width: 1px;
+    font-weight: 700;
+    color: white;
+}
+
+.bouton_voir_detail {
+    height: 40px;
+    width: 140px;
+    border-radius: 10px;
+    border-style: groove;
+    border-color: rgba(0, 0, 0, 0.2);
+    background-color: rgba(23, 159, 23, 0.77);
+    font-weight: 800;
+    color: white;
+}
+
+.container_des_compagnies {
+    display: flex;
+    gap: 10px;
+}
+
+.compagnies {
+    flex-shrink: 0;
+}
+
+/* Intro (titre + sous-titre) de "comment ca marche" */
+.commentCaMarcheIntro {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.commentCaMarcheTitre {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0;
+}
+
+.commentCaMarcheSousTitre {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0;
+}
+
+/* Liste des étapes */
+.listeEtapes {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+/* Une étape */
+.etape {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 180px;
+}
+
+.etapeIconeConteneur {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    border-radius: 50%;
+    background-color: #e6f4ea;
+}
+
+.etapeIcone {
+    font-size: 20px;
+    color: #1a7a3c;
+}
+
+.etapeNumero {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: #1a7a3c;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1;
+}
+
+.etapeContenu {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.etapeTitre {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0;
+}
+
+.etapeTexte {
+    font-size: 12px;
+    color: #6b7280;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.flecheEtape {
+    color: #9ca3af;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.image_entreprise {
+    background-image: url("../assets/logo_entreprise.png");
+    height: 110px;
+    width: 180px;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    object-fit: cover;
+}
+
+/* =========================================================
+   RESPONSIVE - TABLETTE (max-width: 1024px)
+   ========================================================= */
+@media (max-width: 1024px) {
+
+    .corps {
+        width: 100%;
+        padding: 0 16px;
+    }
+
+    .header {
+        justify-content: space-between;
+        padding: 10px 4px;
+        flex-wrap: wrap;
+    }
+
+    .bouton_burger {
+        display: flex;
+        align-items: center;
+    }
+
+    .demande_partenariat {
+        border: none;
+        padding: 8px 0;
+        gap: 10px;
+        font-size: 12px;
+        width: 100%;
+        order: 3;
+    }
+
+    .demande_partenariat svg {
+        width: 34px !important;
+        height: 34px !important;
+        flex-shrink: 0;
+    }
+
+    .acceuil_body {
+        height: auto;
+        flex-direction: column;
+    }
+
+    .acceuil_body .description,
+    .acceuil_body .image_arriere1 {
+        width: 100%;
+    }
+
+    .acceuil_body .image_arriere1 {
+        height: 260px;
+        order: -1;
+    }
+
+    .description1 {
+        font-size: 32px;
+    }
+
+    .description3 {
+        flex-wrap: wrap;
+    }
+
+    .info1 {
+        flex: 1 1 45%;
+    }
+
+    .trouver_depart_body {
+        width: 100%;
+        height: auto;
+        margin-left: 0;
+    }
+
+    .formulaire {
+        flex-wrap: wrap;
+    }
+
+    .champs {
+        flex: 1 1 45%;
+    }
+
+    .champs select,
+    .champs input {
+        width: 100%;
+        max-width: none;
+    }
+
+    .container_des_compagnies {
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        scroll-padding-left: 16px;
+        padding-bottom: 10px;
+    }
+
+    .compagnies {
+        scroll-snap-align: start;
+    }
+
+    .footer {
+        flex-wrap: wrap;
+        margin-top: 80px;
+        gap: 24px;
+    }
+
+    .footer_partie1,
+    .footer_partie5 {
+        width: 45%;
+    }
+
+    .footer_partie2,
+    .footer_partie3,
+    .footer_partie4 {
+        width: 45%;
+        height: auto;
+    }
+}
+
+/* =========================================================
+   RESPONSIVE - MOBILE (max-width: 640px)
+   ========================================================= */
+@media (max-width: 640px) {
+
+    .corps {
+        padding: 0 12px;
+    }
+
+    .logo_entreprise {
+        height: 40px;
+    }
+
+    .header {
+        flex-wrap: wrap;
+    }
+
+    .demande_partenariat {
+        justify-content: flex-start;
+        gap: 8px;
+        font-size: 11px;
+    }
+
+    .demande_partenariat svg {
+        width: 26px !important;
+        height: 26px !important;
+    }
+
+    .body {
+        gap: 20px;
+    }
+
+    .acceuil_body .description {
+        padding-left: 0;
+        background-color: transparent;
+        text-align: left;
+    }
+
+    .description1 {
+        font-size: 26px;
+    }
+
+    .description2 p {
+        font-size: 14px;
+    }
+
+    .description3 {
+        flex-direction: column;
+        margin-top: 16px;
+        gap: 10px;
+    }
+
+    .info1 {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .acceuil_body .image_arriere1 {
+        height: 200px;
+        border-radius: 10px;
+    }
+
+    .trouver_depart_body {
+        margin: 0 0 20px;
+        padding-top: 20px;
+        padding-bottom: 28px;
+        padding-left: 16px;
+        padding-right: 16px;
+        gap: 16px;
+    }
+
+    .formulaire {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .champs {
+        width: 100%;
+    }
+
+    .trouver_depart_body select,
+    .trouver_depart_body input {
+        width: 100%;
+        max-width: none;
+    }
+
+    .depart_recent_body {
+        padding-left: 0;
+        padding-top: 30px;
+    }
+
+    .depart_recent_body p {
+        font-size: 20px !important;
+    }
+
+    /* carrousel mobile : chaque carte occupe (presque) toute la largeur visible */
+    .container_des_compagnies {
+        display: flex;
+        gap: 12px;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        scroll-padding-left: 12px;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 12px;
+        margin: 0 -12px;
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .compagnies {
+        scroll-snap-align: center;
+        flex: 0 0 calc(100vw - 48px);
+    }
+
+    .info_compagnie1,
+    .info_compagnie2 {
+        width: 100%;
+        max-width: none;
+    }
+
+    .info_compagnie1 {
+        height: auto;
+        gap: 10px;
+        padding: 14px;
+    }
+
+    .info_compagnie2 {
+        height: auto;
+        min-height: 80px;
+        padding: 10px 14px;
+    }
+
+    .image_nom_des_compagnies {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .partie1,
+    .partie2,
+    .reference {
+        font-size: 13px;
+        flex-wrap: wrap;
+    }
+
+    .comment_ca_marche_body {
+        padding: 28px 20px;
+        gap: 24px;
+    }
+
+    .listeEtapes {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .flecheEtape {
+        margin-left: 24px;
+    }
+
+    .etape {
+        width: 100%;
+    }
+
+    .footer {
+        flex-direction: column;
+        align-items: flex-start;
+        margin-top: 50px;
+        gap: 30px;
+    }
+
+    .footer_partie1,
+    .footer_partie2,
+    .footer_partie3,
+    .footer_partie4,
+    .footer_partie5 {
+        width: 100%;
+        height: auto;
+    }
+
+    .image_entreprise {
+        height: 80px;
+        width: 130px;
+    }
+}
+
+/* =========================================================
+   MODAL "DEVENIR PARTENAIRE"
+   ========================================================= */
+
+.overlayPartenaire {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+}
+
+.fenetrePartenaire {
+    background-color: white;
+    width: 600px;
+    max-width: 100%;
+    max-height: 90vh;
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.entetePartenaire {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 24px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+}
+
+.titrePartenaire {
+    font-size: 18px;
+    font-weight: 800;
+    color: #1a1a1a;
+}
+
+.boutonFermerPartenaire {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #6b7280;
+    padding: 4px;
+    display: flex;
+}
+
+.progressionPartenaire {
+    display: flex;
+    gap: 8px;
+    padding: 16px 24px 0;
+    flex-shrink: 0;
+}
+
+.pointEtapePartenaire {
+    height: 5px;
+    flex: 1;
+    border-radius: 10px;
+    background-color: rgba(39, 123, 48, 0.15);
+    transition: background-color 0.2s ease;
+}
+
+.pointEtapePartenaireActif {
+    background-color: rgb(39, 123, 48);
+}
+
+.corpsFormulairePartenaire {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 20px 24px 24px;
+    gap: 20px;
+}
+
+.contenuEtapePartenaire {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.sousTitrePartenaire {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+.sousTitrePetitPartenaire {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1a1a;
+    line-height: 1.4;
+}
+
+.texteSecondairePartenaire {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.choixTypePartenaire {
+    display: flex;
+    gap: 14px;
+}
+
+.carteChoixPartenaire {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+    padding: 20px 12px;
+    border-radius: 12px;
+    border: 1.5px solid rgba(0, 0, 0, 0.15);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.carteChoixPartenaireActive {
+    border-color: rgb(39, 123, 48);
+    background-color: rgba(39, 123, 48, 0.06);
+}
+
+.grilleChampsPartenaire {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.champPartenaire {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.champPartenaire label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.champPleineLargeurPartenaire {
+    grid-column: 1 / -1;
+}
+
+.champPartenaire input,
+.champPartenaire select,
+.zoneTextePartenaire {
+    height: 42px;
+    border-radius: 8px;
+    padding: 8px 12px;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    font-family: inherit;
+    font-size: 13px;
+}
+
+.champPartenaire input[type="file"] {
+    padding: 6px 10px;
+    height: auto;
+}
+
+.champPartenaire input[type="checkbox"],
+.champPartenaire input[type="radio"] {
+    height: auto;
+}
+
+.zoneTextePartenaire {
+    height: auto;
+    resize: vertical;
+}
+
+.champPartenaire input:focus,
+.champPartenaire select:focus,
+.zoneTextePartenaire:focus {
+    outline: none;
+    border-color: rgb(39, 123, 48);
+}
+
+.listeCasesPartenaire {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.caseACocherPartenaire {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #374151;
+    cursor: pointer;
+}
+
+.blocVulnerablePartenaire {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+    border-radius: 10px;
+    background-color: rgba(39, 123, 48, 0.05);
+}
+
+.choixRadioPartenaire {
+    display: flex;
+    gap: 20px;
+    font-size: 13px;
+}
+
+.choixRadioPartenaire label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.piedFormulairePartenaire {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4px;
+}
+
+.boutonPrincipalPartenaire {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 42px;
+    padding: 0 20px;
+    border-radius: 10px;
+    border: none;
+    background-color: rgb(39, 123, 48);
+    color: white;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.boutonPrincipalPartenaire:disabled {
+    background-color: rgba(39, 123, 48, 0.4);
+    cursor: not-allowed;
+}
+
+.boutonSecondairePartenaire {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 42px;
+    padding: 0 18px;
+    border-radius: 10px;
+    border: 1.5px solid rgba(0, 0, 0, 0.2);
+    background-color: white;
+    color: #374151;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.confirmationPartenaire {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+    padding: 40px 30px 36px;
+}
+
+.confirmationPartenaireTitre {
+    font-size: 17px;
+    font-weight: 800;
+    color: #1a1a1a;
+}
+
+.confirmationPartenaireTexte {
+    font-size: 14px;
+    color: #6b7280;
+    line-height: 1.5;
+}
+
+/* modal responsive mobile */
+@media (max-width: 640px) {
+    .fenetrePartenaire {
+        max-height: 95vh;
+    }
+
+    .grilleChampsPartenaire,
+    .listeCasesPartenaire {
+        grid-template-columns: 1fr;
+    }
+
+    .choixTypePartenaire {
+        flex-direction: column;
+    }
+}
+.grilleDepotPartenaire {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.zoneDepot {
+    border: 1.5px dashed rgba(39, 123, 48, 0.4);
+    border-radius: 12px;
+    padding: 18px 14px;
+    cursor: pointer;
+    background-color: rgba(39, 123, 48, 0.03);
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+    min-height: 110px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.zoneDepot:hover {
+    background-color: rgba(39, 123, 48, 0.06);
+}
+
+.zoneDepotActive {
+    border-color: rgb(39, 123, 48);
+    background-color: rgba(39, 123, 48, 0.1);
+}
+
+.zoneDepotRemplie {
+    border-style: solid;
+    background-color: rgba(39, 123, 48, 0.05);
+}
+
+.zoneDepotVide {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 6px;
+}
+
+.zoneDepotTexte {
+    font-size: 13px;
+    margin: 0;
+}
+
+.zoneDepotHint {
+    font-size: 11px;
+    color: #6b7280;
+    margin: 0;
+}
+
+.zoneDepotApercu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    text-align: center;
+}
+
+.zoneDepotImage {
+    height: 50px;
+    width: 50px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.zoneDepotNomFichier {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.zoneDepotSupprimer {
+    background: none;
+    border: none;
+    color: #c0392b;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    padding: 0;
+}
+
+@media (max-width: 640px) {
+    .grilleDepotPartenaire {
+        grid-template-columns: 1fr;
+    }
+}
