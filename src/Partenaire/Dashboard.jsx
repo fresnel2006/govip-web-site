@@ -1,15 +1,11 @@
 import React, { useState, useEffect } from "react";
 import styles from "./Dashboard.module.css";
-import { initializeApp } from "firebase/app";
 import {
-  getAuth,
-  createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
 } from "firebase/auth";
 import {
-  getDatabase,
   ref,
   set,
   get,
@@ -22,26 +18,22 @@ import {
 } from "firebase/database";
 
 // ============ FIREBASE : CONFIGURATION ============
-const firebaseConfig = {
-  apiKey: "AIzaSyAzEog53jnWZksBq5SXo41mVvGMjhuqwV8",
-  authDomain: "govip-parcels-appointments.firebaseapp.com",
-  databaseURL: "https://govip-parcels-appointments-default-rtdb.firebaseio.com",
-  projectId: "govip-parcels-appointments",
-  storageBucket: "govip-parcels-appointments.firebasestorage.app",
-  messagingSenderId: "5781132822",
-  appId: "1:5781132822:web:906072edda7ad4b72d0737",
-  measurementId: "G-WDLCTNFMW1",
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
-
-// Instance Firebase secondaire : sert uniquement à créer des comptes partenaires
-// depuis l'espace admin SANS déconnecter l'admin de sa propre session.
-const secondaryApp = initializeApp(firebaseConfig, "Secondary");
-const secondaryAuth = getAuth(secondaryApp);
-const secondaryDb = getDatabase(secondaryApp);
+// L'instance (auth, db) vient du fichier Firebase partagé.
+// La création des comptes de compagnies se fait désormais dans l'espace admin.
+import {
+  auth,
+  db,
+  ecouterExpeditionsCompagnie,
+  enregistrerExpedition,
+  supprimerExpedition,
+  prochaineDateDepart,
+  libelleFrequence,
+  estDepartAffiche,
+  lireDateExpedition,
+  FREQUENCES_DEPART,
+  PAYS_DEPARTS,
+  STATUTS_EXPEDITION,
+} from "../firebase/firebase.js";
 
 // ============ FIREBASE : FONCTIONS AUTH ============
 
@@ -50,35 +42,19 @@ async function seConnecter(email, motDePasse) {
   return userCredential.user.uid;
 }
 
+// Après la déconnexion, retour à la page d'accueil (où se trouve le formulaire de connexion).
+// Le drapeau évite d'afficher l'écran de connexion de cette page le temps de la redirection.
+let redirectionApresDeconnexion = false;
+
 async function seDeconnecter() {
+  redirectionApresDeconnexion = true;
   await signOut(auth);
+  window.location.replace("/Acceuil");
 }
 
 async function recupererProfil(uid) {
   const snapshot = await get(ref(db, `partenaires/${uid}`));
   return snapshot.exists() ? snapshot.val() : null;
-}
-
-async function creerPartenaireParAdmin({ email, motDePasse, nom, nomEntreprise, telephone, pays, adresse }) {
-  const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, motDePasse);
-  const uid = userCredential.user.uid;
-
-  await set(ref(secondaryDb, `partenaires/${uid}`), {
-    nom,
-    nomEntreprise,
-    email,
-    telephone,
-    pays,
-    adresse,
-    statut: "actif",
-    role: "partenaire",
-    dateInscription: Date.now(),
-    tarifParKilo: 0, // NOUVEAU : à définir par le partenaire lui-même depuis son profil
-  });
-
-  await signOut(secondaryAuth);
-
-  return uid;
 }
 
 function traduireErreur(code) {
@@ -93,29 +69,8 @@ function traduireErreur(code) {
   return messages[code] || "Une erreur est survenue, réessayez.";
 }
 
-// ============ FIREBASE : FONCTIONS EXPEDITIONS ============
-async function ajouterExpeditionFirebase(idPartenaire, { date, villeDepart, villeArrivee, poids, statut }) {
-  const nouvelleRef = push(ref(db, "expeditions"));
-  await set(nouvelleRef, {
-    idPartenaire,
-    reference: `GV-${Math.floor(10000 + Math.random() * 89999)}`,
-    date,
-    villeDepart,
-    villeArrivee,
-    poids,
-    statut,
-  });
-  return nouvelleRef.key;
-}
-
-function ecouterExpeditionsPartenaire(idPartenaire, callback) {
-  const q = query(ref(db, "expeditions"), orderByChild("idPartenaire"), equalTo(idPartenaire));
-  return onValue(q, (snapshot) => {
-    const data = snapshot.val() || {};
-    const liste = Object.entries(data).map(([id, valeurs]) => ({ id, ...valeurs }));
-    callback(liste);
-  });
-}
+// Les fonctions d'accès aux expéditions viennent de firebase.js
+// (ecouterExpeditionsCompagnie, enregistrerExpedition, supprimerExpedition).
 
 // ============ FIREBASE : FONCTIONS TICKETS ============
 async function creerTicketFirebase(idPartenaire, { sujet, message }) {
@@ -155,8 +110,6 @@ const statusStyles = {
   "Livré": "statusDelivered",
 };
 
-const initialForm = { date: "", from: "", to: "Abidjan", weight: "", status: "Planifié" };
-
 const news = [
   { date: "06 mai 2025", title: "Nouveau trajet : Paris – Abidjan", text: "Nous renforçons notre réseau pour vous offrir encore plus de flexibilité.", tone: "ocean" },
   { date: "28 avril 2025", title: "Optimisez vos envois", text: "Découvrez nos nouvelles options de suivi et de gestion de vos expéditions.", tone: "boxes" },
@@ -178,29 +131,15 @@ const expeditionFilters = ["Tous", "En cours", "À récupérer", "Planifié", "L
 
 // ============ NOUVEAU : UTILITAIRES POUR LE GRAPHIQUE ET LES REVENUS ============
 
-// Enlève les accents et met en minuscule, pour comparer les noms de mois sans se soucier des accents
-function normaliserTexte(txt) {
-  return txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+// Affiche une date d'expédition (Date, "2026-09-14" ou texte libre) en "sam. 14 sept. 2026".
+function afficherDate(valeur) {
+  const date = valeur instanceof Date ? valeur : lireDateExpedition(valeur);
+  if (!date) return valeur || "—";
+  return date.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
 }
 
-const MOIS_MAP = {
-  janvier: 0, fevrier: 1, mars: 2, avril: 3, mai: 4, juin: 5,
-  juillet: 6, aout: 7, septembre: 8, octobre: 9, novembre: 10, decembre: 11,
-};
-
-// Interprète une date entrée en texte libre (ex: "14 septembre 2026") en objet Date.
-// Renvoie null si le format n'est pas reconnu.
-function parseDateFr(texte) {
-  if (!texte) return null;
-  const norm = normaliserTexte(texte);
-  const m = norm.match(/(\d{1,2})\s+([a-z]+)\s+(\d{4})/);
-  if (!m) return null;
-  const jour = parseInt(m[1], 10);
-  const mois = MOIS_MAP[m[2]];
-  const annee = parseInt(m[3], 10);
-  if (mois === undefined) return null;
-  return new Date(annee, mois, jour);
-}
+// Les dates d'expédition sont lues par lireDateExpedition (firebase.js) :
+// format "2026-09-14" (sélecteur de date) ou ancien texte libre "14 septembre 2026".
 
 // Extrait la valeur numérique d'un champ poids saisi en texte libre (ex: "10 kg" -> 10)
 function extraireNombre(texte) {
@@ -221,7 +160,7 @@ function formaterLabelMois(cle) {
 function genererDonneesGraphique(shipments) {
   const compteurParMois = {};
   shipments.forEach((s) => {
-    const date = parseDateFr(s.date);
+    const date = lireDateExpedition(s.date);
     if (!date) return;
     const cle = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
     compteurParMois[cle] = (compteurParMois[cle] || 0) + 1;
@@ -518,161 +457,32 @@ function EcranProfilIntrouvable({ email }) {
   );
 }
 
-// ============ ESPACE ADMIN (/admin) ============
-const MOT_DE_PASSE_ADMIN = "GvipAdmin2026"; // à changer !
+// ============ ÉCRAN "COMPTE SUSPENDU" (suspendu par l'admin GVIP) ============
+function EcranCompteSuspendu({ email }) {
+  const [deconnexionEnCours, setDeconnexionEnCours] = useState(false);
 
-function PageAdmin() {
-  const [deverrouille, setDeverrouille] = useState(false);
-  const [motDePasseSaisi, setMotDePasseSaisi] = useState("");
-  const [erreurAcces, setErreurAcces] = useState("");
-
-  const [form, setForm] = useState({
-    email: "",
-    motDePasse: "",
-    nom: "",
-    nomEntreprise: "",
-    telephone: "",
-    pays: "France",
-    adresse: "",
-  });
-  const [erreur, setErreur] = useState("");
-  const [succes, setSucces] = useState("");
-  const [chargement, setChargement] = useState(false);
-
-  const verifierAcces = (e) => {
-    e.preventDefault();
-    if (motDePasseSaisi === MOT_DE_PASSE_ADMIN) {
-      setDeverrouille(true);
-      setErreurAcces("");
-    } else {
-      setErreurAcces("Mot de passe incorrect.");
-    }
-  };
-
-  const majChamp = (champ, valeur) => setForm((p) => ({ ...p, [champ]: valeur }));
-
-  const genererMotDePasse = () => {
-    const motDePasse = Math.random().toString(36).slice(-8) + "!" + Math.floor(Math.random() * 100);
-    majChamp("motDePasse", motDePasse);
-  };
-
-  const soumettre = async (e) => {
-    e.preventDefault();
-    setErreur("");
-    setSucces("");
-    setChargement(true);
+  const gererDeconnexion = async () => {
+    setDeconnexionEnCours(true);
     try {
-      await creerPartenaireParAdmin({
-        ...form,
-        email: form.email.trim(),
-        motDePasse: form.motDePasse.trim(),
-      });
-      setSucces(`Compte créé pour ${form.email.trim()}. Transmettez-lui l'email et le mot de passe : ${form.motDePasse.trim()}`);
-      setForm({
-        email: "",
-        motDePasse: "",
-        nom: "",
-        nomEntreprise: "",
-        telephone: "",
-        pays: "France",
-        adresse: "",
-      });
-    } catch (err) {
-      console.error("Erreur lors de la création du partenaire :", err);
-      setErreur(traduireErreur(err.code));
+      await seDeconnecter();
     } finally {
-      setChargement(false);
+      setDeconnexionEnCours(false);
     }
   };
-
-  if (!deverrouille) {
-    return (
-      <div className={styles.app} style={{ alignItems: "center", justifyContent: "center" }}>
-        <div className={styles.panel} style={{ width: 340, maxWidth: "90%" }}>
-          <h2 className={styles.panelTitleStandalone}>Accès admin</h2>
-          {erreurAcces && <p style={{ color: "#c0392b", fontSize: 13, marginBottom: 10 }}>{erreurAcces}</p>}
-          <form onSubmit={verifierAcces} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div className={styles.field}>
-              <label>Mot de passe admin</label>
-              <input
-                type="password"
-                required
-                value={motDePasseSaisi}
-                onChange={(e) => setMotDePasseSaisi(e.target.value)}
-              />
-            </div>
-            <button type="submit" className={styles.modalSubmit}>
-              Entrer
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className={styles.app} style={{ alignItems: "center", justifyContent: "center" }}>
-      <div className={styles.panel} style={{ width: 440, maxWidth: "92%" }}>
-        <h2 className={styles.panelTitleStandalone}>Créer un compte partenaire</h2>
-
-        {succes && (
-          <div className={styles.successBanner} style={{ display: "block" }}>
-            {succes}
-          </div>
-        )}
-        {erreur && <p style={{ color: "#c0392b", fontSize: 13, marginBottom: 10 }}>{erreur}</p>}
-
-        <form onSubmit={soumettre} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <div className={styles.field}>
-            <label>Email du partenaire</label>
-            <input type="email" required value={form.email} onChange={(e) => majChamp("email", e.target.value)} />
-          </div>
-
-          <div className={styles.field}>
-            <label>Mot de passe à lui transmettre</label>
-            <div style={{ display: "flex", gap: 8 }}>
-              <input
-                type="text"
-                required
-                minLength={6}
-                value={form.motDePasse}
-                onChange={(e) => majChamp("motDePasse", e.target.value)}
-                style={{ flex: 1 }}
-              />
-              <button type="button" className={styles.modalCancel} onClick={genererMotDePasse}>
-                Générer
-              </button>
-            </div>
-          </div>
-
-          <div className={styles.field}>
-            <label>Nom complet</label>
-            <input required value={form.nom} onChange={(e) => majChamp("nom", e.target.value)} />
-          </div>
-          <div className={styles.field}>
-            <label>Nom de l'entreprise</label>
-            <input value={form.nomEntreprise} onChange={(e) => majChamp("nomEntreprise", e.target.value)} />
-          </div>
-          <div className={styles.field}>
-            <label>Téléphone</label>
-            <input value={form.telephone} onChange={(e) => majChamp("telephone", e.target.value)} />
-          </div>
-          <div className={styles.field}>
-            <label>Pays</label>
-            <select value={form.pays} onChange={(e) => majChamp("pays", e.target.value)}>
-              <option value="France">France</option>
-              <option value="Côte d'Ivoire">Côte d'Ivoire</option>
-            </select>
-          </div>
-          <div className={styles.field}>
-            <label>Adresse</label>
-            <input value={form.adresse} onChange={(e) => majChamp("adresse", e.target.value)} />
-          </div>
-
-          <button type="submit" className={styles.modalSubmit} disabled={chargement}>
-            {chargement ? "Création en cours..." : "Créer le compte"}
-          </button>
-        </form>
+      <div className={styles.panel} style={{ width: 420, maxWidth: "90%", textAlign: "center" }}>
+        <h2 className={styles.panelTitleStandalone} style={{ marginBottom: 8 }}>
+          Compte suspendu
+        </h2>
+        <p style={{ fontSize: 13.5, color: "#6b7280", marginBottom: 20 }}>
+          L'accès du compte <strong>{email}</strong> à l'espace partenaire a été
+          suspendu. Contactez GVIP pour plus d'informations.
+        </p>
+        <button className={styles.modalSubmit} onClick={gererDeconnexion} disabled={deconnexionEnCours}>
+          {deconnexionEnCours ? "Veuillez patienter..." : "Se déconnecter"}
+        </button>
       </div>
     </div>
   );
@@ -680,7 +490,6 @@ function PageAdmin() {
 
 // ============ COMPOSANT PRINCIPAL ============
 export default function Dashboard() {
-  const estPageAdmin = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
 
   // ---------- Authentification ----------
   const [uid, setUid] = useState(null);
@@ -690,6 +499,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user && redirectionApresDeconnexion) return;
       try {
         if (user) {
           setUid(user.uid);
@@ -717,16 +527,17 @@ export default function Dashboard() {
   const [navOpen, setNavOpen] = useState(false);
   const [section, setSection] = useState("dashboard");
 
-  // ---------- Expéditions ----------
+  // ---------- Expéditions (les « Planifié » à venir sont affichées comme départs sur l'accueil) ----------
   const [shipments, setShipments] = useState([]);
-  const [modalOuvert, setModalOuvert] = useState(false);
-  const [formExpedition, setFormExpedition] = useState(initialForm);
+  const [formExpedition, setFormExpedition] = useState(null); // null = fenêtre fermée
+  const [idExpeditionEditee, setIdExpeditionEditee] = useState(null);
+  const [enregistrementExpedition, setEnregistrementExpedition] = useState(false);
   const [expFilter, setExpFilter] = useState("Tous");
   const [expSearch, setExpSearch] = useState("");
 
   useEffect(() => {
     if (!uid) return;
-    const unsubscribe = ecouterExpeditionsPartenaire(uid, setShipments);
+    const unsubscribe = ecouterExpeditionsCompagnie(uid, setShipments);
     return () => unsubscribe();
   }, [uid]);
 
@@ -754,37 +565,99 @@ export default function Dashboard() {
     return () => unsubscribe();
   }, [uid]);
 
-  const majChampExpedition = (champ, valeur) => setFormExpedition((prec) => ({ ...prec, [champ]: valeur }));
-  const ouvrirModal = () => setModalOuvert(true);
-  const fermerModal = () => {
-    setModalOuvert(false);
-    setFormExpedition(initialForm);
-  };
-
-  const ajouterExpedition = async (e) => {
-    e.preventDefault();
-    if (!formExpedition.date || !formExpedition.from || !formExpedition.weight) return;
-    try {
-      await ajouterExpeditionFirebase(uid, {
-        date: formExpedition.date,
-        villeDepart: formExpedition.from,
-        villeArrivee: formExpedition.to,
-        poids: formExpedition.weight,
-        statut: formExpedition.status,
-      });
-      fermerModal();
-    } catch (err) {
-      console.error("Erreur lors de l'ajout de l'expédition :", err);
-      alert("Impossible d'ajouter l'expédition. Réessayez.");
-    }
-  };
-
   const demanderRetrait = (e) => {
     e.preventDefault();
     setRetraitOuvert(false);
     setMontant("");
   };
 
+  // Ouvre la fenêtre d'ajout (sans argument) ou de modification d'une expédition
+  const ouvrirExpedition = (expedition = null) => {
+    setIdExpeditionEditee(expedition?.id || null);
+    if (expedition) {
+      const date = lireDateExpedition(expedition.date);
+      const iso = date
+        ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+        : "";
+      setFormExpedition({
+        ...expedition,
+        paysDepart: expedition.paysDepart || "France",
+        paysArrivee: expedition.paysArrivee || "Côte d'Ivoire",
+        date: iso,
+        heure: expedition.heure || "",
+        frequence: expedition.frequence || "unique",
+        limiteKg: expedition.limiteKg ?? "",
+        tarifParKilo: expedition.tarifParKilo ?? profile?.tarifParKilo ?? "",
+        poids: expedition.poids ? extraireNombre(expedition.poids) || "" : "",
+        statut: expedition.statut || "Planifié",
+        notes: expedition.notes || "",
+      });
+    } else {
+      setFormExpedition({
+        paysDepart: "France",
+        villeDepart: "",
+        paysArrivee: "Côte d'Ivoire",
+        villeArrivee: "",
+        date: "",
+        heure: "",
+        frequence: "unique",
+        limiteKg: "",
+        tarifParKilo: profile?.tarifParKilo || "",
+        poids: "",
+        statut: "Planifié",
+        notes: "",
+      });
+    }
+  };
+  const fermerExpedition = () => {
+    setFormExpedition(null);
+    setIdExpeditionEditee(null);
+  };
+  const majChampExpedition = (champ, valeur) => setFormExpedition((p) => ({ ...p, [champ]: valeur }));
+  const lireNombreSaisi = (valeur) => parseFloat(String(valeur).replace(",", ".")) || 0;
+
+  const soumettreExpedition = async (e) => {
+    e.preventDefault();
+    setEnregistrementExpedition(true);
+    try {
+      const poids = lireNombreSaisi(formExpedition.poids);
+      await enregistrerExpedition(idExpeditionEditee, {
+        ...(formExpedition.reference ? { reference: formExpedition.reference } : {}),
+        ...(formExpedition.dateCreation ? { dateCreation: formExpedition.dateCreation } : {}),
+        idPartenaire: uid,
+        nomCompagnie: profile.nomEntreprise || profile.nom,
+        paysDepart: formExpedition.paysDepart,
+        villeDepart: formExpedition.villeDepart.trim(),
+        paysArrivee: formExpedition.paysArrivee,
+        villeArrivee: formExpedition.villeArrivee.trim(),
+        date: formExpedition.date,
+        heure: formExpedition.heure,
+        frequence: formExpedition.frequence,
+        limiteKg: lireNombreSaisi(formExpedition.limiteKg),
+        tarifParKilo: lireNombreSaisi(formExpedition.tarifParKilo),
+        poids: poids ? `${poids} kg` : "",
+        statut: formExpedition.statut,
+        notes: formExpedition.notes.trim(),
+        compagnieSuspendue: false,
+      });
+      fermerExpedition();
+    } catch (err) {
+      console.error("Erreur lors de l'enregistrement de l'expédition :", err);
+      alert("Impossible d'enregistrer l'expédition. Réessayez.");
+    } finally {
+      setEnregistrementExpedition(false);
+    }
+  };
+
+  const retirerExpedition = async (expedition) => {
+    if (!window.confirm(`Supprimer l'expédition ${expedition.reference || ""} (${expedition.villeDepart} → ${expedition.villeArrivee}) ?`)) return;
+    try {
+      await supprimerExpedition(expedition.id);
+    } catch (err) {
+      console.error("Erreur lors de la suppression de l'expédition :", err);
+      alert("Impossible de supprimer l'expédition. Réessayez.");
+    }
+  };
   const majChampProfil = (champ, valeur) => setProfilForm((p) => ({ ...p, [champ]: valeur }));
   const annulerProfil = () => {
     setProfilForm(profile);
@@ -828,11 +701,6 @@ export default function Dashboard() {
     setNavOpen(false);
   };
 
-  // ---------- Route admin ----------
-  if (estPageAdmin) {
-    return <PageAdmin />;
-  }
-
   // ---------- Écrans conditionnels ----------
   if (verificationEnCours) {
     return <p style={{ textAlign: "center", marginTop: 60 }}>Chargement...</p>;
@@ -844,6 +712,10 @@ export default function Dashboard() {
 
   if (!profile) {
     return <EcranProfilIntrouvable email={emailConnecte} />;
+  }
+
+  if (profile.statut === "suspendu") {
+    return <EcranCompteSuspendu email={emailConnecte} />;
   }
 
   const initials = profile.nom.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
@@ -999,7 +871,7 @@ export default function Dashboard() {
                     <div className={styles.panelHeader}>
                       <h3>Mes expéditions récentes</h3>
                       <div className={styles.panelHeaderActions}>
-                        <button className={styles.addButton} onClick={ouvrirModal}>
+                        <button className={styles.addButton} onClick={() => ouvrirExpedition()}>
                           <Icon name="plus" className={styles.linkIcon} />
                           Ajouter une expédition
                         </button>
@@ -1024,7 +896,7 @@ export default function Dashboard() {
                             <tr key={row.id}>
                               <td className={styles.dateCell}>
                                 <Icon name="package" className={styles.rowIcon} />
-                                {row.date}
+                                {afficherDate(row.date)}
                               </td>
                               <td>
                                 {row.villeDepart} <Icon name="arrowRight" className={styles.routeIcon} /> {row.villeArrivee}
@@ -1152,9 +1024,11 @@ export default function Dashboard() {
               <div className={styles.headerRow}>
                 <div>
                   <h1 className={styles.pageTitle}>Mes expéditions</h1>
-                  <p className={styles.pageSubtitle}>{shipments.length} expéditions au total</p>
+                  <p className={styles.pageSubtitle}>
+                    {shipments.length} expéditions au total · les expéditions « Planifié » à venir sont affichées comme départs sur la page d&rsquo;accueil
+                  </p>
                 </div>
-                <button className={styles.addButton} onClick={ouvrirModal}>
+                <button className={styles.addButton} onClick={() => ouvrirExpedition()}>
                   <Icon name="plus" className={styles.linkIcon} />
                   Ajouter une expédition
                 </button>
@@ -1189,17 +1063,22 @@ export default function Dashboard() {
                     <thead>
                       <tr>
                         <th>Référence</th>
-                        <th>Date</th>
-                        <th>Destination</th>
+                        <th>Départ</th>
+                        <th>Trajet</th>
+                        <th>Fréquence</th>
+                        <th>Limite · Tarif</th>
                         <th>Poids</th>
                         <th>Statut</th>
+                        <th />
                       </tr>
                     </thead>
                     <tbody>
                       {filteredShipments.length === 0 && (
                         <tr>
-                          <td colSpan={5} className={styles.emptyCell}>
-                            Aucune expédition ne correspond à votre recherche.
+                          <td colSpan={8} className={styles.emptyCell}>
+                            {shipments.length === 0
+                              ? "Aucune expédition. Cliquez sur « Ajouter une expédition » pour publier votre premier départ."
+                              : "Aucune expédition ne correspond à votre recherche."}
                           </td>
                         </tr>
                       )}
@@ -1208,14 +1087,30 @@ export default function Dashboard() {
                           <td className={styles.refCell}>{row.reference}</td>
                           <td className={styles.dateCell}>
                             <Icon name="package" className={styles.rowIcon} />
-                            {row.date}
+                            {afficherDate(prochaineDateDepart(row) || row.date)}
+                            {row.heure ? ` · ${row.heure}` : ""}
                           </td>
                           <td>
                             {row.villeDepart} <Icon name="arrowRight" className={styles.routeIcon} /> {row.villeArrivee}
                           </td>
-                          <td>{row.poids}</td>
+                          <td>{libelleFrequence(row)}</td>
+                          <td>
+                            {row.limiteKg ? `${row.limiteKg} kg` : "—"} · {row.tarifParKilo ? `${row.tarifParKilo} €/kg` : "—"}
+                          </td>
+                          <td>{row.poids || "—"}</td>
                           <td>
                             <span className={`${styles.badge} ${styles[statusStyles[row.statut]]}`}>{row.statut}</span>
+                            {estDepartAffiche(row) && (
+                              <div style={{ fontSize: 11, color: "#16a34a", marginTop: 4 }}>Visible sur l&rsquo;accueil</div>
+                            )}
+                          </td>
+                          <td style={{ whiteSpace: "nowrap", textAlign: "right" }}>
+                            <button className={styles.modalCancel} style={{ padding: "6px 10px" }} onClick={() => ouvrirExpedition(row)} aria-label="Modifier" title="Modifier">
+                              <Icon name="edit" className={styles.linkIcon} />
+                            </button>{" "}
+                            <button className={styles.modalCancel} style={{ padding: "6px 10px" }} onClick={() => retirerExpedition(row)} aria-label="Supprimer" title="Supprimer">
+                              <Icon name="close" className={styles.linkIcon} />
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -1485,74 +1380,91 @@ export default function Dashboard() {
         </footer>
       </div>
 
-      {modalOuvert && (
-        <div className={styles.overlay} onClick={fermerModal}>
+      {formExpedition && (
+        <div className={styles.overlay} onClick={fermerExpedition}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <h3>Ajouter une expédition</h3>
-              <button className={styles.modalClose} onClick={fermerModal} aria-label="Fermer">
+              <h3>{idExpeditionEditee ? "Modifier l'expédition" : "Ajouter une expédition"}</h3>
+              <button className={styles.modalClose} onClick={fermerExpedition} aria-label="Fermer">
                 <Icon name="close" className={styles.navIcon} />
               </button>
             </div>
-            <form className={styles.modalForm} onSubmit={ajouterExpedition}>
-              <div className={styles.modalField}>
-                <label>Date</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ex : 14 septembre 2026"
-                  value={formExpedition.date}
-                  onChange={(e) => majChampExpedition("date", e.target.value)}
-                />
+            <form className={styles.modalForm} onSubmit={soumettreExpedition}>
+              <div className={styles.modalRow}>
+                <div className={styles.modalField}>
+                  <label>Pays de départ</label>
+                  <select value={formExpedition.paysDepart} onChange={(e) => majChampExpedition("paysDepart", e.target.value)}>
+                    {PAYS_DEPARTS.map((p) => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+                <div className={styles.modalField}>
+                  <label>Ville de départ</label>
+                  <input required placeholder="Ex : Paris" value={formExpedition.villeDepart} onChange={(e) => majChampExpedition("villeDepart", e.target.value)} />
+                </div>
               </div>
               <div className={styles.modalRow}>
                 <div className={styles.modalField}>
-                  <label>Ville de départ</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ex : Paris"
-                    value={formExpedition.from}
-                    onChange={(e) => majChampExpedition("from", e.target.value)}
-                  />
+                  <label>Pays d'arrivée</label>
+                  <select value={formExpedition.paysArrivee} onChange={(e) => majChampExpedition("paysArrivee", e.target.value)}>
+                    {PAYS_DEPARTS.map((p) => <option key={p} value={p}>{p}</option>)}
+                  </select>
                 </div>
                 <div className={styles.modalField}>
                   <label>Ville d'arrivée</label>
-                  <input
-                    type="text"
-                    required
-                    value={formExpedition.to}
-                    onChange={(e) => majChampExpedition("to", e.target.value)}
-                  />
+                  <input required placeholder="Ex : Abidjan" value={formExpedition.villeArrivee} onChange={(e) => majChampExpedition("villeArrivee", e.target.value)} />
                 </div>
               </div>
               <div className={styles.modalRow}>
                 <div className={styles.modalField}>
-                  <label>Poids</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ex : 10 kg"
-                    value={formExpedition.weight}
-                    onChange={(e) => majChampExpedition("weight", e.target.value)}
-                  />
+                  <label>{formExpedition.frequence === "unique" ? "Date du départ" : "Premier départ"}</label>
+                  <input type="date" required value={formExpedition.date} onChange={(e) => majChampExpedition("date", e.target.value)} />
+                </div>
+                <div className={styles.modalField}>
+                  <label>Heure</label>
+                  <input type="time" required value={formExpedition.heure} onChange={(e) => majChampExpedition("heure", e.target.value)} />
+                </div>
+              </div>
+              <div className={styles.modalField}>
+                <label>Fréquence</label>
+                <select value={formExpedition.frequence} onChange={(e) => majChampExpedition("frequence", e.target.value)}>
+                  {Object.entries(FREQUENCES_DEPART).map(([cle, libelle]) => <option key={cle} value={cle}>{libelle}</option>)}
+                </select>
+              </div>
+              <div className={styles.modalRow}>
+                <div className={styles.modalField}>
+                  <label>Limite par client (kg)</label>
+                  <input type="number" min="0" step="0.5" required placeholder="Ex : 30" value={formExpedition.limiteKg} onChange={(e) => majChampExpedition("limiteKg", e.target.value)} />
+                </div>
+                <div className={styles.modalField}>
+                  <label>Tarif (€ par kg)</label>
+                  <input type="number" min="0" step="0.01" required placeholder="Ex : 8" value={formExpedition.tarifParKilo} onChange={(e) => majChampExpedition("tarifParKilo", e.target.value)} />
+                </div>
+              </div>
+              <div className={styles.modalField}>
+                <label>Informations utiles (facultatif)</label>
+                <input placeholder="Ex : dépôt des colis la veille avant 18h, à Château-Rouge" value={formExpedition.notes} onChange={(e) => majChampExpedition("notes", e.target.value)} />
+              </div>
+              <div className={styles.modalRow}>
+                <div className={styles.modalField}>
+                  <label>Poids transporté (kg)</label>
+                  <input type="number" min="0" step="0.1" placeholder="À remplir une fois chargé" value={formExpedition.poids} onChange={(e) => majChampExpedition("poids", e.target.value)} />
                 </div>
                 <div className={styles.modalField}>
                   <label>Statut</label>
-                  <select value={formExpedition.status} onChange={(e) => majChampExpedition("status", e.target.value)}>
-                    <option value="Planifié">Planifié</option>
-                    <option value="En cours">En cours</option>
-                    <option value="À récupérer">À récupérer</option>
-                    <option value="Livré">Livré</option>
+                  <select value={formExpedition.statut} onChange={(e) => majChampExpedition("statut", e.target.value)}>
+                    {STATUTS_EXPEDITION.map((s) => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
               </div>
+              <p style={{ fontSize: 12, color: "#6b7280", margin: 0 }}>
+                Tant qu&rsquo;elle est « Planifié » et à venir, cette expédition est affichée comme départ sur la page d&rsquo;accueil.
+              </p>
               <div className={styles.modalActions}>
-                <button type="button" className={styles.modalCancel} onClick={fermerModal}>
+                <button type="button" className={styles.modalCancel} onClick={fermerExpedition}>
                   Annuler
                 </button>
-                <button type="submit" className={styles.modalSubmit}>
-                  Ajouter
+                <button type="submit" className={styles.modalSubmit} disabled={enregistrementExpedition}>
+                  {enregistrementExpedition ? "Enregistrement..." : idExpeditionEditee ? "Enregistrer" : "Ajouter"}
                 </button>
               </div>
             </form>
