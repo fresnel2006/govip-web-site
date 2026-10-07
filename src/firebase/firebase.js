@@ -314,7 +314,7 @@ export function ecouterCompagnies(onData, onError) {
  * Passe par l'instance secondaire pour ne pas déconnecter l'admin.
  * @returns {Promise<string>} l'uid de la compagnie créée
  */
-export async function creerCompagnie({ email, motDePasse, nom, nomEntreprise, telephone, pays, adresse }) {
+export async function creerCompagnie({ email, motDePasse, nom, nomEntreprise, telephone, pays, adresse, logoUrl = '', description = '' }) {
     const identifiants = await createUserWithEmailAndPassword(authSecondaire, email, motDePasse);
     const uid = identifiants.user.uid;
 
@@ -325,6 +325,8 @@ export async function creerCompagnie({ email, motDePasse, nom, nomEntreprise, te
         telephone,
         pays,
         adresse,
+        logoUrl,
+        description,
         statut: 'actif',
         role: 'partenaire',
         dateInscription: Date.now(),
