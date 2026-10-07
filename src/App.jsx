@@ -10,6 +10,7 @@ function App() {
 
 
   return (
+    
     <BrowserRouter>
       <Routes>
         <Route path="/espace_partenaire" element={<Dashboard />} />
@@ -20,6 +21,7 @@ function App() {
       </Routes>
     </BrowserRouter>
   )
+
 }
 
 export default App

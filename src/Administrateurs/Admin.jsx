@@ -158,7 +158,10 @@ function BadgeCompagnie({ compagnie }) {
         : <Badge ton="vert">Active</Badge>;
 }
 
-function Avatar({ texte, grand = false }) {
+function Avatar({ texte, image, grand = false }) {
+    if (image) {
+        return <img src={image} alt="" className={`${styles.avatar} ${grand ? styles.avatar_grand : ''}`} style={{ objectFit: 'cover', padding: 0 }} />;
+    }
     return (
         <span className={`${styles.avatar} ${grand ? styles.avatar_grand : ''}`} aria-hidden="true">
             {initiales(texte)}
@@ -652,6 +655,7 @@ function FicheCompagnie({ compagnie, expeditions, tickets, onClose, onAction }) 
         ['Téléphone', compagnie.telephone],
         ['Pays', compagnie.pays],
         ['Adresse', compagnie.adresse],
+        ...(compagnie.description ? [['Description', compagnie.description]] : []),
         ['Tarif par kilo', compagnie.tarifParKilo ? `${formatNombre(compagnie.tarifParKilo)} €` : 'Non défini'],
         ['Inscrite le', formatDate(compagnie.dateInscription)],
         ['Identifiant', compagnie.id],
@@ -662,7 +666,7 @@ function FicheCompagnie({ compagnie, expeditions, tickets, onClose, onAction }) 
             onClose={onClose}
             entete={
                 <>
-                    <Avatar texte={nomCompagnie(compagnie)} grand />
+                    <Avatar texte={nomCompagnie(compagnie)} image={compagnie.logoUrl} grand />
                     <div style={{ minWidth: 0 }}>
                         <h2 className={styles.modale_titre}>{nomCompagnie(compagnie)}</h2>
                         <div style={{ marginTop: 6 }}><BadgeCompagnie compagnie={compagnie} /></div>
@@ -888,7 +892,7 @@ function Compagnies({ compagnies, expeditions, tickets, chargement, notifier, on
                                         <tr key={c.id} className={styles.ligne_cliquable} onClick={() => setIdOuverte(c.id)}>
                                             <td>
                                                 <div className={styles.cellule_compagnie}>
-                                                    <Avatar texte={nomCompagnie(c)} />
+                                                    <Avatar texte={nomCompagnie(c)} image={c.logoUrl} />
                                                     <div style={{ minWidth: 0 }}>
                                                         <div className={styles.liste_principal}>{nomCompagnie(c)}</div>
                                                         <div className={styles.liste_secondaire}>{c.nom}</div>
@@ -1109,7 +1113,7 @@ function VueEnsemble({ compagnies, expeditions, tickets, demandes, allerA }) {
                         <ul className={styles.liste}>
                             {classement.map(({ compagnie, total }) => (
                                 <li key={compagnie.id} className={styles.liste_element}>
-                                    <Avatar texte={nomCompagnie(compagnie)} />
+                                    <Avatar texte={nomCompagnie(compagnie)} image={compagnie.logoUrl} />
                                     <div className={styles.liste_texte}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                                             <span className={styles.liste_principal}>{nomCompagnie(compagnie)}</span>
@@ -1160,7 +1164,7 @@ function VueEnsemble({ compagnies, expeditions, tickets, demandes, allerA }) {
                         <ul className={styles.liste}>
                             {dernieresInscriptions.map((c) => (
                                 <li key={c.id} className={styles.liste_element}>
-                                    <Avatar texte={nomCompagnie(c)} />
+                                    <Avatar texte={nomCompagnie(c)} image={c.logoUrl} />
                                     <div className={styles.liste_texte}>
                                         <div className={styles.liste_principal}>{nomCompagnie(c)}</div>
                                         <div className={styles.liste_secondaire}>{c.pays || '—'} · {formatDate(c.dateInscription)}</div>
@@ -1376,7 +1380,7 @@ function Support({ tickets, compagnies, notifier }) {
                         const resolu = t.statut === 'Résolu';
                         return (
                             <li key={t.id} className={styles.liste_element} style={{ alignItems: 'flex-start', padding: '16px 0' }}>
-                                <Avatar texte={noms[t.idPartenaire] || '?'} />
+                                <Avatar texte={noms[t.idPartenaire] || '?'} image={compagnies.find((c) => c.id === t.idPartenaire)?.logoUrl} />
                                 <div className={styles.liste_texte}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                                         <span style={{ fontWeight: 600 }}>{t.sujet || 'Sans sujet'}</span>
@@ -1740,6 +1744,7 @@ function Admin() {
         nom: [demande.prenom, demande.nom].filter(Boolean).join(' '),
         email: demande.email || '',
         telephone: demande.telephone || '',
+        logoUrl: demande.logoUrl || '',
     }, demande.id);
 
     const apresCreation = async (donnees) => {
