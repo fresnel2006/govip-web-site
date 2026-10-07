@@ -626,6 +626,8 @@ export default function Dashboard() {
         ...(formExpedition.dateCreation ? { dateCreation: formExpedition.dateCreation } : {}),
         idPartenaire: uid,
         nomCompagnie: profile.nomEntreprise || profile.nom,
+        logoUrl: profile.logoUrl || "",
+        descriptionCompagnie: profile.description || "",
         paysDepart: formExpedition.paysDepart,
         villeDepart: formExpedition.villeDepart.trim(),
         paysArrivee: formExpedition.paysArrivee,

@@ -409,6 +409,23 @@
     height: auto;
 }
 
+/* liens du footer : meme rendu que le texte, souligne au survol */
+.lien_footer {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.lien_footer:hover {
+    text-decoration: underline;
+    color: rgb(120, 200, 120);
+}
+
 .info_compagnie1 {
     padding: 10px;
     height: 180px;
@@ -514,6 +531,14 @@
 
 .compagnies {
     flex-shrink: 0;
+}
+
+/* fond des cartes au depart de la Cote d'Ivoire (le degrade s'affiche tant que la photo n'est pas ajoutee) */
+.info_compagnie1.fond_cote_ivoire {
+    background-image:
+        linear-gradient(rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.25)),
+        url("../assets/cote_ivoire.png"),
+        linear-gradient(135deg, #f77f00, #009e60);
 }
 
 /* Intro (titre + sous-titre) de "comment ca marche" */

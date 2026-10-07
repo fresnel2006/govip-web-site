@@ -452,7 +452,7 @@ function Acceuil(){
         <select>
         <option value="">Pays de départ</option>
         <option value="ci">Côte d'Ivoire</option>
-        <option value="sn">Sénégal</option>
+        <option value="fr">France</option>
       </select>
 </div>
 <div className={styles.champs}>
@@ -506,7 +506,7 @@ function Acceuil(){
                 <div className={styles.container_des_compagnies} style={voirTousDeparts && !isMobile ? { flexWrap: 'wrap' } : undefined}>
                 {departsAffiches.map((d) => (
                 <div key={d.id} className={styles.compagnies}>
-                    <div className={styles.info_compagnie1}>
+                    <div className={`${styles.info_compagnie1} ${d.paysDepart === "Côte d'Ivoire" ? styles.fond_cote_ivoire : ''}`}>
 <div className={styles.partie1}>
 <div className={styles.information_sur_depart}>
     <p>Depart confirme</p>
@@ -537,9 +537,13 @@ function Acceuil(){
                     <div className={styles.info_compagnie2}>
 <div className={styles.image_nom_des_compagnies}>
 
+{d.logoUrl ? (
+<img src={d.logoUrl} alt={d.nomCompagnie || 'logo'} className={styles.images_compagines} style={{ objectFit: 'cover', backgroundColor: 'white' }} />
+) : (
 <div className={styles.images_compagines} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 14 }}>
 {initialesCompagnie(d.nomCompagnie)}
 </div>
+)}
 <div className={styles.nom_avis_compagnies}>
 <p><strong>{d.nomCompagnie || 'Compagnie GVIP'}</strong></p>
 <p>{d.villeDepart} → {d.villeArrivee}</p>
@@ -624,35 +628,38 @@ function Acceuil(){
 </div>
 <div className={styles.footer_partie2}>
     <p style={{marginBottom:20,fontSize:21}}><strong>Navigation</strong></p>
-    <p>Accueil <br />
-Trouver un départ<br />
-Nos transporteurs<br />
-Comment ça marche<br />
-A propos<br />
-Contact</p>
+    <p>
+<button type='button' className={styles.lien_footer} onClick={() => scrollVers('acceuil')}>Accueil</button><br />
+<button type='button' className={styles.lien_footer} onClick={() => scrollVers('trouver-depart')}>Trouver un départ</button><br />
+<button type='button' className={styles.lien_footer} onClick={() => scrollVers('nos-transport')}>Nos transporteurs</button><br />
+<button type='button' className={styles.lien_footer} onClick={() => scrollVers('comment-ca-marche')}>Comment ça marche</button><br />
+<button type='button' className={styles.lien_footer} onClick={() => scrollVers('a-propos')}>A propos</button><br />
+<button type='button' className={styles.lien_footer} onClick={() => scrollVers('contact')}>Contact</button></p>
 </div>
 <div className={styles.footer_partie3}>
     <p style={{marginBottom:20,fontSize:21}}><strong>Espace partenaire</strong></p>
-    <p>Se connecter<br />
-Devenir partenaire<br />
-Publier un départ<br />
-Tableau de bord</p>
+    <p>
+<button type='button' className={styles.lien_footer} onClick={ouvrirModalConnexion}>Se connecter</button><br />
+<button type='button' className={styles.lien_footer} onClick={ouvrirModalPartenaire}>Devenir partenaire</button><br />
+<a className={styles.lien_footer} href="/espace_partenaire">Publier un départ</a><br />
+<a className={styles.lien_footer} href="/espace_partenaire">Tableau de bord</a></p>
 </div>
 <div className={styles.footer_partie4}>
 <p style={{marginBottom:20,fontSize:21}}><strong>Informations</strong></p>
+{/* TODO : pages CGV / confidentialite / mentions legales / FAQ a creer */}
 <p>Conditions générales (CGV)<br />
 Politique de confidentialité<br />
 Mentions légales<br />
 FAQ<br />
-Nous contacter</p>
+<a className={styles.lien_footer} href="mailto:contact@gvipcolis.com">Nous contacter</a></p>
 </div>
 <div className={styles.footer_partie5} id="contact">
     <p style={{marginBottom:20,fontSize:21}}><strong>Suivez-nous</strong></p>
 <p><FaInstagram/> <FaTiktok/> <FaYoutube/> <FaWhatsapp/> <br />
 
 Contact<br />
-contact@gvipcolis.com<br />
-+33 6 00 00 00 00<br />
+<a className={styles.lien_footer} href="mailto:contact@gvipcolis.com">contact@gvipcolis.com</a><br />
+<a className={styles.lien_footer} href="tel:+33758145546">+33 7 58 14 55 46</a><br />
 Lun - Ven : 9h00 - 18h00</p>
 </div>
         </div>
@@ -673,6 +680,12 @@ Lun - Ven : 9h00 - 18h00</p>
                 </button>
             </div>
             <div className={styles.corpsFormulairePartenaire}>
+                {(departOuvert.logoUrl || departOuvert.descriptionCompagnie) && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingBottom: 12, borderBottom: '1px solid #eee' }}>
+                    {departOuvert.logoUrl && <img src={departOuvert.logoUrl} alt="" style={{ width: 56, height: 56, borderRadius: 12, objectFit: 'cover', flexShrink: 0 }} />}
+                    {departOuvert.descriptionCompagnie && <p style={{ margin: 0, fontSize: 13, color: '#4b5563' }}>{departOuvert.descriptionCompagnie}</p>}
+                </div>
+                )}
                 <p style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 16, margin: 0 }}>
                     <DrapeauPays pays={departOuvert.paysDepart} /> {departOuvert.villeDepart}
                     <FaArrowRight size={13} />
