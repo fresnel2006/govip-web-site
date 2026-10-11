@@ -309,12 +309,63 @@ export function ecouterCompagnies(onData, onError) {
     return ecouterListe('partenaires', onData, onError);
 }
 
+/** Clé d'un numéro dans l'index "telephonesPartenaires" (9 derniers chiffres). Identique côté Cloud Function. */
+export function cleTelephone(telephone) {
+    const chiffres = String(telephone || '').replace(/\D/g, '');
+    return chiffres.length >= 8 ? chiffres.slice(-9) : null;
+}
+
+/** Vrai si une compagnie partenaire utilise déjà ce numéro (lecture publique d'une seule clé). */
+export async function telephoneDejaPartenaire(telephone) {
+    const cle = cleTelephone(telephone);
+    if (!cle) return false;
+    return (await get(ref(db, `telephonesPartenaires/${cle}`))).exists();
+}
+
+/**
+ * Vrai si deux numéros désignent la même ligne : on compare les 9 derniers chiffres,
+ * ce qui ignore les espaces et l'indicatif ("+33 7 58 14 55 46" = "07 58 14 55 46").
+ */
+export function memeTelephone(a, b) {
+    const chiffresA = String(a || '').replace(/\D/g, '');
+    const chiffresB = String(b || '').replace(/\D/g, '');
+    if (chiffresA.length < 8 || chiffresB.length < 8) return false;
+    return chiffresA.slice(-9) === chiffresB.slice(-9);
+}
+
+/**
+ * Cherche une compagnie existante qui utilise déjà cet email ou ce numéro.
+ * Lecture réservée à l'admin (règles de la branche "partenaires").
+ * @param {string} [uidIgnore] la compagnie en cours de modification, à ne pas compter
+ * @returns {Promise<'email'|'telephone'|null>}
+ */
+export async function chercherDoublonCompagnie({ email, telephone }, uidIgnore = null) {
+    const snapshot = await get(ref(db, 'partenaires'));
+    const emailNormalise = String(email || '').trim().toLowerCase();
+    for (const [uid, compagnie] of Object.entries(snapshot.val() || {})) {
+        if (uid === uidIgnore) continue;
+        if (emailNormalise && String(compagnie.email || '').trim().toLowerCase() === emailNormalise) return 'email';
+        if (telephone && memeTelephone(compagnie.telephone, telephone)) return 'telephone';
+    }
+    return null;
+}
+
+function erreurDoublon(champ) {
+    const erreur = new Error(`Compagnie déjà existante (${champ})`);
+    erreur.code = champ === 'email' ? 'auth/email-already-in-use' : 'compagnie/telephone-deja-utilise';
+    return erreur;
+}
+
 /**
  * Crée le compte de connexion d'une compagnie + sa fiche dans la base.
  * Passe par l'instance secondaire pour ne pas déconnecter l'admin.
  * @returns {Promise<string>} l'uid de la compagnie créée
  */
 export async function creerCompagnie({ email, motDePasse, nom, nomEntreprise, telephone, pays, adresse, logoUrl = '', description = '' }) {
+    // un expéditeur = un seul compte : email et téléphone uniques
+    const doublon = await chercherDoublonCompagnie({ email, telephone });
+    if (doublon) throw erreurDoublon(doublon);
+
     const identifiants = await createUserWithEmailAndPassword(authSecondaire, email, motDePasse);
     const uid = identifiants.user.uid;
 
@@ -338,10 +389,45 @@ export async function creerCompagnie({ email, motDePasse, nom, nomEntreprise, te
 }
 
 /**
+ * Envoie par email ses identifiants à une compagnie qui vient d'être créée.
+ * Le mot de passe est déposé dans sa fiche ; la Cloud Function "envoyerIdentifiantsCompagnie"
+ * envoie l'email, note le résultat (identifiantsEnvoyes / erreurEnvoiIdentifiants)
+ * puis efface le mot de passe. Se résout quand l'email est parti.
+ */
+export async function envoyerIdentifiantsCompagnie(uidCompagnie, motDePasse, delaiMs = 45000) {
+    const depot = Date.now();
+    await set(ref(db, `partenaires/${uidCompagnie}/envoiIdentifiants`), { motDePasse, date: depot });
+
+    return new Promise((resolve, reject) => {
+        let arreter = () => {};
+        const minuteur = setTimeout(() => {
+            arreter();
+            reject(new Error("Pas de réponse de la fonction d'envoi"));
+        }, delaiMs);
+        arreter = onValue(ref(db, `partenaires/${uidCompagnie}`), (snapshot) => {
+            const fiche = snapshot.val() || {};
+            if (fiche.identifiantsEnvoyes >= depot) {
+                clearTimeout(minuteur);
+                arreter();
+                resolve();
+            } else if (fiche.erreurEnvoiIdentifiants) {
+                clearTimeout(minuteur);
+                arreter();
+                reject(new Error(fiche.erreurEnvoiIdentifiants));
+            }
+        });
+    });
+}
+
+/**
  * Met à jour (fusion) la fiche d'une compagnie.
  * Utilisé pour : modification des infos, suspension / réactivation.
  */
 export async function modifierCompagnie(uid, donnees) {
+    if (donnees.telephone) {
+        const doublon = await chercherDoublonCompagnie({ telephone: donnees.telephone }, uid);
+        if (doublon) throw erreurDoublon(doublon);
+    }
     await update(ref(db, `partenaires/${uid}`), donnees);
 }
 

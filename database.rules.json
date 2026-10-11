@@ -49,6 +49,11 @@
     "demandesPartenaires": {
       ".read": "auth != null",
       ".write": true
+    },
+    "telephonesPartenaires": {
+      "$cle": {
+        ".read": true
+      }
     }
   }
 }

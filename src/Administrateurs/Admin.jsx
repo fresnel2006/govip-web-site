@@ -25,10 +25,12 @@ import {
     ecouterEtatAuth,
     estAdmin,
     ecouterCompagnies,
+    memeTelephone,
     ecouterToutesExpeditions,
     ecouterTousTickets,
     ecouterDemandesPartenaires,
     creerCompagnie,
+    envoyerIdentifiantsCompagnie,
     modifierCompagnie,
     supprimerCompagnie,
     envoyerReinitialisationMotDePasse,
@@ -347,6 +349,7 @@ const PAYS = ["Côte d'Ivoire", 'France'];
 function traduireErreur(code) {
     const messages = {
         'auth/email-already-in-use': 'Cet email est déjà utilisé par un autre compte.',
+        'compagnie/telephone-deja-utilise': 'Ce numéro de téléphone est déjà utilisé par une autre compagnie.',
         'auth/invalid-email': 'Adresse email invalide.',
         'auth/weak-password': 'Le mot de passe doit contenir au moins 6 caractères.',
         'auth/network-request-failed': 'Problème de connexion internet.',
@@ -390,6 +393,7 @@ function ModaleCreationCompagnie({ valeursInitiales, onClose, onCree }) {
     const [erreur, setErreur] = useState('');
     const [enCours, setEnCours] = useState(false);
     const [identifiants, setIdentifiants] = useState(null);
+    const [etatEmail, setEtatEmail] = useState(null); // 'envoi' | 'ok' | 'echec'
     const [copie, setCopie] = useState(false);
 
     const maj = (champ) => (e) => setForm((p) => ({ ...p, [champ]: e.target.value }));
@@ -408,9 +412,17 @@ function ModaleCreationCompagnie({ valeursInitiales, onClose, onCree }) {
             adresse: form.adresse.trim(),
         };
         try {
-            await creerCompagnie(donnees);
+            const uid = await creerCompagnie(donnees);
             setIdentifiants({ nom: donnees.nomEntreprise, email: donnees.email, motDePasse: donnees.motDePasse });
             onCree?.(donnees);
+            // la compagnie recoit ses identifiants par email
+            setEtatEmail('envoi');
+            envoyerIdentifiantsCompagnie(uid, donnees.motDePasse)
+                .then(() => setEtatEmail('ok'))
+                .catch((err) => {
+                    console.error('Erreur envoi email identifiants :', err);
+                    setEtatEmail('echec');
+                });
         } catch (err) {
             console.error('Erreur création compagnie :', err);
             setErreur(traduireErreur(err.code));
@@ -443,9 +455,11 @@ function ModaleCreationCompagnie({ valeursInitiales, onClose, onCree }) {
                 onClose={onClose}
                 pied={
                     <>
+                        {etatEmail === 'echec' && (
                         <button type="button" className={styles.bouton} onClick={copierIdentifiants}>
                             {copie ? <FaCheck /> : <FaCopy />} {copie ? 'Copié' : 'Copier le message'}
                         </button>
+                        )}
                         <button type="button" className={`${styles.bouton} ${styles.bouton_principal}`} onClick={onClose}>
                             Terminé
                         </button>
@@ -455,9 +469,12 @@ function ModaleCreationCompagnie({ valeursInitiales, onClose, onCree }) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                     <div className={styles.succes_icone}><FaCheck size={18} /></div>
                     <p style={{ margin: 0, color: 'var(--texte-2)' }}>
-                        Transmettez ces identifiants à la compagnie. Le mot de passe ne sera
-                        plus affiché après fermeture de cette fenêtre.
+                        {etatEmail === 'envoi' && `Envoi des identifiants par email à ${identifiants.email}…`}
+                        {etatEmail === 'ok' && `Les identifiants ont été envoyés par email à ${identifiants.email}.`}
+                        {etatEmail === 'echec' && "L'email n'a pas pu être envoyé : transmettez ces identifiants à la compagnie vous-même. Le mot de passe ne sera plus affiché après fermeture de cette fenêtre."}
                     </p>
+                    {/* les identifiants ne s'affichent que si l'email n'a pas pu partir */}
+                    {etatEmail === 'echec' && (
                     <div className={styles.identifiants}>
                         <div className={styles.identifiants_ligne}>
                             <span>Espace</span>
@@ -472,6 +489,7 @@ function ModaleCreationCompagnie({ valeursInitiales, onClose, onCree }) {
                             <code>{identifiants.motDePasse}</code>
                         </div>
                     </div>
+                    )}
                 </div>
             </Modale>
         );
@@ -523,14 +541,10 @@ function ModaleCreationCompagnie({ valeursInitiales, onClose, onCree }) {
                     <input id="c-email" type="email" required value={form.email} onChange={maj('email')} />
                 </div>
                 <div className={`${styles.champ} ${styles.champ_large}`}>
-                    <label htmlFor="c-mdp">Mot de passe provisoire *</label>
-                    <div className={styles.champ_groupe}>
-                        <input id="c-mdp" required minLength={6} value={form.motDePasse} onChange={maj('motDePasse')} />
-                        <button type="button" className={styles.bouton} onClick={() => setForm((p) => ({ ...p, motDePasse: genererMotDePasse() }))}>
-                            Générer
-                        </button>
-                    </div>
-                    <span className={styles.champ_aide}>La compagnie pourra le changer avec « mot de passe oublié ».</span>
+                    <span className={styles.champ_aide}>
+                        Un mot de passe est généré automatiquement. À la validation, la compagnie reçoit par email
+                        ses identifiants et le récapitulatif de ses informations.
+                    </span>
                 </div>
             </form>
         </Modale>
@@ -1412,7 +1426,7 @@ function Support({ tickets, compagnies, notifier }) {
 //  Demandes de partenariat (formulaire "devenir partenaire" de l'accueil)
 // ════════════════════════════════════════════════════════════════════════
 
-function Demandes({ demandes, notifier, onCreerCompte }) {
+function Demandes({ demandes, compagnies, notifier, onCreerCompte }) {
     const [filtre, setFiltre] = useState('attente');
     const [recherche, setRecherche] = useState('');
 
@@ -1426,7 +1440,7 @@ function Demandes({ demandes, notifier, onCreerCompte }) {
     const visibles = useMemo(
         () => demandes
             .filter((d) => filtre === 'toutes' || (filtre === 'archives') === Boolean(d.traitee))
-            .filter((d) => correspond(recherche, d.prenom, d.nom, d.email, d.telephone))
+            .filter((d) => correspond(recherche, d.nomEntreprise, d.prenom, d.nom, d.email, d.telephone))
             .sort(parDateDecroissante(filtre === 'archives' ? 'dateArchivage' : 'dateCreation')),
         [demandes, filtre, recherche]
     );
@@ -1469,6 +1483,10 @@ function Demandes({ demandes, notifier, onCreerCompte }) {
                 <ul className={styles.liste} style={{ padding: '0 20px' }}>
                     {visibles.map((d) => {
                         const nomComplet = [d.prenom, d.nom].filter(Boolean).join(' ') || 'Sans nom';
+                        // une compagnie existe deja avec cet email ou ce numero : pas de second compte
+                        const dejaInscrite = !d.compteCree && compagnies.find((c) =>
+                            (d.email && String(c.email || '').toLowerCase() === d.email.trim().toLowerCase())
+                            || memeTelephone(c.telephone, d.telephone));
                         return (
                             <li key={d.id} className={styles.liste_element} style={{ alignItems: 'flex-start', padding: '16px 0', flexWrap: 'wrap' }}>
                                 {d.logoUrl ? (
@@ -1478,8 +1496,9 @@ function Demandes({ demandes, notifier, onCreerCompte }) {
                                 )}
                                 <div className={styles.liste_texte}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                                        <span style={{ fontWeight: 600 }}>{nomComplet}</span>
+                                        <span style={{ fontWeight: 600 }}>{d.nomEntreprise ? `${d.nomEntreprise} · ${nomComplet}` : nomComplet}</span>
                                         {!d.traitee && <Badge ton="orange">En attente</Badge>}
+                                        {dejaInscrite && <Badge ton="rouge">Déjà inscrite : {nomCompagnie(dejaInscrite)}</Badge>}
                                         {d.traitee && d.compteCree && <Badge ton="vert">Compte créé</Badge>}
                                         {d.traitee && !d.compteCree && <Badge ton="gris">Archivée</Badge>}
                                     </div>
@@ -1741,6 +1760,7 @@ function Admin() {
     const ouvrirCreation = (valeurs = {}, demandeId = null) => setCreation({ valeurs, demandeId });
 
     const creerDepuisDemande = (demande) => ouvrirCreation({
+        nomEntreprise: demande.nomEntreprise || '',
         nom: [demande.prenom, demande.nom].filter(Boolean).join(' '),
         email: demande.email || '',
         telephone: demande.telephone || '',
@@ -1856,7 +1876,7 @@ function Admin() {
                         )}
                         {section === 'expeditions' && <Expeditions expeditions={expeditions} compagnies={compagnies} notifier={notifier} />}
                         {section === 'support' && <Support tickets={tickets} compagnies={compagnies} notifier={notifier} />}
-                        {section === 'demandes' && <Demandes demandes={demandes} notifier={notifier} onCreerCompte={creerDepuisDemande} />}
+                        {section === 'demandes' && <Demandes demandes={demandes} compagnies={compagnies} notifier={notifier} onCreerCompte={creerDepuisDemande} />}
                     </div>
                 </main>
             </div>
