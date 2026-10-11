@@ -533,6 +533,29 @@
     flex-shrink: 0;
 }
 
+/* "Voir tous les departs" avec peu de departs : les cartes passent simplement a la ligne */
+.container_des_compagnies.cartes_a_la_ligne {
+    flex-wrap: wrap;
+    gap: 16px 12px;
+}
+
+/* "Voir tous les departs" avec beaucoup de departs : 2 lignes maximum, le reste defile horizontalement */
+.container_des_compagnies.grille_deux_lignes {
+    display: grid;
+    grid-auto-flow: column;
+    grid-template-rows: repeat(2, auto);
+    grid-auto-columns: max-content;
+    gap: 16px 12px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 12px;
+}
+
+.grille_deux_lignes .compagnies {
+    scroll-snap-align: start;
+}
+
 /* fond des cartes au depart de la Cote d'Ivoire (le degrade s'affiche tant que la photo n'est pas ajoutee) */
 .info_compagnie1.fond_cote_ivoire {
     background-image:
@@ -877,6 +900,12 @@
         flex: 0 0 calc(100vw - 48px);
     }
 
+    /* sur telephone : une seule ligne qui defile */
+    .container_des_compagnies.grille_deux_lignes {
+        grid-template-rows: auto;
+        grid-auto-columns: calc(100vw - 48px);
+    }
+
     .info_compagnie1,
     .info_compagnie2 {
         width: 100%;
@@ -1065,6 +1094,50 @@
     border: 1.5px solid rgba(0, 0, 0, 0.15);
     cursor: pointer;
     transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+/* bandeau "Compagnie de transport de colis" du formulaire devenir partenaire */
+.bandeauTypePartenaire {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1.5px solid rgb(39, 123, 48);
+    background: linear-gradient(135deg, rgba(39, 123, 48, 0.09), rgba(39, 123, 48, 0.02));
+    font-family: "Poppins", system-ui, sans-serif;
+}
+
+.bandeauTypeIcone {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background-color: rgb(39, 123, 48);
+    color: white;
+}
+
+.bandeauTypeTitre {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+.bandeauTypeTexte {
+    margin: 2px 0 0;
+    font-size: 12.5px;
+    color: #6b7280;
+}
+
+.bandeauTypeCoche {
+    margin-left: auto;
+    flex-shrink: 0;
+    color: rgb(39, 123, 48);
 }
 
 .carteChoixPartenaireActive {

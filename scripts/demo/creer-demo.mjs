@@ -100,7 +100,7 @@ for (const c of COMPAGNIES) {
     for (const d of c.departs) {
         await set(push(ref(db, 'expeditions')), {
             reference: `GV-${Math.floor(10000 + Math.random() * 89999)}`, dateCreation: Date.now(),
-            idPartenaire: uid, nomCompagnie: c.nomEntreprise, logoUrl, descriptionCompagnie: c.description,
+            idPartenaire: uid, nomCompagnie: c.nomEntreprise, logoUrl, descriptionCompagnie: c.description, telephoneCompagnie: c.telephone,
             ...d, poids: '', statut: 'Planifié', compagnieSuspendue: false, demo: true,
         });
     }

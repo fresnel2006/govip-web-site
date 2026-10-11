@@ -541,10 +541,6 @@ export default function Dashboard() {
     return () => unsubscribe();
   }, [uid]);
 
-  // ---------- Revenus ----------
-  const [retraitOuvert, setRetraitOuvert] = useState(false);
-  const [montant, setMontant] = useState("");
-
   // ---------- Profil ----------
   const [profilForm, setProfilForm] = useState(null);
   const [profilEditMode, setProfilEditMode] = useState(false);
@@ -564,12 +560,6 @@ export default function Dashboard() {
     const unsubscribe = ecouterTicketsPartenaire(uid, setTickets);
     return () => unsubscribe();
   }, [uid]);
-
-  const demanderRetrait = (e) => {
-    e.preventDefault();
-    setRetraitOuvert(false);
-    setMontant("");
-  };
 
   // Ouvre la fenêtre d'ajout (sans argument) ou de modification d'une expédition
   const ouvrirExpedition = (expedition = null) => {
@@ -628,6 +618,7 @@ export default function Dashboard() {
         nomCompagnie: profile.nomEntreprise || profile.nom,
         logoUrl: profile.logoUrl || "",
         descriptionCompagnie: profile.description || "",
+        telephoneCompagnie: profile.telephone || "",
         paysDepart: formExpedition.paysDepart,
         villeDepart: formExpedition.villeDepart.trim(),
         paysArrivee: formExpedition.paysArrivee,
@@ -672,6 +663,7 @@ export default function Dashboard() {
       const donneesAEnregistrer = {
         ...profile,
         ...profilForm,
+        telephone: profile.telephone, // numero unique, modifiable seulement par l'admin
         tarifParKilo: parseFloat(profilForm.tarifParKilo) || 0,
       };
       await set(ref(db, `partenaires/${uid}`), donneesAEnregistrer);
@@ -1128,12 +1120,8 @@ export default function Dashboard() {
               <div className={styles.headerRow}>
                 <div>
                   <h1 className={styles.pageTitle}>Mes revenus</h1>
-                  <p className={styles.pageSubtitle}>Suivez vos gains et vos retraits</p>
+                  <p className={styles.pageSubtitle}>Suivez vos gains</p>
                 </div>
-                <button className={styles.addButton} onClick={() => setRetraitOuvert(true)}>
-                  <Icon name="wallet" className={styles.linkIcon} />
-                  Demander un retrait
-                </button>
               </div>
 
               {/* NOUVEAU : estimation des revenus basée sur le tarif par kilo défini par le partenaire */}
@@ -1237,7 +1225,7 @@ export default function Dashboard() {
                     <div className={styles.field}>
                       <label>Téléphone</label>
                       {profilEditMode ? (
-                        <input value={profilForm.telephone} onChange={(e) => majChampProfil("telephone", e.target.value)} />
+                        <p>{profile.telephone} <small style={{ color: "#6b7280" }}>(pour le modifier, contactez le support)</small></p>
                       ) : (
                         <p>{profile.telephone}</p>
                       )}

@@ -1,16 +1,33 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useMediaQuery } from 'react-responsive';
-import { FaArrowRight, FaCalendar, FaClock, FaSearch, FaTag, FaTimes, FaUsers, FaPaperPlane, FaRegCalendarAlt, FaCheckCircle, FaBars, FaInstagram, FaTiktok, FaYoutube, FaWhatsapp, FaBus, FaLock, FaEnvelope, FaEye, FaEyeSlash, FaCloudUploadAlt, FaFileAlt } from 'react-icons/fa';
+import { FaArrowRight, FaCalendar, FaClock, FaSearch, FaTag, FaTimes, FaUsers, FaPaperPlane, FaRegCalendarAlt, FaCheckCircle, FaBars, FaInstagram, FaTiktok, FaYoutube, FaWhatsapp, FaBus, FaLock, FaEnvelope, FaEye, FaEyeSlash, FaCloudUploadAlt, FaFileAlt, FaPhoneAlt } from 'react-icons/fa';
 import styles from '../Acceuil/Acceuil.module.css'
 import logo_entreprise from '../assets/logo_entreprise.png'
 import { FaMoneyBill, FaShield } from 'react-icons/fa6';
 import { CI, FR } from 'country-flag-icons/react/3x2';
 // On passe uniquement par les fonctions du fichier Firebase partage,
 // sans appeler firebase/database ou firebase/storage directement.
-import { connexionAdmin, creerDemandePartenaire, ecouterToutesExpeditions, estDepartAffiche, prochaineDateDepart, libelleFrequence } from '../firebase/firebase';
+import { connexionAdmin, creerDemandePartenaire, telephoneDejaPartenaire, ecouterToutesExpeditions, estDepartAffiche, prochaineDateDepart, libelleFrequence, lireDateExpedition } from '../firebase/firebase';
+
+// formulaire "contacter l'expediteur" d'un depart
+const ETAT_INITIAL_CONTACT = { nom: '', prenom: '', quantite: '', telephone: '', nature: '' };
+
+// "+225 07 08 09 10 11" -> "2250708091011" pour les liens WhatsApp
+function numeroWhatsApp(telephone) {
+    return String(telephone || '').replace(/\D/g, '').replace(/^00/, '');
+}
+
+// filtres vides du formulaire "Trouvez un depart"
+const RECHERCHE_VIDE = { paysDepart: '', villeDepart: '', paysArrivee: '', date: '' };
+
+// "Bouaké " -> "bouake" : recherche de ville sans accents ni majuscules
+function normaliser(texte) {
+    return String(texte || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+}
 
 // etat initial du formulaire "devenir partenaire" - uniquement transporteurs de colis
 const ETAT_INITIAL_PARTENAIRE = {
+    nomEntreprise: '',
     nom: '',
     prenom: '',
     email: '',
@@ -157,6 +174,19 @@ function Acceuil(){
     const [chargementDeparts, setChargementDeparts] = useState(true);
     const [voirTousDeparts, setVoirTousDeparts] = useState(false);
     const [departOuvert, setDepartOuvert] = useState(null);
+    // contact de l'expediteur depuis la fenetre de details : null (details) | 'formulaire' | 'numero'
+    const [etapeContact, setEtapeContact] = useState(null);
+    const [formContact, setFormContact] = useState(ETAT_INITIAL_CONTACT);
+    const majChampContact = (champ) => (e) => setFormContact((p) => ({ ...p, [champ]: e.target.value }));
+    const fermerDetailsDepart = () => {
+        setDepartOuvert(null);
+        setEtapeContact(null);
+        setFormContact(ETAT_INITIAL_CONTACT);
+    };
+    const envoyerFormulaireContact = (e) => {
+        e.preventDefault();
+        setEtapeContact('numero');
+    };
 
     useEffect(() => {
         return ecouterToutesExpeditions(
@@ -168,16 +198,44 @@ function Acceuil(){
         );
     }, []);
 
-    // prochains departs : expeditions planifiees a venir, compagnies non suspendues, du plus proche au plus lointain
-    const prochainsDeparts = useMemo(
-        () => departs
+    // filtres du formulaire "Trouvez un depart"
+    const [recherche, setRecherche] = useState(RECHERCHE_VIDE);
+    const majRecherche = (champ) => (e) => setRecherche((p) => ({ ...p, [champ]: e.target.value }));
+    const rechercheActive = Object.values(recherche).some(Boolean);
+
+    // prochains departs : expeditions planifiees a venir, compagnies non suspendues, du plus proche au plus lointain.
+    // Avec une date choisie, on prend la prochaine occurrence a partir de cette date.
+    const prochainsDeparts = useMemo(() => {
+        const aPartirDe = recherche.date ? lireDateExpedition(recherche.date) : new Date();
+        const ville = normaliser(recherche.villeDepart);
+        return departs
             .filter(estDepartAffiche)
-            .map((d) => ({ ...d, prochaine: prochaineDateDepart(d) }))
-            .sort((a, b) => a.prochaine - b.prochaine || (a.heure || '').localeCompare(b.heure || '')),
-        [departs]
-    );
+            .filter((d) => !recherche.paysDepart || d.paysDepart === recherche.paysDepart)
+            .filter((d) => !recherche.paysArrivee || d.paysArrivee === recherche.paysArrivee)
+            .filter((d) => !ville || normaliser(d.villeDepart).includes(ville))
+            .map((d) => ({ ...d, prochaine: prochaineDateDepart(d, aPartirDe) }))
+            .filter((d) => d.prochaine)
+            .sort((a, b) => a.prochaine - b.prochaine || (a.heure || '').localeCompare(b.heure || ''));
+    }, [departs, recherche]);
     const nbDepartsApercu = isMobile ? 2 : 3;
-    const departsAffiches = voirTousDeparts ? prochainsDeparts : prochainsDeparts.slice(0, nbDepartsApercu);
+    // pendant une recherche, on montre tous les resultats
+    const modeTousDeparts = voirTousDeparts || rechercheActive;
+    const departsAffiches = modeTousDeparts ? prochainsDeparts : prochainsDeparts.slice(0, nbDepartsApercu);
+
+    // nombre de cartes qui tiennent sur une ligne, recalcule quand la largeur de la liste change
+    const [cartesParLigne, setCartesParLigne] = useState(3);
+    const observateurListe = useRef(null);
+    const refListeDeparts = useCallback((el) => {
+        observateurListe.current?.disconnect();
+        if (!el) return;
+        observateurListe.current = new ResizeObserver(() => {
+            const largeurCarte = el.firstElementChild?.offsetWidth || 450;
+            setCartesParLigne(Math.max(1, Math.floor((el.clientWidth + 12) / (largeurCarte + 12))));
+        });
+        observateurListe.current.observe(el);
+    }, []);
+    // au-dela de 2 lignes (ou sur telephone), les cartes defilent horizontalement ; sinon elles passent simplement a la ligne
+    const listeEnDefilement = modeTousDeparts && (isMobile || departsAffiches.length > 2 * cartesParLigne);
 
     // etats du modal "se connecter"
     const [modalConnexionOuvert, setModalConnexionOuvert] = useState(false);
@@ -233,6 +291,11 @@ function Acceuil(){
         setEnvoiEnCours(true);
 
         try {
+            // un numero = un seul partenaire
+            if (await telephoneDejaPartenaire(formPartenaire.telephone)) {
+                setErreurPartenaire('Ce numéro de téléphone est déjà utilisé par un partenaire GVIP. Si c\'est le vôtre, connectez-vous à votre espace partenaire.');
+                return;
+            }
             await creerDemandePartenaire(formPartenaire, fichiersPartenaire);
             setDemandeEnvoyee(true);
         } catch (err) {
@@ -449,10 +512,10 @@ function Acceuil(){
 <div className={styles.formulaire}>
     <div className={styles.champs}>
         <p>Pays de depart</p>
-        <select>
+        <select value={recherche.paysDepart} onChange={majRecherche('paysDepart')}>
         <option value="">Pays de départ</option>
-        <option value="ci">Côte d'Ivoire</option>
-        <option value="fr">France</option>
+        <option value="Côte d'Ivoire">Côte d'Ivoire</option>
+        <option value="France">France</option>
       </select>
 </div>
 <div className={styles.champs}>
@@ -462,6 +525,8 @@ function Acceuil(){
       <input
         type="text"
         name="ville_depart"
+        value={recherche.villeDepart}
+        onChange={majRecherche('villeDepart')}
         placeholder="Ex : Abidjan, Yamoussoukro..."
         autoComplete="off"
       />
@@ -469,10 +534,10 @@ function Acceuil(){
       <div className={styles.champs}>
       <p>Pays de destination</p>
 
-      <select>
+      <select value={recherche.paysArrivee} onChange={majRecherche('paysArrivee')}>
         <option value="">Pays de destination</option>
-        <option value="ci">Côte d'Ivoire</option>
-        <option value="fr">France</option>
+        <option value="Côte d'Ivoire">Côte d'Ivoire</option>
+        <option value="France">France</option>
       </select>
 </div>
       <div className={styles.champs}>
@@ -481,6 +546,8 @@ function Acceuil(){
       <input
         type="date"
         name="date_depart"
+        value={recherche.date}
+        onChange={majRecherche('date')}
         min={new Date().toISOString().split('T')[0]}
       />
 </div>
@@ -492,7 +559,11 @@ function Acceuil(){
             <div className={styles.depart_recent_body} id="nos-transport">
                 <div className={styles.depart_recent_entete}>
                 <p style={{fontSize: isMobile ? 20 : 30,fontWeight:800}}>Departs recents</p>
-                {prochainsDeparts.length > nbDepartsApercu && (
+                {rechercheActive ? (
+                <button type='button' className={styles.lien_voir_tout} onClick={() => setRecherche(RECHERCHE_VIDE)}>
+                    Effacer la recherche ({prochainsDeparts.length} resultat{prochainsDeparts.length > 1 ? 's' : ''}) <FaTimes size={12}/>
+                </button>
+                ) : prochainsDeparts.length > nbDepartsApercu && (
                 <button type='button' className={styles.lien_voir_tout} onClick={() => setVoirTousDeparts((v) => !v)}>
                     {voirTousDeparts ? 'Voir moins' : `Voir tous les departs (${prochainsDeparts.length})`} <FaArrowRight size={13}/>
                 </button>
@@ -501,9 +572,11 @@ function Acceuil(){
                 {chargementDeparts ? (
                     <p style={{ color: '#6b7280' }}>Chargement des departs...</p>
                 ) : prochainsDeparts.length === 0 ? (
-                    <p style={{ color: '#6b7280' }}>Aucun depart programme pour le moment. Revenez bientot !</p>
+                    <p style={{ color: '#6b7280' }}>{rechercheActive
+                        ? 'Aucun depart ne correspond a votre recherche. Essayez une autre ville ou une autre date.'
+                        : 'Aucun depart programme pour le moment. Revenez bientot !'}</p>
                 ) : (
-                <div className={styles.container_des_compagnies} style={voirTousDeparts && !isMobile ? { flexWrap: 'wrap' } : undefined}>
+                <div ref={refListeDeparts} className={`${styles.container_des_compagnies} ${listeEnDefilement ? styles.grille_deux_lignes : modeTousDeparts ? styles.cartes_a_la_ligne : ''}`}>
                 {departsAffiches.map((d) => (
                 <div key={d.id} className={styles.compagnies}>
                     <div className={`${styles.info_compagnie1} ${d.paysDepart === "Côte d'Ivoire" ? styles.fond_cote_ivoire : ''}`}>
@@ -666,19 +739,20 @@ Lun - Ven : 9h00 - 18h00</p>
 
 {/* modal "details d'un depart" */}
 {departOuvert && (
-    <div className={styles.overlayPartenaire} onClick={() => setDepartOuvert(null)}>
+    <div className={styles.overlayPartenaire} onClick={fermerDetailsDepart}>
         <div className={styles.fenetrePartenaire} onClick={(e) => e.stopPropagation()} style={{ width: 460 }}>
             <div className={styles.entetePartenaire}>
                 <p className={styles.titrePartenaire}>{departOuvert.nomCompagnie || 'Depart'}</p>
                 <button
                     type="button"
                     className={styles.boutonFermerPartenaire}
-                    onClick={() => setDepartOuvert(null)}
+                    onClick={fermerDetailsDepart}
                     aria-label="Fermer"
                 >
                     <FaTimes size={18} />
                 </button>
             </div>
+            {etapeContact === null && (
             <div className={styles.corpsFormulairePartenaire}>
                 {(departOuvert.logoUrl || departOuvert.descriptionCompagnie) && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingBottom: 12, borderBottom: '1px solid #eee' }}>
@@ -703,7 +777,92 @@ Lun - Ven : 9h00 - 18h00</p>
                         <strong style={{ textAlign: 'right' }}>{valeur}</strong>
                     </div>
                 ))}
+                <button type="button" className={styles.boutonPrincipalPartenaire} style={{ margin: '6px 0 0', width: '100%', justifyContent: 'center' }} onClick={() => setEtapeContact('formulaire')}>
+                    <FaPhoneAlt size={13} /> Contacter l'expediteur
+                </button>
             </div>
+            )}
+
+            {etapeContact === 'formulaire' && (
+            <form className={styles.corpsFormulairePartenaire} onSubmit={envoyerFormulaireContact}>
+                <p style={{ margin: 0, fontSize: 14, color: '#4b5563' }}>
+                    Remplissez le formulaire pour pouvoir rentrer en contact avec l'expediteur.
+                </p>
+                <div className={styles.grilleChampsPartenaire}>
+                    <div className={styles.champPartenaire}>
+                        <label>Nom</label>
+                        <input type="text" required value={formContact.nom} onChange={majChampContact('nom')} placeholder="Ex : Kouassi" />
+                    </div>
+                    <div className={styles.champPartenaire}>
+                        <label>Prenom</label>
+                        <input type="text" required value={formContact.prenom} onChange={majChampContact('prenom')} placeholder="Ex : Jean" />
+                    </div>
+                    <div className={styles.champPartenaire}>
+                        <label>Quantite (kg)</label>
+                        <input
+                            type="number"
+                            required
+                            min="0.1"
+                            step="0.1"
+                            max={departOuvert.limiteKg || undefined}
+                            value={formContact.quantite}
+                            onChange={majChampContact('quantite')}
+                            placeholder={departOuvert.limiteKg ? `Max ${departOuvert.limiteKg} kg` : 'Ex : 10'}
+                        />
+                    </div>
+                    <div className={styles.champPartenaire}>
+                        <label>Numero de telephone</label>
+                        <input type="tel" required value={formContact.telephone} onChange={majChampContact('telephone')} placeholder="+225 07 00 00 00 00" />
+                    </div>
+                    <div className={`${styles.champPartenaire} ${styles.champPleineLargeurPartenaire}`}>
+                        <label>Nature du colis</label>
+                        <input type="text" required value={formContact.nature} onChange={majChampContact('nature')} placeholder="Ex : vetements, documents, produits alimentaires..." />
+                    </div>
+                </div>
+                <div className={styles.piedFormulairePartenaire}>
+                    <button type="button" className={styles.boutonSecondairePartenaire} onClick={() => setEtapeContact(null)}>Retour</button>
+                    <button type="submit" className={styles.boutonPrincipalPartenaire}>Afficher le numero</button>
+                </div>
+            </form>
+            )}
+
+            {etapeContact === 'numero' && (
+            <div className={styles.corpsFormulairePartenaire} style={{ alignItems: 'center', textAlign: 'center' }}>
+                {departOuvert.telephoneCompagnie ? (
+                <>
+                    <FaCheckCircle size={44} color="rgb(39, 123, 48)" />
+                    <p style={{ margin: 0, fontSize: 14, color: '#4b5563' }}>
+                        Merci {formContact.prenom} ! Vous pouvez contacter {departOuvert.nomCompagnie || "l'expediteur"} au :
+                    </p>
+                    <a href={`tel:${departOuvert.telephoneCompagnie.replace(/\s/g, '')}`} style={{ fontSize: 24, fontWeight: 800, color: 'rgb(39, 123, 48)', textDecoration: 'none' }}>
+                        {departOuvert.telephoneCompagnie}
+                    </a>
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+                        <a className={styles.boutonSecondairePartenaire} style={{ textDecoration: 'none' }} href={`tel:${departOuvert.telephoneCompagnie.replace(/\s/g, '')}`}>
+                            <FaPhoneAlt size={13} /> Appeler
+                        </a>
+                        <a
+                            className={styles.boutonPrincipalPartenaire}
+                            style={{ margin: 0, textDecoration: 'none' }}
+                            target="_blank"
+                            rel="noreferrer"
+                            href={`https://wa.me/${numeroWhatsApp(departOuvert.telephoneCompagnie)}?text=${encodeURIComponent(
+                                `Bonjour, je suis ${formContact.prenom} ${formContact.nom}. J'ai vu votre depart ${departOuvert.villeDepart} -> ${departOuvert.villeArrivee} du ${formatDateCarte(departOuvert.prochaine)} sur GVIP Colis. `
+                                + `Je souhaite envoyer ${formContact.quantite} kg (${formContact.nature}). Mon numero : ${formContact.telephone}.`
+                            )}`}
+                        >
+                            <FaWhatsapp size={15} /> Ecrire sur WhatsApp
+                        </a>
+                    </div>
+                </>
+                ) : (
+                    <p style={{ margin: 0, fontSize: 14, color: '#4b5563' }}>
+                        Le numero de cet expediteur n'est pas encore disponible. Contactez-nous a contact@gvipcolis.com, nous vous mettrons en relation.
+                    </p>
+                )}
+                <button type="button" className={styles.boutonSecondairePartenaire} style={{ marginTop: 4 }} onClick={fermerDetailsDepart}>Fermer</button>
+            </div>
+            )}
         </div>
     </div>
 )}
@@ -860,14 +1019,28 @@ Lun - Ven : 9h00 - 18h00</p>
 
                     <div className={styles.contenuEtapePartenaire}>
                         <div className={styles.choixTypePartenaire}>
-                            <div className={styles.carteChoixPartenaireActive} style={{ flexDirection: 'row', gap: 10, justifyContent: 'center' }}>
-                                <FaBus size={22} color="rgb(39, 123, 48)" />
-                                <p><strong>Compagnie de transport de colis</strong></p>
+                            <div className={styles.bandeauTypePartenaire}>
+                                <span className={styles.bandeauTypeIcone}><FaBus size={20} /></span>
+                                <div>
+                                    <p className={styles.bandeauTypeTitre}>Compagnie de transport de colis</p>
+                                    <p className={styles.bandeauTypeTexte}>Publiez vos departs et recevez des demandes d'expedition</p>
+                                </div>
+                                <FaCheckCircle size={18} className={styles.bandeauTypeCoche} />
                             </div>
                         </div>
 
                         <p className={styles.sousTitrePartenaire}>Vos informations</p>
                         <div className={styles.grilleChampsPartenaire}>
+                            <div className={`${styles.champPartenaire} ${styles.champPleineLargeurPartenaire}`}>
+                                <label>Nom de l'entreprise / compagnie</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={formPartenaire.nomEntreprise}
+                                    onChange={(e) => majChampPartenaire('nomEntreprise', e.target.value)}
+                                    placeholder="Ex : Sika Transport"
+                                />
+                            </div>
                             <div className={styles.champPartenaire}>
                                 <label>Nom</label>
                                 <input
