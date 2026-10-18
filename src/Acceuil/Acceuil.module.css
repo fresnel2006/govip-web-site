@@ -963,10 +963,17 @@
         width: 100%;
     }
 
+    /* telephone : colonnes empilees verticalement, texte a taille normale */
     .footer {
+        grid-template-columns: 1fr;
+        row-gap: 30px;
         margin-top: 50px;
-        padding-left: 10px;
-        padding-right: 10px;
+        padding: 40px 20px;
+        font-size: 16px;
+    }
+
+    .image_entreprise {
+        max-width: 150px;
     }
 }
 
