@@ -49,7 +49,7 @@ let redirectionApresDeconnexion = false;
 async function seDeconnecter() {
   redirectionApresDeconnexion = true;
   await signOut(auth);
-  window.location.replace("/Acceuil");
+  window.location.replace("/");
 }
 
 async function recupererProfil(uid) {

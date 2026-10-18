@@ -1,0 +1,20 @@
+[
+  {
+    "uid": "EAdZ8jweiRVeLfqlESqPX0Y6uj52",
+    "email": "demo.sika@gvipcolis-demo.com",
+    "motDePasse": "DemoGvip2026!",
+    "nomEntreprise": "Sika Transport (DÉMO)"
+  },
+  {
+    "uid": "RNfFn3KrT4Qst4jo5AN8AbhNUnc2",
+    "email": "demo.ivoire@gvipcolis-demo.com",
+    "motDePasse": "DemoGvip2026!",
+    "nomEntreprise": "Ivoire Express Colis (DÉMO)"
+  },
+  {
+    "uid": "6ULXsAfDl5ZoY9FF6CVVBi95kZ22",
+    "email": "demo.baobab@gvipcolis-demo.com",
+    "motDePasse": "DemoGvip2026!",
+    "nomEntreprise": "Baobab Fret (DÉMO)"
+  }
+]

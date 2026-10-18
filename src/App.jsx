@@ -15,6 +15,7 @@ function App() {
       <Routes>
         <Route path="/espace_partenaire" element={<Dashboard />} />
         <Route path="/" element={<Acceuil />} />
+        <Route path="/Acceuil" element={<Acceuil />} />
         <Route path="/dashboard" element={<GvipRiskDashboard />} />
         <Route path="/administrateurs" element={<Admin />} />
       </Routes>
