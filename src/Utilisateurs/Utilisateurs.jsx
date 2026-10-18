@@ -1402,12 +1402,12 @@ function Utilisateur() {
                             </div>
                             <div className={styles.phrases_informatives} ref={refAPropos}>
                                 <p className={styles.titre_section}>PRISE DE RENDEZ-VOUS</p>
-                                <p className={styles.titre_principal}>Reservez votre rendez-vous colis</p>
-                                <p>Planifiez facilement l'enlevement ou le depot de votre colis</p>
+                                <p className={styles.titre_principal}>Réservez votre rendez-vous colis</p>
+                                <p>Planifiez facilement l'enlèvement ou le dépôt de votre colis</p>
                                 <div className={styles.competences}>
                                     <p><span className={styles.point}>•</span> Rapide</p>
                                     <p><span className={styles.point}>•</span> Fiable</p>
-                                    <p><span className={styles.point}>•</span> Sécuriser</p>
+                                    <p><span className={styles.point}>•</span> Sécurisé</p>
                                 </div>
                             </div>
 
@@ -1449,7 +1449,7 @@ function Utilisateur() {
                                             </div>
                                         </div>
                                         <div className={styles.telephone_et_whatsapp}>
-                                            <p>Télephone / WhatsApp <span className={styles.asterix}>*</span></p>
+                                            <p>Téléphone / WhatsApp <span className={styles.asterix}>*</span></p>
                                             <div className={`${styles.champs} ${erreursChamps.telephone ? styles.champ_erreur : ''}`}>
                                                 <SelecteurPaysTelephone
                                                     paysActif={paysTelephone}
@@ -1588,12 +1588,12 @@ function Utilisateur() {
                                         </div>
                                     </div>
                                     <div className={styles.notes}>
-                                        <p>Notes complementaires (optionnel) </p>
+                                        <p>Notes complémentaires (optionnel) </p>
                                         <div className={styles.champs_notes}>
                                             <input
                                                 className={styles.input_notes}
                                                 type="text"
-                                                placeholder='Intructions particulières ?'
+                                                placeholder='Instructions particulières ?'
                                                 value={formData.notes}
                                                 onChange={(e) => majFormulaire('notes', e.target.value)}
                                             />
@@ -1647,7 +1647,7 @@ function Utilisateur() {
                                             onSelect={choisirDate}
                                         />
                                         <div className={styles.choix}>
-                                            <p>Choisir un crenau horaire</p>
+                                            <p>Choisir un créneau horaire</p>
                                         </div>
                                         {!dateSelectionnee ? (
                                             <p className={styles.sous_texte_creneaux}>Choisissez d'abord une date</p>
@@ -1688,8 +1688,8 @@ function Utilisateur() {
                                     <Bs1CircleFill size={24} color='green' />
 
                                     <div className={styles.informations_supp}>
-                                        <p className={styles.libel}>Reserver</p>
-                                        <p className={styles.description}>choisissez entierement ou depot,<br /> remplissez vos informations et selectionnez une date</p>
+                                        <p className={styles.libel}>Réserver</p>
+                                        <p className={styles.description}>choisissez entièrement ou dépôt,<br /> remplissez vos informations et sélectionnez une date</p>
                                     </div>
                                     <FaArrowRight className={styles.fleche} />
                                     <FaWhatsapp size={60} color='green' />
@@ -1697,22 +1697,22 @@ function Utilisateur() {
 
                                     <div className={styles.informations_supp}>
                                         <p className={styles.libel}>Nous confirmons</p>
-                                        <p className={styles.description}>Nous vous contacterons par whatsapp <br /> pour confirmer votre rendez-vous</p>
+                                        <p className={styles.description}>Nous vous contacterons par WhatsApp <br /> pour confirmer votre rendez-vous</p>
                                     </div>
                                     <FaArrowRight className={styles.fleche} />
                                     <FiPackage size={60} color='green' />
                                     <Bs3CircleFill size={24} color='green' />
 
                                     <div className={styles.informations_supp}>
-                                        <p className={styles.libel}>Nous recuperons <br /> /Vous deposez</p>
-                                        <p className={styles.description}>Nous venons chez vous ou vous deposez votre colis</p>
+                                        <p className={styles.libel}>Nous récupérons <br /> /Vous déposez</p>
+                                        <p className={styles.description}>Nous venons chez vous ou vous déposez votre colis</p>
                                     </div>
                                     <FaArrowRight className={styles.fleche} />
                                     <FaCheckCircle size={60} color='green' />
                                     <Bs4CircleFill size={24} color='green' />
                                     <div className={styles.informations_supp}>
                                         <p className={styles.libel}>Livré</p>
-                                        <p className={styles.description}>Votre colis est livré en toute securite a destination</p>
+                                        <p className={styles.description}>Votre colis est livré en toute sécurité à destination</p>
                                     </div>
                                 </div>
                             </div>

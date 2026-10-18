@@ -373,16 +373,16 @@ function Acceuil(){
             {isDesktop && (
             <div className={styles.navigation}>
             <div className={styles.acceuil} onClick={() => scrollVers('acceuil')}>
-<p>Acceuil</p>
+<p>Accueil</p>
             </div>
             <div className={styles.trouver_depart} onClick={() => scrollVers('trouver-depart')}>
-<p>Trouver un depart</p>
+<p>Trouver un départ</p>
             </div>
             <div className={styles.nos_transport} onClick={() => scrollVers('nos-transport')}>
-<p>Nos transport</p>
+<p>Nos transporteurs</p>
             </div>
             <div className={styles.comment_ca_marche} onClick={() => scrollVers('comment-ca-marche')}>
-<p>Comment ca marche</p>
+<p>Comment ça marche</p>
             </div>
             <div className={styles.a_propos} onClick={() => scrollVers('a-propos')}>
 <p>A propos</p>
@@ -431,16 +431,16 @@ function Acceuil(){
         {isMobileOuTablette && menuOuvert && (
             <div className={styles.navigation_ouverte}>
             <div className={styles.acceuil} onClick={() => scrollVers('acceuil')}>
-<p>Acceuil</p>
+<p>Accueil</p>
             </div>
             <div className={styles.trouver_depart} onClick={() => scrollVers('trouver-depart')}>
-<p>Trouver un depart</p>
+<p>Trouver un départ</p>
             </div>
             <div className={styles.nos_transport} onClick={() => scrollVers('nos-transport')}>
-<p>Nos transport</p>
+<p>Nos transporteurs</p>
             </div>
             <div className={styles.comment_ca_marche} onClick={() => scrollVers('comment-ca-marche')}>
-<p>Comment ca marche</p>
+<p>Comment ça marche</p>
             </div>
             <div className={styles.a_propos} onClick={() => scrollVers('a-propos')}>
 <p>A propos</p>
@@ -467,13 +467,13 @@ function Acceuil(){
             <div className={styles.acceuil_body} id="acceuil">
                 <div className={styles.description}>
                     <div className={styles.description1}>
-<p>Trouvez le meilleur<br />depart pour <span className={styles.ecriture_verte}>vos colis</span></p>
+<p>Trouvez le meilleur<br />départ pour <span className={styles.ecriture_verte}>vos colis</span></p>
 
                     </div>
                     <div className={styles.description2}>
-<p>GVIP Colis est la plateforme qui centralise les departs</p>
-<p>proposes par les trasnporteurs fiables.</p>
-<p>Coparez, choisissez et expediez en toutes confiance.</p>
+<p>GVIP Colis est la plateforme qui centralise les départs</p>
+<p>proposés par les transporteurs fiables.</p>
+<p>Comparez, choisissez et expédiez en toute confiance.</p>
 <div className={styles.description3}>
 
 <div className={styles.info1}>
@@ -481,7 +481,7 @@ function Acceuil(){
 <FaShield size={30} color="green"/>
 </div>
 <div className={styles.mini_description}>
-<p style={{color:"green"}}><strong>Transporteurs verifies</strong></p>
+<p style={{color:"green"}}><strong>Transporteurs vérifiés</strong></p>
 <p style={{fontWeight:700,fontSize:13}}> Des partenaires de confiance</p>
 </div>
 </div>
@@ -491,7 +491,7 @@ function Acceuil(){
 < FaCalendar size={30} color="green"/>
 </div>
 <div className={styles.mini_description}>
-<p style={{color:"green"}}><strong>Depart reguliers</strong></p>
+<p style={{color:"green"}}><strong>Départs réguliers</strong></p>
 <p style={{fontWeight:700,fontSize:13}}>Chaque jour, chaque semaine</p>
 </div>
 </div>
@@ -515,10 +515,10 @@ function Acceuil(){
                 </div>
             </div>
             <div className={styles.trouver_depart_body} id="trouver-depart">
-<p style={{fontSize: isMobile ? 20 : 25}}> <strong>Trouvez un depart</strong></p>
+<p style={{fontSize: isMobile ? 20 : 25}}> <strong>Trouvez un départ</strong></p>
 <div className={styles.formulaire}>
     <div className={styles.champs}>
-        <p>Pays de depart</p>
+        <p>Pays de départ</p>
         <select value={recherche.paysDepart} onChange={majRecherche('paysDepart')}>
         <option value="">Pays de départ</option>
         <option value="Côte d'Ivoire">Côte d'Ivoire</option>
@@ -526,7 +526,7 @@ function Acceuil(){
       </select>
 </div>
 <div className={styles.champs}>
-      <p>Ville de depart</p>
+      <p>Ville de départ</p>
 
       
       <input
@@ -548,7 +548,7 @@ function Acceuil(){
       </select>
 </div>
       <div className={styles.champs}>
-      <p >Date de depart</p>
+      <p >Date de départ</p>
 
       <input
         type="date"
@@ -565,23 +565,23 @@ function Acceuil(){
             </div>
             <div className={styles.depart_recent_body} id="nos-transport">
                 <div className={styles.depart_recent_entete}>
-                <p style={{fontSize: isMobile ? 20 : 30,fontWeight:800}}>Departs recents</p>
+                <p style={{fontSize: isMobile ? 20 : 30,fontWeight:800}}>Départs récents</p>
                 {rechercheActive ? (
                 <button type='button' className={styles.lien_voir_tout} onClick={() => setRecherche(RECHERCHE_VIDE)}>
-                    Effacer la recherche ({prochainsDeparts.length} resultat{prochainsDeparts.length > 1 ? 's' : ''}) <FaTimes size={12}/>
+                    Effacer la recherche ({prochainsDeparts.length} résultat{prochainsDeparts.length > 1 ? 's' : ''}) <FaTimes size={12}/>
                 </button>
                 ) : prochainsDeparts.length > nbDepartsApercu && (
                 <button type='button' className={styles.lien_voir_tout} onClick={() => setVoirTousDeparts((v) => !v)}>
-                    {voirTousDeparts ? 'Voir moins' : `Voir tous les departs (${prochainsDeparts.length})`} <FaArrowRight size={13}/>
+                    {voirTousDeparts ? 'Voir moins' : `Voir tous les départs (${prochainsDeparts.length})`} <FaArrowRight size={13}/>
                 </button>
                 )}
                 </div>
                 {chargementDeparts ? (
-                    <p style={{ color: '#6b7280' }}>Chargement des departs...</p>
+                    <p style={{ color: '#6b7280' }}>Chargement des départs...</p>
                 ) : prochainsDeparts.length === 0 ? (
                     <p style={{ color: '#6b7280' }}>{rechercheActive
-                        ? 'Aucun depart ne correspond a votre recherche. Essayez une autre ville ou une autre date.'
-                        : 'Aucun depart programme pour le moment. Revenez bientot !'}</p>
+                        ? 'Aucun départ ne correspond à votre recherche. Essayez une autre ville ou une autre date.'
+                        : 'Aucun départ programmé pour le moment. Revenez bientôt !'}</p>
                 ) : (
                 <div ref={refListeDeparts} className={`${styles.container_des_compagnies} ${listeEnDefilement ? styles.grille_deux_lignes : modeTousDeparts ? styles.cartes_a_la_ligne : ''}`}>
                 {departsAffiches.map((d) => (
@@ -589,7 +589,7 @@ function Acceuil(){
                     <div className={`${styles.info_compagnie1} ${d.paysDepart === "Côte d'Ivoire" ? styles.fond_cote_ivoire : ''}`}>
 <div className={styles.partie1}>
 <div className={styles.information_sur_depart}>
-    <p>Depart confirme</p>
+    <p>Départ confirmé</p>
 </div>
 <p><strong>{formatDateCarte(d.prochaine)}</strong> </p>
 </div>
@@ -602,7 +602,7 @@ function Acceuil(){
 </div>
 <div className={styles.reference}>
     <p><FaClock/>     Heure</p>
-    <p><FaCalendar/>     Frequence</p>
+    <p><FaCalendar/>     Fréquence</p>
     <p><FaClock/>     Limite</p>
     <p><FaMoneyBill/>     Tarif</p>
 </div>
@@ -630,7 +630,7 @@ function Acceuil(){
 </div>
 </div>
 <div className={styles.voir_details}>
-<button type='button' className={styles.bouton_voir_detail} onClick={() => setDepartOuvert(d)}>Voir les details</button>
+<button type='button' className={styles.bouton_voir_detail} onClick={() => setDepartOuvert(d)}>Voir les détails</button>
 </div>
 </div>
 
@@ -664,7 +664,7 @@ function Acceuil(){
       </div>
       <div className={styles.etapeContenu}>
         <p className={styles.etapeTitre}>Choisissez</p>
-        <p className={styles.etapeTexte}>Sélectionnez le transporteur et le départ qui vous convient</p>
+        <p className={styles.etapeTexte}>Sélectionnez le transporteur et le départ qui vous conviennent</p>
       </div>
     </div>
 
@@ -749,7 +749,7 @@ Lun - Ven : 9h00 - 18h00</p>
     <div className={styles.overlayPartenaire} onClick={fermerDetailsDepart}>
         <div className={styles.fenetrePartenaire} onClick={(e) => e.stopPropagation()} style={{ width: 460 }}>
             <div className={styles.entetePartenaire}>
-                <p className={styles.titrePartenaire}>{departOuvert.nomCompagnie || 'Depart'}</p>
+                <p className={styles.titrePartenaire}>{departOuvert.nomCompagnie || 'Départ'}</p>
                 <button
                     type="button"
                     className={styles.boutonFermerPartenaire}
@@ -773,11 +773,11 @@ Lun - Ven : 9h00 - 18h00</p>
                     <DrapeauPays pays={departOuvert.paysArrivee} /> {departOuvert.villeArrivee}
                 </p>
                 {[
-                    ['Prochain depart', `${formatDateCarte(departOuvert.prochaine)}${departOuvert.heure ? ` a ${departOuvert.heure}` : ''}`],
-                    ['Frequence', libelleFrequence(departOuvert)],
+                    ['Prochain départ', `${formatDateCarte(departOuvert.prochaine)}${departOuvert.heure ? ` à ${departOuvert.heure}` : ''}`],
+                    ['Fréquence', libelleFrequence(departOuvert)],
                     ['Limite par client', departOuvert.limiteKg ? `${departOuvert.limiteKg} kg` : '—'],
                     ['Tarif', departOuvert.tarifParKilo ? `${formatPrix(departOuvert.tarifParKilo)} € par kg` : '—'],
-                    ...(departOuvert.notes ? [['A savoir', departOuvert.notes]] : []),
+                    ...(departOuvert.notes ? [['À savoir', departOuvert.notes]] : []),
                 ].map(([label, valeur]) => (
                     <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, padding: '8px 0', borderBottom: '1px solid #eee', fontSize: 14 }}>
                         <span style={{ color: '#6b7280' }}>{label}</span>
@@ -785,7 +785,7 @@ Lun - Ven : 9h00 - 18h00</p>
                     </div>
                 ))}
                 <button type="button" className={styles.boutonPrincipalPartenaire} style={{ margin: '6px 0 0', width: '100%', justifyContent: 'center' }} onClick={() => setEtapeContact('formulaire')}>
-                    <FaPhoneAlt size={13} /> Contacter l'expediteur
+                    <FaPhoneAlt size={13} /> Contacter l'expéditeur
                 </button>
             </div>
             )}
@@ -793,7 +793,7 @@ Lun - Ven : 9h00 - 18h00</p>
             {etapeContact === 'formulaire' && (
             <form className={styles.corpsFormulairePartenaire} onSubmit={envoyerFormulaireContact}>
                 <p style={{ margin: 0, fontSize: 14, color: '#4b5563' }}>
-                    Remplissez le formulaire pour pouvoir rentrer en contact avec l'expediteur.
+                    Remplissez le formulaire pour pouvoir rentrer en contact avec l'expéditeur.
                 </p>
                 <div className={styles.grilleChampsPartenaire}>
                     <div className={styles.champPartenaire}>
@@ -801,11 +801,11 @@ Lun - Ven : 9h00 - 18h00</p>
                         <input type="text" required value={formContact.nom} onChange={majChampContact('nom')} placeholder="Ex : Kouassi" />
                     </div>
                     <div className={styles.champPartenaire}>
-                        <label>Prenom</label>
+                        <label>Prénom</label>
                         <input type="text" required value={formContact.prenom} onChange={majChampContact('prenom')} placeholder="Ex : Jean" />
                     </div>
                     <div className={styles.champPartenaire}>
-                        <label>Quantite (kg)</label>
+                        <label>Quantité (kg)</label>
                         <input
                             type="number"
                             required
@@ -818,17 +818,17 @@ Lun - Ven : 9h00 - 18h00</p>
                         />
                     </div>
                     <div className={styles.champPartenaire}>
-                        <label>Numero de telephone</label>
+                        <label>Numéro de téléphone</label>
                         <input type="tel" required value={formContact.telephone} onChange={majChampContact('telephone')} placeholder="+225 07 00 00 00 00" />
                     </div>
                     <div className={`${styles.champPartenaire} ${styles.champPleineLargeurPartenaire}`}>
                         <label>Nature du colis</label>
-                        <input type="text" required value={formContact.nature} onChange={majChampContact('nature')} placeholder="Ex : vetements, documents, produits alimentaires..." />
+                        <input type="text" required value={formContact.nature} onChange={majChampContact('nature')} placeholder="Ex : vêtements, documents, produits alimentaires..." />
                     </div>
                 </div>
                 <div className={styles.piedFormulairePartenaire}>
                     <button type="button" className={styles.boutonSecondairePartenaire} onClick={() => setEtapeContact(null)}>Retour</button>
-                    <button type="submit" className={styles.boutonPrincipalPartenaire}>Afficher le numero</button>
+                    <button type="submit" className={styles.boutonPrincipalPartenaire}>Afficher le numéro</button>
                 </div>
             </form>
             )}
@@ -839,7 +839,7 @@ Lun - Ven : 9h00 - 18h00</p>
                 <>
                     <FaCheckCircle size={44} color="rgb(39, 123, 48)" />
                     <p style={{ margin: 0, fontSize: 14, color: '#4b5563' }}>
-                        Merci {formContact.prenom} ! Vous pouvez contacter {departOuvert.nomCompagnie || "l'expediteur"} au :
+                        Merci {formContact.prenom} ! Vous pouvez contacter {departOuvert.nomCompagnie || "l'expéditeur"} au :
                     </p>
                     <a href={`tel:${departOuvert.telephoneCompagnie.replace(/\s/g, '')}`} style={{ fontSize: 24, fontWeight: 800, color: 'rgb(39, 123, 48)', textDecoration: 'none' }}>
                         {departOuvert.telephoneCompagnie}
@@ -854,17 +854,17 @@ Lun - Ven : 9h00 - 18h00</p>
                             target="_blank"
                             rel="noreferrer"
                             href={`https://wa.me/${numeroWhatsApp(departOuvert.telephoneCompagnie)}?text=${encodeURIComponent(
-                                `Bonjour, je suis ${formContact.prenom} ${formContact.nom}. J'ai vu votre depart ${departOuvert.villeDepart} -> ${departOuvert.villeArrivee} du ${formatDateCarte(departOuvert.prochaine)} sur GVIP Colis. `
-                                + `Je souhaite envoyer ${formContact.quantite} kg (${formContact.nature}). Mon numero : ${formContact.telephone}.`
+                                `Bonjour, je suis ${formContact.prenom} ${formContact.nom}. J'ai vu votre départ ${departOuvert.villeDepart} -> ${departOuvert.villeArrivee} du ${formatDateCarte(departOuvert.prochaine)} sur GVIP Colis. `
+                                + `Je souhaite envoyer ${formContact.quantite} kg (${formContact.nature}). Mon numéro : ${formContact.telephone}.`
                             )}`}
                         >
-                            <FaWhatsapp size={15} /> Ecrire sur WhatsApp
+                            <FaWhatsapp size={15} /> Écrire sur WhatsApp
                         </a>
                     </div>
                 </>
                 ) : (
                     <p style={{ margin: 0, fontSize: 14, color: '#4b5563' }}>
-                        Le numero de cet expediteur n'est pas encore disponible. Contactez-nous a contact@gvipcolis.com, nous vous mettrons en relation.
+                        Le numéro de cet expéditeur n'est pas encore disponible. Contactez-nous à contact@gvipcolis.com, nous vous mettrons en relation.
                     </p>
                 )}
                 <button type="button" className={styles.boutonSecondairePartenaire} style={{ marginTop: 4 }} onClick={fermerDetailsDepart}>Fermer</button>
@@ -995,7 +995,7 @@ Lun - Ven : 9h00 - 18h00</p>
 
             <div className={styles.entetePartenaire}>
                 <p className={styles.titrePartenaire}>
-                    {demandeEnvoyee ? 'Demande envoyee' : 'Devenir partenaire transporteur'}
+                    {demandeEnvoyee ? 'Demande envoyée' : 'Devenir partenaire transporteur'}
                 </p>
                 <button
                     type="button"
@@ -1014,8 +1014,8 @@ Lun - Ven : 9h00 - 18h00</p>
                         Merci, {formPartenaire.prenom || 'votre demande'} !
                     </p>
                     <p className={styles.confirmationPartenaireTexte}>
-                        Votre demande de partenariat a bien ete enregistree. Notre equipe
-                        vous contactera sous peu a l'adresse {formPartenaire.email}.
+                        Votre demande de partenariat a bien été enregistrée. Notre équipe
+                        vous contactera sous peu à l'adresse {formPartenaire.email}.
                     </p>
                     <button type="button" className={styles.boutonPrincipalPartenaire} onClick={fermerModalPartenaire}>
                         Fermer
@@ -1030,7 +1030,7 @@ Lun - Ven : 9h00 - 18h00</p>
                                 <span className={styles.bandeauTypeIcone}><FaBus size={20} /></span>
                                 <div>
                                     <p className={styles.bandeauTypeTitre}>Compagnie de transport de colis</p>
-                                    <p className={styles.bandeauTypeTexte}>Publiez vos departs et recevez des demandes d'expedition</p>
+                                    <p className={styles.bandeauTypeTexte}>Publiez vos départs et recevez des demandes d'expédition</p>
                                 </div>
                                 <FaCheckCircle size={18} className={styles.bandeauTypeCoche} />
                             </div>
@@ -1059,7 +1059,7 @@ Lun - Ven : 9h00 - 18h00</p>
                                 />
                             </div>
                             <div className={styles.champPartenaire}>
-                                <label>Prenom</label>
+                                <label>Prénom</label>
                                 <input
                                     type="text"
                                     required
@@ -1079,7 +1079,7 @@ Lun - Ven : 9h00 - 18h00</p>
                                 />
                             </div>
                             <div className={styles.champPartenaire}>
-                                <label>Numero de telephone</label>
+                                <label>Numéro de téléphone</label>
                                 <input
                                     type="tel"
                                     required
