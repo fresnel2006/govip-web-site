@@ -376,37 +376,42 @@
     flex-direction: column;
 }
 
-/* footer : contenu centre */
+/* footer : le contenu commence au meme bord gauche (et finit au meme bord droit)
+   que le cadre "comment ca marche" (marge de 20px) */
+/* meme disposition sur tous les ecrans : 5 colonnes alignees en haut sur une ligne,
+   le texte se reduit avec la largeur de l'ecran au lieu de passer a la ligne */
 .footer {
     margin-top: 60px;
     height: auto;
     min-height: 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 40px;
-    align-items: flex-start;
-    justify-content: center;
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr 1fr 1.3fr;
+    column-gap: clamp(8px, 2.5vw, 40px);
+    align-items: start;
     background-color: black;
     color: white;
-    padding: 50px 60px;
+    padding: clamp(24px, 4vw, 50px) 20px;
+    font-size: clamp(8px, 1.15vw, 16px);
+}
+
+.footer_partie1,
+.footer_partie2,
+.footer_partie3,
+.footer_partie4,
+.footer_partie5 {
+    width: auto;
+    min-width: 0;
+    height: auto;
+    overflow-wrap: anywhere;
 }
 
 .footer_partie1 {
-    width: 300px;
-    height: auto;
     font-weight: 600;
 }
 
-.footer_partie2,
-.footer_partie3,
-.footer_partie4 {
-    width: 200px;
-    height: auto;
-}
-
-.footer_partie5 {
-    width: 300px;
-    height: auto;
+.titre_footer {
+    margin-bottom: 1.2em;
+    font-size: 1.3em;
 }
 
 /* liens du footer : meme rendu que le texte, souligne au survol */
@@ -665,8 +670,9 @@
 
 .image_entreprise {
     background-image: url("../assets/logo_entreprise.png");
-    height: 110px;
-    width: 180px;
+    width: 100%;
+    max-width: 180px;
+    aspect-ratio: 180 / 110;
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -768,21 +774,7 @@
     }
 
     .footer {
-        flex-wrap: wrap;
         margin-top: 80px;
-        gap: 24px;
-    }
-
-    .footer_partie1,
-    .footer_partie5 {
-        width: 45%;
-    }
-
-    .footer_partie2,
-    .footer_partie3,
-    .footer_partie4 {
-        width: 45%;
-        height: auto;
     }
 }
 
@@ -955,24 +947,9 @@
     }
 
     .footer {
-        flex-direction: column;
-        align-items: flex-start;
         margin-top: 50px;
-        gap: 30px;
-    }
-
-    .footer_partie1,
-    .footer_partie2,
-    .footer_partie3,
-    .footer_partie4,
-    .footer_partie5 {
-        width: 100%;
-        height: auto;
-    }
-
-    .image_entreprise {
-        height: 80px;
-        width: 130px;
+        padding-left: 10px;
+        padding-right: 10px;
     }
 }
 

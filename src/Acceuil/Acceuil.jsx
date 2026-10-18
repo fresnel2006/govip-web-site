@@ -7,7 +7,7 @@ import { FaMoneyBill, FaShield } from 'react-icons/fa6';
 import { CI, FR } from 'country-flag-icons/react/3x2';
 // On passe uniquement par les fonctions du fichier Firebase partage,
 // sans appeler firebase/database ou firebase/storage directement.
-import { connexionAdmin, creerDemandePartenaire, telephoneDejaPartenaire, ecouterToutesExpeditions, estDepartAffiche, prochaineDateDepart, libelleFrequence, lireDateExpedition } from '../firebase/firebase';
+import { connexionAdmin, deconnexionAdmin, creerDemandePartenaire, telephoneDejaPartenaire, ecouterToutesExpeditions, estDepartAffiche, prochaineDateDepart, libelleFrequence, lireDateExpedition } from '../firebase/firebase';
 
 // formulaire "contacter l'expediteur" d'un depart
 const ETAT_INITIAL_CONTACT = { nom: '', prenom: '', quantite: '', telephone: '', nature: '' };
@@ -305,6 +305,13 @@ function Acceuil(){
             setEnvoiEnCours(false);
         }
     };
+
+    // Arriver sur l'accueil ferme toute session partenaire restée ouverte
+    // (ex. retour avec les flèches du navigateur) : l'espace partenaire
+    // redemandera alors le mot de passe.
+    useEffect(() => {
+        deconnexionAdmin().catch(() => {});
+    }, []);
 
     // ouvre le modal "se connecter" et ferme le menu mobile si besoin
     const ouvrirModalConnexion = () => {
@@ -700,7 +707,7 @@ function Acceuil(){
 
 </div>
 <div className={styles.footer_partie2}>
-    <p style={{marginBottom:20,fontSize:21}}><strong>Navigation</strong></p>
+    <p className={styles.titre_footer}><strong>Navigation</strong></p>
     <p>
 <button type='button' className={styles.lien_footer} onClick={() => scrollVers('acceuil')}>Accueil</button><br />
 <button type='button' className={styles.lien_footer} onClick={() => scrollVers('trouver-depart')}>Trouver un départ</button><br />
@@ -710,7 +717,7 @@ function Acceuil(){
 <button type='button' className={styles.lien_footer} onClick={() => scrollVers('contact')}>Contact</button></p>
 </div>
 <div className={styles.footer_partie3}>
-    <p style={{marginBottom:20,fontSize:21}}><strong>Espace partenaire</strong></p>
+    <p className={styles.titre_footer}><strong>Espace partenaire</strong></p>
     <p>
 <button type='button' className={styles.lien_footer} onClick={ouvrirModalConnexion}>Se connecter</button><br />
 <button type='button' className={styles.lien_footer} onClick={ouvrirModalPartenaire}>Devenir partenaire</button><br />
@@ -718,7 +725,7 @@ function Acceuil(){
 <a className={styles.lien_footer} href="/espace_partenaire">Tableau de bord</a></p>
 </div>
 <div className={styles.footer_partie4}>
-<p style={{marginBottom:20,fontSize:21}}><strong>Informations</strong></p>
+<p className={styles.titre_footer}><strong>Informations</strong></p>
 {/* TODO : pages CGV / confidentialite / mentions legales / FAQ a creer */}
 <p>Conditions générales (CGV)<br />
 Politique de confidentialité<br />
@@ -727,7 +734,7 @@ FAQ<br />
 <a className={styles.lien_footer} href="mailto:contact@gvipcolis.com">Nous contacter</a></p>
 </div>
 <div className={styles.footer_partie5} id="contact">
-    <p style={{marginBottom:20,fontSize:21}}><strong>Suivez-nous</strong></p>
+    <p className={styles.titre_footer}><strong>Suivez-nous</strong></p>
 <p><FaInstagram/> <FaTiktok/> <FaYoutube/> <FaWhatsapp/> <br />
 
 Contact<br />

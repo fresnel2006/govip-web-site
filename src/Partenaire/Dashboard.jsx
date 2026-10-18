@@ -523,6 +523,23 @@ export default function Dashboard() {
     return () => unsubscribe();
   }, []);
 
+  // Quitter l'espace partenaire avec les flèches du navigateur ferme la session :
+  // y revenir redemande le mot de passe (Firebase garde sinon la session ouverte).
+  useEffect(() => {
+    const deconnecterSiSortie = () => {
+      redirectionApresDeconnexion = false;
+      signOut(auth).catch(() => {});
+    };
+    // pageshow persisted : page restaurée depuis le cache arrière/avant du navigateur
+    const surPageShow = (e) => { if (e.persisted) deconnecterSiSortie(); };
+    window.addEventListener("popstate", deconnecterSiSortie);
+    window.addEventListener("pageshow", surPageShow);
+    return () => {
+      window.removeEventListener("popstate", deconnecterSiSortie);
+      window.removeEventListener("pageshow", surPageShow);
+    };
+  }, []);
+
   // ---------- Navigation ----------
   const [navOpen, setNavOpen] = useState(false);
   const [section, setSection] = useState("dashboard");
