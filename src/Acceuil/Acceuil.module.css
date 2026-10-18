@@ -1411,3 +1411,111 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* =========================================================
+   BOUTONS ET ELEMENTS CLIQUABLES : curseur "main", effet au survol,
+   effet a l'appui et contour au clavier, pour qu'on sente qu'on peut cliquer
+   ========================================================= */
+
+/* onglets du menu (haut de page et menu mobile) */
+.header .navigation > div,
+.navigation_ouverte > div {
+    cursor: pointer;
+    transition: color 0.15s ease;
+}
+
+.header .navigation > div p,
+.navigation_ouverte > div p {
+    padding-bottom: 3px;
+    border-bottom: 2px solid transparent;
+    transition: border-color 0.15s ease;
+}
+
+/* boutons "Se connecter", "Devenir partenaire", "Voir les details" */
+.se_connecter button,
+.devenir_partenaire button,
+.bouton_voir_detail {
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.se_connecter button,
+.bouton_voir_detail {
+    box-shadow: 0 2px 6px rgba(39, 123, 48, 0.18);
+}
+
+.devenir_partenaire button {
+    box-shadow: 0 3px 8px rgba(39, 123, 48, 0.3);
+}
+
+/* boutons des fenetres (envoyer, retour, fermer...) */
+.boutonPrincipalPartenaire,
+.boutonSecondairePartenaire,
+.boutonFermerPartenaire,
+.zoneDepotSupprimer,
+.lien_voir_tout {
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.boutonPrincipalPartenaire {
+    box-shadow: 0 3px 8px rgba(39, 123, 48, 0.3);
+}
+
+@media (hover: hover) {
+    .header .navigation > div:hover,
+    .navigation_ouverte > div:hover {
+        color: rgb(39, 123, 48);
+    }
+
+    .header .navigation > div:hover p,
+    .navigation_ouverte > div:hover p {
+        border-bottom-color: rgb(39, 123, 48);
+    }
+
+    .se_connecter button:hover {
+        background-color: rgba(39, 123, 48, 0.1);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 14px rgba(39, 123, 48, 0.28);
+    }
+
+    .devenir_partenaire button:hover,
+    .bouton_voir_detail:hover,
+    .boutonPrincipalPartenaire:not(:disabled):hover {
+        background-color: rgb(28, 98, 37);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 14px rgba(39, 123, 48, 0.4);
+    }
+
+    .boutonSecondairePartenaire:hover,
+    .boutonFermerPartenaire:hover,
+    .zoneDepotSupprimer:hover {
+        background-color: rgba(39, 123, 48, 0.1);
+        color: rgb(39, 123, 48);
+    }
+
+    .lien_voir_tout:hover {
+        text-decoration: underline;
+        transform: translateX(2px);
+    }
+}
+
+.se_connecter button:active,
+.devenir_partenaire button:active,
+.bouton_voir_detail:active,
+.boutonPrincipalPartenaire:not(:disabled):active,
+.boutonSecondairePartenaire:active {
+    transform: scale(0.96);
+}
+
+/* contour visible quand on navigue au clavier */
+.se_connecter button:focus-visible,
+.devenir_partenaire button:focus-visible,
+.bouton_voir_detail:focus-visible,
+.boutonPrincipalPartenaire:focus-visible,
+.boutonSecondairePartenaire:focus-visible,
+.boutonFermerPartenaire:focus-visible,
+.lien_voir_tout:focus-visible,
+.bouton_burger:focus-visible {
+    outline: 2px solid rgb(39, 123, 48);
+    outline-offset: 2px;
+}
