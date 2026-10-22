@@ -564,6 +564,29 @@ export async function enregistrerExpedition(id, donnees) {
     return nouvelleRef.key;
 }
 
+/**
+ * Recopie le numéro de téléphone de chaque compagnie dans ses départs (champ
+ * "telephoneCompagnie"). Le visiteur de l'accueil ne peut pas lire la fiche d'une
+ * compagnie : il lit le numéro sur le départ. Sans cette recopie, un numéro ajouté
+ * ou modifié après la création d'un départ n'apparaîtrait pas sur l'accueil.
+ * @param {{id: string, telephone?: string}[]} compagnies
+ * @param {{id: string, idPartenaire?: string, telephoneCompagnie?: string}[]} expeditions
+ */
+export async function synchroniserTelephonesExpeditions(compagnies, expeditions) {
+    const telephones = Object.fromEntries(
+        compagnies.filter((c) => c.telephone).map((c) => [c.id, c.telephone])
+    );
+    const modifications = {};
+    expeditions.forEach((e) => {
+        const telephone = telephones[e.idPartenaire];
+        if (telephone && e.telephoneCompagnie !== telephone) {
+            modifications[`${e.id}/telephoneCompagnie`] = telephone;
+        }
+    });
+    if (Object.keys(modifications).length === 0) return;
+    await update(ref(db, 'expeditions'), modifications);
+}
+
 export async function supprimerExpedition(id) {
     await remove(ref(db, `expeditions/${id}`));
 }

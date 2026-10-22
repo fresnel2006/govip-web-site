@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import styles from "./Dashboard.module.css";
+import { bloquerSymbolesNombre } from "../utils/champsNumeriques.js";
 import {
   signInWithEmailAndPassword,
   signOut,
@@ -29,6 +30,7 @@ import {
   prochaineDateDepart,
   libelleFrequence,
   estDepartAffiche,
+  synchroniserTelephonesExpeditions,
   lireDateExpedition,
   FREQUENCES_DEPART,
   PAYS_DEPARTS,
@@ -557,6 +559,13 @@ export default function Dashboard() {
     const unsubscribe = ecouterExpeditionsCompagnie(uid, setShipments);
     return () => unsubscribe();
   }, [uid]);
+
+  // Le numéro du profil est recopié dans les départs (affiché aux visiteurs sur l'accueil)
+  useEffect(() => {
+    if (!uid || !profile?.telephone || shipments.length === 0) return;
+    synchroniserTelephonesExpeditions([{ id: uid, telephone: profile.telephone }], shipments)
+      .catch((err) => console.error("Erreur synchronisation du téléphone :", err));
+  }, [uid, profile, shipments]);
 
   // ---------- Profil ----------
   const [profilForm, setProfilForm] = useState(null);
@@ -1253,6 +1262,8 @@ export default function Dashboard() {
                       {profilEditMode ? (
                         <input
                           type="number"
+                          inputMode="decimal"
+                          onKeyDown={bloquerSymbolesNombre}
                           min="0"
                           step="0.01"
                           value={profilForm.tarifParKilo ?? ""}
@@ -1440,11 +1451,11 @@ export default function Dashboard() {
               <div className={styles.modalRow}>
                 <div className={styles.modalField}>
                   <label>Limite par client (kg)</label>
-                  <input type="number" min="0" step="0.5" required placeholder="Ex : 30" value={formExpedition.limiteKg} onChange={(e) => majChampExpedition("limiteKg", e.target.value)} />
+                  <input type="number" inputMode="decimal" onKeyDown={bloquerSymbolesNombre} min="0" step="0.5" required placeholder="Ex : 30" value={formExpedition.limiteKg} onChange={(e) => majChampExpedition("limiteKg", e.target.value)} />
                 </div>
                 <div className={styles.modalField}>
                   <label>Tarif (€ par kg)</label>
-                  <input type="number" min="0" step="0.01" required placeholder="Ex : 8" value={formExpedition.tarifParKilo} onChange={(e) => majChampExpedition("tarifParKilo", e.target.value)} />
+                  <input type="number" inputMode="decimal" onKeyDown={bloquerSymbolesNombre} min="0" step="0.01" required placeholder="Ex : 8" value={formExpedition.tarifParKilo} onChange={(e) => majChampExpedition("tarifParKilo", e.target.value)} />
                 </div>
               </div>
               <div className={styles.modalField}>
@@ -1454,7 +1465,7 @@ export default function Dashboard() {
               <div className={styles.modalRow}>
                 <div className={styles.modalField}>
                   <label>Poids transporté (kg)</label>
-                  <input type="number" min="0" step="0.1" placeholder="À remplir une fois chargé" value={formExpedition.poids} onChange={(e) => majChampExpedition("poids", e.target.value)} />
+                  <input type="number" inputMode="decimal" onKeyDown={bloquerSymbolesNombre} min="0" step="0.1" placeholder="À remplir une fois chargé" value={formExpedition.poids} onChange={(e) => majChampExpedition("poids", e.target.value)} />
                 </div>
                 <div className={styles.modalField}>
                   <label>Statut</label>

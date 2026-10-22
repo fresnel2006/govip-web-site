@@ -3,6 +3,7 @@ import { useMediaQuery } from 'react-responsive';
 import { FaArrowRight, FaCalendar, FaClock, FaSearch, FaTag, FaTimes, FaUsers, FaPaperPlane, FaRegCalendarAlt, FaCheckCircle, FaBars, FaInstagram, FaTiktok, FaYoutube, FaWhatsapp, FaBus, FaLock, FaEnvelope, FaEye, FaEyeSlash, FaCloudUploadAlt, FaFileAlt, FaPhoneAlt } from 'react-icons/fa';
 import styles from '../Acceuil/Acceuil.module.css'
 import logo_entreprise from '../assets/logo_entreprise.png'
+import { filtrerTelephone, bloquerSymbolesNombre } from '../utils/champsNumeriques.js'
 import { FaMoneyBill, FaShield } from 'react-icons/fa6';
 import { CI, FR } from 'country-flag-icons/react/3x2';
 // On passe uniquement par les fonctions du fichier Firebase partage,
@@ -11,11 +12,6 @@ import { connexionAdmin, deconnexionAdmin, creerDemandePartenaire, telephoneDeja
 
 // formulaire "contacter l'expediteur" d'un depart
 const ETAT_INITIAL_CONTACT = { nom: '', prenom: '', quantite: '', telephone: '', nature: '' };
-
-// "+225 07 08 09 10 11" -> "2250708091011" pour les liens WhatsApp
-function numeroWhatsApp(telephone) {
-    return String(telephone || '').replace(/\D/g, '').replace(/^00/, '');
-}
 
 // filtres vides du formulaire "Trouvez un depart"
 const RECHERCHE_VIDE = { paysDepart: '', villeDepart: '', paysArrivee: '', date: '' };
@@ -808,6 +804,8 @@ Lun - Ven : 9h00 - 18h00</p>
                         <label>Quantité (kg)</label>
                         <input
                             type="number"
+                            inputMode="decimal"
+                            onKeyDown={bloquerSymbolesNombre}
                             required
                             min="0.1"
                             step="0.1"
@@ -819,7 +817,7 @@ Lun - Ven : 9h00 - 18h00</p>
                     </div>
                     <div className={styles.champPartenaire}>
                         <label>Numéro de téléphone</label>
-                        <input type="tel" required value={formContact.telephone} onChange={majChampContact('telephone')} placeholder="+225 07 00 00 00 00" />
+                        <input type="tel" inputMode="tel" required value={formContact.telephone} onChange={(e) => setFormContact((p) => ({ ...p, telephone: filtrerTelephone(e.target.value) }))} placeholder="+225 07 00 00 00 00" />
                     </div>
                     <div className={`${styles.champPartenaire} ${styles.champPleineLargeurPartenaire}`}>
                         <label>Nature du colis</label>
@@ -847,18 +845,6 @@ Lun - Ven : 9h00 - 18h00</p>
                     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
                         <a className={styles.boutonSecondairePartenaire} style={{ textDecoration: 'none' }} href={`tel:${departOuvert.telephoneCompagnie.replace(/\s/g, '')}`}>
                             <FaPhoneAlt size={13} /> Appeler
-                        </a>
-                        <a
-                            className={styles.boutonPrincipalPartenaire}
-                            style={{ margin: 0, textDecoration: 'none' }}
-                            target="_blank"
-                            rel="noreferrer"
-                            href={`https://wa.me/${numeroWhatsApp(departOuvert.telephoneCompagnie)}?text=${encodeURIComponent(
-                                `Bonjour, je suis ${formContact.prenom} ${formContact.nom}. J'ai vu votre départ ${departOuvert.villeDepart} -> ${departOuvert.villeArrivee} du ${formatDateCarte(departOuvert.prochaine)} sur GVIP Colis. `
-                                + `Je souhaite envoyer ${formContact.quantite} kg (${formContact.nature}). Mon numéro : ${formContact.telephone}.`
-                            )}`}
-                        >
-                            <FaWhatsapp size={15} /> Écrire sur WhatsApp
                         </a>
                     </div>
                 </>
@@ -1082,9 +1068,10 @@ Lun - Ven : 9h00 - 18h00</p>
                                 <label>Numéro de téléphone</label>
                                 <input
                                     type="tel"
+                                    inputMode="tel"
                                     required
                                     value={formPartenaire.telephone}
-                                    onChange={(e) => majChampPartenaire('telephone', e.target.value)}
+                                    onChange={(e) => majChampPartenaire('telephone', filtrerTelephone(e.target.value))}
                                     placeholder="+225 07 00 00 00 00"
                                 />
                             </div>
