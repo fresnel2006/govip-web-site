@@ -3,12 +3,24 @@ import { useMediaQuery } from 'react-responsive';
 import { FaArrowRight, FaCalendar, FaClock, FaSearch, FaTag, FaTimes, FaUsers, FaPaperPlane, FaRegCalendarAlt, FaCheckCircle, FaBars, FaInstagram, FaTiktok, FaYoutube, FaWhatsapp, FaBus, FaLock, FaEnvelope, FaEye, FaEyeSlash, FaCloudUploadAlt, FaFileAlt, FaPhoneAlt } from 'react-icons/fa';
 import styles from '../Acceuil/Acceuil.module.css'
 import logo_entreprise from '../assets/logo_entreprise.png'
+import arrierePlan1 from '../assets/arriere_plan1.png'
+import arrierePlan2 from '../assets/arriere_plan2.png'
+import arrierePlan3 from '../assets/arriere_plan3.png'
+import arrierePlan4 from '../assets/arriere_plan4.png'
 import { filtrerTelephone, bloquerSymbolesNombre } from '../utils/champsNumeriques.js'
 import { FaMoneyBill, FaShield } from 'react-icons/fa6';
 import { CI, FR } from 'country-flag-icons/react/3x2';
 // On passe uniquement par les fonctions du fichier Firebase partage,
 // sans appeler firebase/database ou firebase/storage directement.
 import { connexionAdmin, deconnexionAdmin, creerDemandePartenaire, telephoneDejaPartenaire, ecouterToutesExpeditions, estDepartAffiche, prochaineDateDepart, libelleFrequence, lireDateExpedition } from '../firebase/firebase';
+
+// images du bandeau de l'accueil : chacune reste 3 secondes entierement visible,
+// puis le fondu vers la suivante dure DUREE_FONDU_MS (a garder egal a la
+// transition .fond_diapo du CSS)
+const IMAGES_FOND = [arrierePlan1, arrierePlan2, arrierePlan3, arrierePlan4];
+const DUREE_AFFICHAGE_MS = 3000;
+const DUREE_FONDU_MS = 1200;
+const DELAI_DIAPORAMA_MS = DUREE_AFFICHAGE_MS + DUREE_FONDU_MS;
 
 // formulaire "contacter l'expediteur" d'un depart
 const ETAT_INITIAL_CONTACT = { nom: '', prenom: '', quantite: '', telephone: '', nature: '' };
@@ -157,6 +169,21 @@ function Acceuil(){
     const isDesktop = useMediaQuery({ minWidth: 1025 });
     const isMobileOuTablette = isMobile || isTablette;
 
+    // diaporama du bandeau : une image est affichee seulement une fois chargee
+    // (on voit un fond neutre, jamais de couleur vive, pendant le chargement)
+    const [indexFond, setIndexFond] = useState(0);
+    const [fondsCharges, setFondsCharges] = useState({});
+    useEffect(() => {
+        if (isMobile) return;
+        IMAGES_FOND.forEach((src, i) => {
+            const img = new Image();
+            img.onload = () => setFondsCharges((prec) => ({ ...prec, [i]: true }));
+            img.src = src;
+        });
+        const minuteur = setInterval(() => setIndexFond((i) => (i + 1) % IMAGES_FOND.length), DELAI_DIAPORAMA_MS);
+        return () => clearInterval(minuteur);
+    }, [isMobile]);
+
     // etats du modal "devenir partenaire"
     const [modalPartenaireOuvert, setModalPartenaireOuvert] = useState(false);
     const [formPartenaire, setFormPartenaire] = useState(ETAT_INITIAL_PARTENAIRE);
@@ -198,6 +225,8 @@ function Acceuil(){
     const [recherche, setRecherche] = useState(RECHERCHE_VIDE);
     const majRecherche = (champ) => (e) => setRecherche((p) => ({ ...p, [champ]: e.target.value }));
     const rechercheActive = Object.values(recherche).some(Boolean);
+    // telephone : la suite du formulaire se deroule des qu'on touche "Pays de depart" (et reste ouverte)
+    const [suiteFormulaireOuverte, setSuiteFormulaireOuverte] = useState(false);
 
     // prochains departs : expeditions planifiees a venir, compagnies non suspendues, du plus proche au plus lointain.
     // Avec une date choisie, on prend la prochaine occurrence a partir de cette date.
@@ -221,7 +250,27 @@ function Acceuil(){
     // nombre de cartes qui tiennent sur une ligne, recalcule quand la largeur de la liste change
     const [cartesParLigne, setCartesParLigne] = useState(3);
     const observateurListe = useRef(null);
+    const elListeDeparts = useRef(null);
+    // telephone : carte visible dans le carrousel + a-t-on deja fait defiler (pour cacher l'astuce)
+    const [carteActive, setCarteActive] = useState(0);
+    const [aDefile, setADefile] = useState(false);
+    const surDefilementListe = (e) => {
+        const el = e.currentTarget;
+        const carte = el.firstElementChild;
+        if (!carte) return;
+        const ecart = parseFloat(getComputedStyle(el).columnGap) || 12;
+        setCarteActive(Math.round(el.scrollLeft / (carte.offsetWidth + ecart)));
+        if (el.scrollLeft > 10) setADefile(true);
+    };
+    const allerALaCarte = (i) => {
+        const el = elListeDeparts.current;
+        const carte = el?.firstElementChild;
+        if (!el || !carte) return;
+        const ecart = parseFloat(getComputedStyle(el).columnGap) || 12;
+        el.scrollTo({ left: i * (carte.offsetWidth + ecart), behavior: 'smooth' });
+    };
     const refListeDeparts = useCallback((el) => {
+        elListeDeparts.current = el;
         observateurListe.current?.disconnect();
         if (!el) return;
         observateurListe.current = new ResizeObserver(() => {
@@ -470,6 +519,7 @@ function Acceuil(){
 <p>GVIP Colis est la plateforme qui centralise les départs</p>
 <p>proposés par les transporteurs fiables.</p>
 <p>Comparez, choisissez et expédiez en toute confiance.</p>
+{!isMobile && (
 <div className={styles.description3}>
 
 <div className={styles.info1}>
@@ -503,24 +553,36 @@ function Acceuil(){
 </div>
 
 </div>
+)}
                     </div>
 
                 </div>
+                {!isMobile && (
                 <div className={styles.image_arriere1}>
-                
+                    {IMAGES_FOND.map((src, i) => (
+                        <div
+                            key={src}
+                            className={`${styles.fond_diapo} ${fondsCharges[i] && i === indexFond ? styles.fond_diapo_actif : fondsCharges[i] && i === (indexFond + IMAGES_FOND.length - 1) % IMAGES_FOND.length ? styles.fond_diapo_precedent : ''}`}
+                            style={{ backgroundImage: `url(${src})` }}
+                        />
+                    ))}
                 </div>
+                )}
             </div>
             <div className={styles.trouver_depart_body} id="trouver-depart">
 <p style={{fontSize: isMobile ? 20 : 25}}> <strong>Trouvez un départ</strong></p>
 <div className={styles.formulaire}>
     <div className={styles.champs}>
         <p>Pays de départ</p>
-        <select value={recherche.paysDepart} onChange={majRecherche('paysDepart')}>
+        <select value={recherche.paysDepart} onChange={majRecherche('paysDepart')} onFocus={() => setSuiteFormulaireOuverte(true)} onClick={() => setSuiteFormulaireOuverte(true)}>
         <option value="">Pays de départ</option>
         <option value="Côte d'Ivoire">Côte d'Ivoire</option>
         <option value="France">France</option>
       </select>
 </div>
+{/* sur telephone, le reste du formulaire se deroule quand un champ est rempli (ex. le pays de depart) */}
+<div className={`${styles.suite_formulaire} ${!isMobile || rechercheActive || suiteFormulaireOuverte ? styles.suite_ouverte : ''}`}>
+<div className={styles.suite_formulaire_interieur}>
 <div className={styles.champs}>
       <p>Ville de départ</p>
 
@@ -554,6 +616,8 @@ function Acceuil(){
         min={new Date().toISOString().split('T')[0]}
       />
 </div>
+</div>
+</div>
       
     </div>
 
@@ -579,7 +643,8 @@ function Acceuil(){
                         ? 'Aucun départ ne correspond à votre recherche. Essayez une autre ville ou une autre date.'
                         : 'Aucun départ programmé pour le moment. Revenez bientôt !'}</p>
                 ) : (
-                <div ref={refListeDeparts} className={`${styles.container_des_compagnies} ${listeEnDefilement ? styles.grille_deux_lignes : modeTousDeparts ? styles.cartes_a_la_ligne : ''}`}>
+                <>
+                <div ref={refListeDeparts} onScroll={isMobile ? surDefilementListe : undefined} className={`${styles.container_des_compagnies} ${listeEnDefilement ? styles.grille_deux_lignes : modeTousDeparts ? styles.cartes_a_la_ligne : ''}`}>
                 {departsAffiches.map((d) => (
                 <div key={d.id} className={styles.compagnies}>
                     <div className={`${styles.info_compagnie1} ${d.paysDepart === "Côte d'Ivoire" ? styles.fond_cote_ivoire : ''}`}>
@@ -596,6 +661,7 @@ function Acceuil(){
 <p><DrapeauPays pays={d.paysArrivee} />        {d.paysArrivee || d.villeArrivee}</p>
 
 </div>
+<div className={styles.infos_depart}>
 <div className={styles.reference}>
     <p><FaClock/>     Heure</p>
     <p><FaCalendar/>     Fréquence</p>
@@ -607,6 +673,7 @@ function Acceuil(){
     <p>{libelleFrequence(d)}</p>
     <p>{d.limiteKg ? `${d.limiteKg} KG` : '—'}</p>
     <p>{d.tarifParKilo ? `${formatPrix(d.tarifParKilo)} €/kg` : '—'}</p>
+</div>
 </div>
 
                     </div>
@@ -633,6 +700,29 @@ function Acceuil(){
                     </div>
                 ))}
                 </div>
+                {isMobile && departsAffiches.length > 1 && (
+                <div className={styles.indicateur_defilement}>
+                    {departsAffiches.length <= 7 ? (
+                    <div className={styles.points_defilement}>
+                        {departsAffiches.map((d, i) => (
+                            <button
+                                key={d.id}
+                                type="button"
+                                className={`${styles.point_defilement} ${i === carteActive ? styles.point_defilement_actif : ''}`}
+                                onClick={() => allerALaCarte(i)}
+                                aria-label={`Voir le départ ${i + 1} sur ${departsAffiches.length}`}
+                            />
+                        ))}
+                    </div>
+                    ) : (
+                    <p className={styles.compteur_defilement}>{Math.min(carteActive + 1, departsAffiches.length)} / {departsAffiches.length}</p>
+                    )}
+                    {!aDefile && (
+                    <p className={styles.astuce_defilement}>Glissez pour voir les autres départs <FaArrowRight /></p>
+                    )}
+                </div>
+                )}
+                </>
                 )}
 
             </div>
