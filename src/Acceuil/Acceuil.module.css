@@ -59,20 +59,31 @@
     object-fit: contain;
 }
 
+/* bandeau "Vous transportez aussi des colis ?" : pastille verte compacte */
 .demande_partenariat {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 15px;
-    font-size: 14px;
-    border-color: rgba(0, 0, 0, 0.168);
-    border-style: groove;
-    padding-left: 30px;
-    padding-right: 30px;
-    padding-top: 10px;
-    padding-bottom: 10px;
-    border-top: none;
-    border-bottom: none;
+    gap: 10px;
+    font-size: 12.5px;
+    padding: 6px 16px;
+    border: 1px solid rgba(39, 123, 48, 0.3);
+    border-radius: 12px;
+    background-color: rgba(39, 123, 48, 0.08);
+}
+
+.demande_partenariat svg {
+    width: 28px !important;
+    height: 28px !important;
+    flex-shrink: 0;
+}
+
+.descritpion p {
+    line-height: 1.25;
+}
+
+.descritpion p:first-child {
+    color: rgb(28, 98, 37);
 }
 
 .bouton_header {
@@ -768,18 +779,11 @@
     }
 
     .demande_partenariat {
-        border: none;
-        padding: 8px 0;
+        padding: 6px 12px;
         gap: 10px;
         font-size: 12px;
         width: 100%;
         order: 3;
-    }
-
-    .demande_partenariat svg {
-        width: 34px !important;
-        height: 34px !important;
-        flex-shrink: 0;
     }
 
     .acceuil_body {
@@ -873,14 +877,13 @@
     }
 
     .demande_partenariat {
-        justify-content: flex-start;
         gap: 8px;
-        font-size: 11px;
+        font-size: 11.5px;
     }
 
     .demande_partenariat svg {
-        width: 26px !important;
-        height: 26px !important;
+        width: 24px !important;
+        height: 24px !important;
     }
 
     .body {

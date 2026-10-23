@@ -625,7 +625,7 @@ function Acceuil(){
             </div>
             <div className={styles.depart_recent_body} id="nos-transport">
                 <div className={styles.depart_recent_entete}>
-                <p style={{fontSize: isMobile ? 20 : 30,fontWeight:800}}>Départs récents</p>
+                <p style={{fontSize: isMobile ? 20 : 30,fontWeight:800}}>Prochains départs</p>
                 {rechercheActive ? (
                 <button type='button' className={styles.lien_voir_tout} onClick={() => setRecherche(RECHERCHE_VIDE)}>
                     Effacer la recherche ({prochainsDeparts.length} résultat{prochainsDeparts.length > 1 ? 's' : ''}) <FaTimes size={12}/>
