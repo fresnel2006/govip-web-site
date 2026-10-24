@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useMediaQuery } from 'react-responsive';
-import { FaArrowRight, FaCalendar, FaClock, FaSearch, FaTag, FaTimes, FaUsers, FaPaperPlane, FaRegCalendarAlt, FaCheckCircle, FaBars, FaInstagram, FaTiktok, FaYoutube, FaWhatsapp, FaBus, FaLock, FaEnvelope, FaEye, FaEyeSlash, FaCloudUploadAlt, FaFileAlt, FaPhoneAlt } from 'react-icons/fa';
+import { FaArrowRight, FaCalendar, FaClock, FaSearch, FaTag, FaTimes, FaUsers, FaPaperPlane, FaRegCalendarAlt, FaCheckCircle, FaBars, FaInstagram, FaTiktok, FaYoutube, FaWhatsapp, FaBus, FaLock, FaEnvelope, FaEye, FaEyeSlash, FaCloudUploadAlt, FaFileAlt, FaPhoneAlt, FaArrowLeft } from 'react-icons/fa';
 import styles from '../Acceuil/Acceuil.module.css'
 import logo_entreprise from '../assets/logo_entreprise.png'
 import arrierePlan1 from '../assets/arriere_plan1.png'
@@ -12,7 +12,7 @@ import { FaMoneyBill, FaShield } from 'react-icons/fa6';
 import { CI, FR } from 'country-flag-icons/react/3x2';
 // On passe uniquement par les fonctions du fichier Firebase partage,
 // sans appeler firebase/database ou firebase/storage directement.
-import { connexionAdmin, deconnexionAdmin, creerDemandePartenaire, telephoneDejaPartenaire, ecouterToutesExpeditions, estDepartAffiche, prochaineDateDepart, libelleFrequence, lireDateExpedition } from '../firebase/firebase';
+import { connexionAdmin, deconnexionAdmin, envoyerReinitialisationMotDePasse, creerDemandePartenaire, telephoneDejaPartenaire, ecouterToutesExpeditions, estDepartAffiche, prochaineDateDepart, libelleFrequence, lireDateExpedition } from '../firebase/firebase';
 
 // images du bandeau de l'accueil : chacune reste 3 secondes entierement visible,
 // puis le fondu vers la suivante dure DUREE_FONDU_MS (a garder egal a la
@@ -66,6 +66,19 @@ function traduireErreurConnexion(code) {
     };
     return messages[code] || 'Une erreur est survenue, réessayez.';
 }
+
+// messages d'erreur de l'envoi du lien de reinitialisation du mot de passe
+function traduireErreurOubli(code) {
+    const messages = {
+        'auth/invalid-email': 'Adresse email invalide.',
+        'auth/too-many-requests': 'Trop de demandes. Réessayez dans quelques minutes.',
+        'auth/network-request-failed': 'Problème de connexion internet.',
+    };
+    return messages[code] || 'Une erreur est survenue, réessayez.';
+}
+
+// delai avant de pouvoir renvoyer le lien (en secondes)
+const DELAI_RENVOI_S = 30;
 
 // AJOUT : petit composant reutilisable pour une zone de depot de fichier (drag & drop + clic)
 function ZoneDepotFichier({ label, description, accept, fichier, onChange }) {
@@ -288,6 +301,17 @@ function Acceuil(){
     const [motDePasseVisible, setMotDePasseVisible] = useState(false);
     const [erreurConnexion, setErreurConnexion] = useState('');
     const [connexionEnCours, setConnexionEnCours] = useState(false);
+    // "mot de passe oublie" : meme fenetre, autre ecran
+    const [modeOubli, setModeOubli] = useState(false);
+    const [oubliEnCours, setOubliEnCours] = useState(false);
+    const [oubliEnvoye, setOubliEnvoye] = useState(false);
+    const [erreurOubli, setErreurOubli] = useState('');
+    const [delaiRenvoi, setDelaiRenvoi] = useState(0);
+    useEffect(() => {
+        if (delaiRenvoi <= 0) return;
+        const minuteur = setTimeout(() => setDelaiRenvoi((d) => d - 1), 1000);
+        return () => clearTimeout(minuteur);
+    }, [delaiRenvoi]);
 
     // fait defiler la page en douceur jusqu'a la section demandee et ferme le menu mobile
     const scrollVers = (id) => {
@@ -371,6 +395,43 @@ function Acceuil(){
         setErreurConnexion('');
         setMotDePasseVisible(false);
         setConnexionEnCours(false);
+        setModeOubli(false);
+        setOubliEnCours(false);
+        setOubliEnvoye(false);
+        setErreurOubli('');
+        setDelaiRenvoi(0);
+    };
+
+    // retour de l'ecran "mot de passe oublie" vers la connexion
+    const retourConnexion = () => {
+        setModeOubli(false);
+        setOubliEnvoye(false);
+        setErreurOubli('');
+        setDelaiRenvoi(0);
+    };
+
+    // envoie le lien de reinitialisation. Le message de succes ne dit pas si le compte existe
+    // (pour ne pas reveler quelles adresses sont inscrites).
+    const envoyerOubli = async (e) => {
+        e?.preventDefault();
+        setErreurOubli('');
+        setOubliEnCours(true);
+        try {
+            await envoyerReinitialisationMotDePasse(formConnexion.email.trim());
+            setOubliEnvoye(true);
+            setDelaiRenvoi(DELAI_RENVOI_S);
+        } catch (err) {
+            if (err.code === 'auth/user-not-found') {
+                // meme message qu'un succes : on ne revele pas si l'adresse existe
+                setOubliEnvoye(true);
+                setDelaiRenvoi(DELAI_RENVOI_S);
+            } else {
+                console.error('Erreur mot de passe oublie :', err);
+                setErreurOubli(traduireErreurOubli(err.code));
+            }
+        } finally {
+            setOubliEnCours(false);
+        }
     };
 
     const majChampConnexion = (champ, valeur) => {
@@ -956,7 +1017,7 @@ Lun - Ven : 9h00 - 18h00</p>
         <div className={styles.fenetrePartenaire} onClick={(e) => e.stopPropagation()} style={{ width: 420 }}>
 
             <div className={styles.entetePartenaire}>
-                <p className={styles.titrePartenaire}>Se connecter</p>
+                <p className={styles.titrePartenaire}>{modeOubli ? 'Mot de passe oublié' : 'Se connecter'}</p>
                 <button
                     type="button"
                     className={styles.boutonFermerPartenaire}
@@ -967,6 +1028,94 @@ Lun - Ven : 9h00 - 18h00</p>
                 </button>
             </div>
 
+            {modeOubli ? (
+            <form className={styles.corpsFormulairePartenaire} onSubmit={envoyerOubli}>
+                <div className={styles.contenuEtapePartenaire}>
+                    {oubliEnvoye ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, textAlign: 'center' }}>
+                        <FaCheckCircle size={44} color="rgb(39, 123, 48)" />
+                        <p style={{ margin: 0, fontSize: 14, color: '#374151' }}>
+                            Si un compte existe avec l'adresse <strong>{formConnexion.email.trim()}</strong>,
+                            vous allez recevoir un email avec un lien pour choisir un nouveau mot de passe.
+                        </p>
+                        <p style={{ margin: 0, fontSize: 12.5, color: '#6b7280' }}>
+                            Pensez à regarder dans vos courriers indésirables (spams).
+                        </p>
+                    </div>
+                    ) : (
+                    <>
+                        <p style={{ margin: 0, fontSize: 14, color: '#4b5563' }}>
+                            Entrez l'adresse email de votre compte partenaire. Nous vous enverrons un lien pour choisir un nouveau mot de passe.
+                        </p>
+                        <div className={styles.champPartenaire}>
+                            <label>Email</label>
+                            <div style={{ position: 'relative' }}>
+                                <FaEnvelope
+                                    size={14}
+                                    color="rgba(0,0,0,0.4)"
+                                    style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }}
+                                />
+                                <input
+                                    type="email"
+                                    required
+                                    autoFocus
+                                    value={formConnexion.email}
+                                    onChange={(e) => majChampConnexion('email', e.target.value)}
+                                    placeholder="contact@exemple.com"
+                                    style={{ paddingLeft: 32 }}
+                                />
+                            </div>
+                        </div>
+                    </>
+                    )}
+
+                    {erreurOubli && (
+                        <p style={{ color: '#c0392b', fontSize: 13, margin: 0 }}>{erreurOubli}</p>
+                    )}
+                </div>
+
+                <div className={styles.piedFormulairePartenaire} style={{ flexDirection: 'column', gap: 10 }}>
+                    {oubliEnvoye ? (
+                    <>
+                        <button
+                            type="submit"
+                            className={styles.boutonSecondairePartenaire}
+                            disabled={oubliEnCours || delaiRenvoi > 0}
+                            style={{ width: '100%', justifyContent: 'center' }}
+                        >
+                            {oubliEnCours ? 'Envoi...' : delaiRenvoi > 0 ? `Renvoyer l'email (${delaiRenvoi} s)` : "Renvoyer l'email"}
+                        </button>
+                        <button
+                            type="button"
+                            className={styles.boutonPrincipalPartenaire}
+                            onClick={retourConnexion}
+                            style={{ width: '100%', justifyContent: 'center' }}
+                        >
+                            Retour à la connexion
+                        </button>
+                    </>
+                    ) : (
+                    <>
+                        <button
+                            type="submit"
+                            className={styles.boutonPrincipalPartenaire}
+                            disabled={oubliEnCours}
+                            style={{ width: '100%', justifyContent: 'center' }}
+                        >
+                            {oubliEnCours ? 'Envoi en cours...' : 'Envoyer le lien'}
+                        </button>
+                        <button
+                            type="button"
+                            style={{ background: 'none', border: 'none', color: 'rgb(39, 123, 48)', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                            onClick={retourConnexion}
+                        >
+                            <FaArrowLeft size={11} /> Retour à la connexion
+                        </button>
+                    </>
+                    )}
+                </div>
+            </form>
+            ) : (
             <form className={styles.corpsFormulairePartenaire} onSubmit={envoyerConnexion}>
 
                 <div className={styles.contenuEtapePartenaire}>
@@ -1032,7 +1181,7 @@ Lun - Ven : 9h00 - 18h00</p>
                             fontSize: 13, fontWeight: 600, cursor: 'pointer', textAlign: 'right',
                             padding: 0, alignSelf: 'flex-end'
                         }}
-                        onClick={() => console.log('TODO : mot de passe oublie')}
+                        onClick={() => { setModeOubli(true); setErreurOubli(''); }}
                     >
                         Mot de passe oublié ?
                     </button>
@@ -1060,6 +1209,7 @@ Lun - Ven : 9h00 - 18h00</p>
                     </p>
                 </div>
             </form>
+            )}
         </div>
     </div>
 )}

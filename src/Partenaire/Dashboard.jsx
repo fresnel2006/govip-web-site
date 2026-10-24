@@ -31,6 +31,7 @@ import {
   libelleFrequence,
   estDepartAffiche,
   synchroniserTelephonesExpeditions,
+  envoyerReinitialisationMotDePasse,
   lireDateExpedition,
   FREQUENCES_DEPART,
   PAYS_DEPARTS,
@@ -367,6 +368,50 @@ function EcranConnexion() {
   const [chargement, setChargement] = useState(false);
   const [email, setEmail] = useState("");
   const [motDePasse, setMotDePasse] = useState("");
+  // "mot de passe oublié" : même écran, autre formulaire
+  const [modeOubli, setModeOubli] = useState(false);
+  const [oubliEnvoye, setOubliEnvoye] = useState(false);
+  const [delaiRenvoi, setDelaiRenvoi] = useState(0);
+
+  useEffect(() => {
+    if (delaiRenvoi <= 0) return;
+    const minuteur = setTimeout(() => setDelaiRenvoi((d) => d - 1), 1000);
+    return () => clearTimeout(minuteur);
+  }, [delaiRenvoi]);
+
+  const retourConnexion = () => {
+    setModeOubli(false);
+    setOubliEnvoye(false);
+    setErreur("");
+    setDelaiRenvoi(0);
+  };
+
+  // Le message de succès ne dit pas si le compte existe (on ne révèle pas les adresses inscrites).
+  const envoyerOubli = async (e) => {
+    e?.preventDefault();
+    setErreur("");
+    setChargement(true);
+    try {
+      await envoyerReinitialisationMotDePasse(email.trim());
+      setOubliEnvoye(true);
+      setDelaiRenvoi(30);
+    } catch (err) {
+      if (err.code === "auth/user-not-found") {
+        setOubliEnvoye(true);
+        setDelaiRenvoi(30);
+      } else {
+        console.error("Erreur mot de passe oublié :", err);
+        const messages = {
+          "auth/invalid-email": "Adresse email invalide.",
+          "auth/too-many-requests": "Trop de demandes. Réessayez dans quelques minutes.",
+          "auth/network-request-failed": "Problème de connexion internet.",
+        };
+        setErreur(messages[err.code] || "Une erreur est survenue, réessayez.");
+      }
+    } finally {
+      setChargement(false);
+    }
+  };
 
   const soumettre = async (e) => {
     e.preventDefault();
@@ -385,11 +430,45 @@ function EcranConnexion() {
   return (
     <div className={styles.app} style={{ alignItems: "center", justifyContent: "center" }}>
       <div className={styles.panel} style={{ width: 380, maxWidth: "90%" }}>
-        <h2 className={styles.panelTitleStandalone}>Connexion partenaire</h2>
+        <h2 className={styles.panelTitleStandalone}>{modeOubli ? "Mot de passe oublié" : "Connexion partenaire"}</h2>
         <p style={{ fontSize: 12.5, color: "#6b7280", marginTop: -8, marginBottom: 16 }}>
-          Vous n'avez pas encore de compte ? Contactez GVIP pour en obtenir un.
+          {modeOubli
+            ? "Entrez l'adresse email de votre compte. Nous vous enverrons un lien pour choisir un nouveau mot de passe."
+            : "Vous n'avez pas encore de compte ? Contactez GVIP pour en obtenir un."}
         </p>
         {erreur && <p style={{ color: "#c0392b", fontSize: 13, marginBottom: 10 }}>{erreur}</p>}
+        {modeOubli ? (
+          <form onSubmit={envoyerOubli} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {oubliEnvoye ? (
+              <>
+                <p style={{ fontSize: 13.5, color: "#374151" }}>
+                  Si un compte existe avec l'adresse <strong>{email.trim()}</strong>, vous allez recevoir un email avec
+                  un lien pour choisir un nouveau mot de passe. Pensez à regarder dans vos courriers indésirables (spams).
+                </p>
+                <button type="submit" className={styles.modalSubmit} disabled={chargement || delaiRenvoi > 0}>
+                  {chargement ? "Envoi..." : delaiRenvoi > 0 ? `Renvoyer l'email (${delaiRenvoi} s)` : "Renvoyer l'email"}
+                </button>
+              </>
+            ) : (
+              <>
+                <div className={styles.field}>
+                  <label>Email</label>
+                  <input type="email" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)} />
+                </div>
+                <button type="submit" className={styles.modalSubmit} disabled={chargement}>
+                  {chargement ? "Envoi en cours..." : "Envoyer le lien"}
+                </button>
+              </>
+            )}
+            <button
+              type="button"
+              onClick={retourConnexion}
+              style={{ background: "none", border: "none", color: "#277b30", fontSize: 13, fontWeight: 600, cursor: "pointer", padding: 0 }}
+            >
+              ← Retour à la connexion
+            </button>
+          </form>
+        ) : (
         <form onSubmit={soumettre} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div className={styles.field}>
             <label>Email</label>
@@ -402,7 +481,15 @@ function EcranConnexion() {
           <button type="submit" className={styles.modalSubmit} disabled={chargement}>
             {chargement ? "Veuillez patienter..." : "Se connecter"}
           </button>
+          <button
+            type="button"
+            onClick={() => { setModeOubli(true); setErreur(""); }}
+            style={{ background: "none", border: "none", color: "#277b30", fontSize: 13, fontWeight: 600, cursor: "pointer", padding: 0 }}
+          >
+            Mot de passe oublié ?
+          </button>
         </form>
+        )}
       </div>
     </div>
   );
