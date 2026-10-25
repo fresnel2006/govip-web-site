@@ -31,5 +31,5 @@ npm run dev
 Cloud Functions : remplir `functions/.env` (voir `functions/.env.example`),
 puis `firebase deploy --only functions`. Voir aussi `SECURITE-ENV.md`.
 
-Deployment Test 10:32PM
+Deployment Test 2:46AM
  
