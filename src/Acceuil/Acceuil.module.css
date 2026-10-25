@@ -59,20 +59,31 @@
     object-fit: contain;
 }
 
+/* bandeau "Vous transportez aussi des colis ?" : pastille verte compacte */
 .demande_partenariat {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 15px;
-    font-size: 14px;
-    border-color: rgba(0, 0, 0, 0.168);
-    border-style: groove;
-    padding-left: 30px;
-    padding-right: 30px;
-    padding-top: 10px;
-    padding-bottom: 10px;
-    border-top: none;
-    border-bottom: none;
+    gap: 10px;
+    font-size: 12.5px;
+    padding: 6px 16px;
+    border: 1px solid rgba(39, 123, 48, 0.3);
+    border-radius: 12px;
+    background-color: rgba(39, 123, 48, 0.08);
+}
+
+.demande_partenariat svg {
+    width: 28px !important;
+    height: 28px !important;
+    flex-shrink: 0;
+}
+
+.descritpion p {
+    line-height: 1.25;
+}
+
+.descritpion p:first-child {
+    color: rgb(28, 98, 37);
 }
 
 .bouton_header {
@@ -213,10 +224,48 @@
 .acceuil_body .image_arriere1 {
     height: 100%;
     width: 40%;
-    background-image: url("../assets/arriere_plan1.png");
-    background-color: rgb(15, 149, 64);
+    position: relative;
+    overflow: hidden;
+}
+
+/* diaporama : les images sont superposees et passent en fondu.
+   L'image precedente reste dessous pendant que la nouvelle apparait,
+   donc aucun fond de couleur n'est jamais visible derriere. */
+.fond_diapo {
+    position: absolute;
+    inset: 0;
     background-size: cover;
     background-position: center;
+    opacity: 0;
+    z-index: 0;
+    transition: opacity 1.2s ease-in-out;
+}
+
+.fond_diapo_precedent {
+    opacity: 1;
+    z-index: 1;
+}
+
+.fond_diapo_actif {
+    opacity: 1;
+    z-index: 2;
+}
+
+/* degrade blanc : l'image se fond dans le texte a sa gauche */
+.acceuil_body .image_arriere1::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    background: linear-gradient(
+        to right,
+        #ffffff 0%,
+        rgba(255, 255, 255, 0.9) 10%,
+        rgba(255, 255, 255, 0.55) 28%,
+        rgba(255, 255, 255, 0.15) 48%,
+        rgba(255, 255, 255, 0) 65%
+    );
 }
 
 .image_arriere1 img {
@@ -287,6 +336,13 @@
     gap: 10px;
     flex: 1 1 0;
     min-width: 0;
+}
+
+/* suite du formulaire "Trouvez un depart" : sans effet sur ordinateur et tablette
+   (les champs gardent leur disposition), se deroule sur telephone */
+.suite_formulaire,
+.suite_formulaire_interieur {
+    display: contents;
 }
 
 .champs select,
@@ -507,6 +563,11 @@
     justify-content: space-around;
 }
 
+/* conteneur des 2 lignes "libelles" / "valeurs" : sans effet sur ordinateur */
+.infos_depart {
+    display: contents;
+}
+
 .image_nom_des_compagnies {
     display: flex;
     align-items: center;
@@ -718,18 +779,11 @@
     }
 
     .demande_partenariat {
-        border: none;
-        padding: 8px 0;
+        padding: 6px 12px;
         gap: 10px;
         font-size: 12px;
         width: 100%;
         order: 3;
-    }
-
-    .demande_partenariat svg {
-        width: 34px !important;
-        height: 34px !important;
-        flex-shrink: 0;
     }
 
     .acceuil_body {
@@ -745,6 +799,16 @@
     .acceuil_body .image_arriere1 {
         height: 260px;
         order: -1;
+    }
+
+    /* image au-dessus du texte : le degrade blanc est en bas */
+    .acceuil_body .image_arriere1::after {
+        background: linear-gradient(
+            to bottom,
+            rgba(255, 255, 255, 0) 55%,
+            rgba(255, 255, 255, 0.7) 85%,
+            #ffffff 100%
+        );
     }
 
     .description1 {
@@ -813,22 +877,23 @@
     }
 
     .demande_partenariat {
-        justify-content: flex-start;
         gap: 8px;
-        font-size: 11px;
+        font-size: 11.5px;
     }
 
     .demande_partenariat svg {
-        width: 26px !important;
-        height: 26px !important;
+        width: 24px !important;
+        height: 24px !important;
     }
 
     .body {
         gap: 20px;
     }
 
+    /* espace entre le header et le texte d'accroche */
     .acceuil_body .description {
         padding-left: 0;
+        padding-top: 32px;
         background-color: transparent;
         text-align: left;
     }
@@ -868,7 +933,39 @@
 
     .formulaire {
         flex-direction: column;
+        align-items: stretch;
         gap: 16px;
+    }
+
+    /* telephone : seul "Pays de depart" est visible, le reste se deroule des qu on le touche */
+    .suite_formulaire {
+        display: grid;
+        grid-template-rows: 0fr;
+        grid-template-columns: minmax(0, 1fr);
+        width: 100%;
+        align-self: stretch;
+        margin-top: -16px;
+        opacity: 0;
+        visibility: hidden;
+        transition: grid-template-rows 0.4s ease, margin-top 0.4s ease, opacity 0.3s ease, visibility 0s linear 0.4s;
+    }
+
+    .suite_formulaire.suite_ouverte {
+        grid-template-rows: 1fr;
+        margin-top: 0;
+        opacity: 1;
+        visibility: visible;
+        transition: grid-template-rows 0.4s ease, margin-top 0.4s ease, opacity 0.4s ease 0.1s, visibility 0s;
+    }
+
+    .suite_formulaire_interieur {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        width: 100%;
+        min-width: 0;
+        min-height: 0;
+        overflow: hidden;
     }
 
     .champs {
@@ -906,13 +1003,13 @@
 
     .compagnies {
         scroll-snap-align: center;
-        flex: 0 0 calc(100vw - 48px);
+        flex: 0 0 calc(100vw - 64px);
     }
 
     /* sur telephone : une seule ligne qui defile */
     .container_des_compagnies.grille_deux_lignes {
         grid-template-rows: auto;
-        grid-auto-columns: calc(100vw - 48px);
+        grid-auto-columns: calc(100vw - 64px);
     }
 
     .info_compagnie1,
@@ -927,15 +1024,56 @@
         padding: 14px;
     }
 
+    /* bas de la carte : logo + nom a gauche, bouton en dessous sur toute la largeur */
     .info_compagnie2 {
         height: auto;
         min-height: 80px;
-        padding: 10px 14px;
+        padding: 14px;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+        gap: 12px;
     }
 
     .image_nom_des_compagnies {
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         gap: 12px;
+    }
+
+    .images_compagines {
+        flex-shrink: 0;
+        height: 44px;
+        width: 44px;
+    }
+
+    .nom_avis_compagnies {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .nom_avis_compagnies p {
+        margin: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .nom_avis_compagnies p:first-child {
+        font-size: 15px;
+        line-height: 1.25;
+    }
+
+    .nom_avis_compagnies p:last-child {
+        margin-top: 2px;
+        font-size: 13px;
+        color: #4b5563;
+    }
+
+    .voir_details {
+        width: 100%;
+    }
+
+    .bouton_voir_detail {
+        width: 100%;
+        height: 42px;
     }
 
     .partie1,
@@ -943,6 +1081,76 @@
     .reference {
         font-size: 13px;
         flex-wrap: wrap;
+    }
+
+    /* Heure / Frequence / Limite / Tarif : 4 cases en grille 2x2 (libelle en petit,
+       valeur dessous). Chaque case a la moitie de la largeur : ca tient sur tous les ecrans. */
+    .infos_depart {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-rows: repeat(4, auto);
+        column-gap: 12px;
+        row-gap: 2px;
+        padding: 12px 14px;
+        border-radius: 10px;
+        background-color: rgba(0, 0, 0, 0.45);
+    }
+
+    .infos_depart .reference {
+        display: contents;
+    }
+
+    .infos_depart .reference p {
+        margin: 0;
+        min-width: 0;
+        text-align: left;
+    }
+
+    /* libelles (icone + nom) */
+    .infos_depart .reference:first-child p {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+        color: rgba(255, 255, 255, 0.82);
+    }
+
+    /* valeurs */
+    .infos_depart .reference:last-child p {
+        font-size: 14px;
+        font-weight: 700;
+        line-height: 1.25;
+        overflow-wrap: break-word;
+        margin-bottom: 10px;
+    }
+
+    /* placement : cases 1-2 sur les lignes 1-2, cases 3-4 sur les lignes 3-4 */
+    .infos_depart .reference:first-child p:nth-child(1) { grid-area: 1 / 1; }
+    .infos_depart .reference:first-child p:nth-child(2) { grid-area: 1 / 2; }
+    .infos_depart .reference:first-child p:nth-child(3) { grid-area: 3 / 1; }
+    .infos_depart .reference:first-child p:nth-child(4) { grid-area: 3 / 2; }
+    .infos_depart .reference:last-child p:nth-child(1) { grid-area: 2 / 1; }
+    .infos_depart .reference:last-child p:nth-child(2) { grid-area: 2 / 2; }
+    .infos_depart .reference:last-child p:nth-child(3) { grid-area: 4 / 1; margin-bottom: 0; }
+    .infos_depart .reference:last-child p:nth-child(4) { grid-area: 4 / 2; margin-bottom: 0; }
+
+    /* tres petits ecrans : un peu plus compact pour que tout tienne */
+    @media (max-width: 340px) {
+        .infos_depart {
+            padding: 10px;
+            column-gap: 8px;
+        }
+
+        .infos_depart .reference:first-child p {
+            gap: 4px;
+            font-size: 11px;
+        }
+
+        .infos_depart .reference:last-child p {
+            font-size: 13px;
+        }
     }
 
     .comment_ca_marche_body {
@@ -1518,4 +1726,72 @@
 .bouton_burger:focus-visible {
     outline: 2px solid rgb(39, 123, 48);
     outline-offset: 2px;
+}
+
+
+/* =========================================================
+   CARROUSEL DES DEPARTS (telephone) : indices pour montrer qu'on peut glisser
+   ========================================================= */
+.indicateur_defilement {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.points_defilement {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.point_defilement {
+    width: 8px;
+    height: 8px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    transition: width 0.25s ease, background-color 0.25s ease;
+}
+
+.point_defilement_actif {
+    width: 22px;
+    border-radius: 4px;
+    background-color: rgb(39, 123, 48);
+}
+
+.compteur_defilement {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: rgb(39, 123, 48);
+}
+
+.astuce_defilement {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #4b5563;
+}
+
+.astuce_defilement svg {
+    color: rgb(39, 123, 48);
+    animation: glisse_fleche 1.2s ease-in-out infinite;
+}
+
+@keyframes glisse_fleche {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .astuce_defilement svg {
+        animation: none;
+    }
 }

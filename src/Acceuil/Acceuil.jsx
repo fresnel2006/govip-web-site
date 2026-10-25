@@ -1,21 +1,29 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useMediaQuery } from 'react-responsive';
-import { FaArrowRight, FaCalendar, FaClock, FaSearch, FaTag, FaTimes, FaUsers, FaPaperPlane, FaRegCalendarAlt, FaCheckCircle, FaBars, FaInstagram, FaTiktok, FaYoutube, FaWhatsapp, FaBus, FaLock, FaEnvelope, FaEye, FaEyeSlash, FaCloudUploadAlt, FaFileAlt, FaPhoneAlt } from 'react-icons/fa';
+import { FaArrowRight, FaCalendar, FaClock, FaSearch, FaTag, FaTimes, FaUsers, FaPaperPlane, FaRegCalendarAlt, FaCheckCircle, FaBars, FaInstagram, FaTiktok, FaYoutube, FaWhatsapp, FaBus, FaLock, FaEnvelope, FaEye, FaEyeSlash, FaCloudUploadAlt, FaFileAlt, FaPhoneAlt, FaArrowLeft } from 'react-icons/fa';
 import styles from '../Acceuil/Acceuil.module.css'
 import logo_entreprise from '../assets/logo_entreprise.png'
+import arrierePlan1 from '../assets/arriere_plan1.png'
+import arrierePlan2 from '../assets/arriere_plan2.png'
+import arrierePlan3 from '../assets/arriere_plan3.png'
+import arrierePlan4 from '../assets/arriere_plan4.png'
+import { filtrerTelephone, bloquerSymbolesNombre } from '../utils/champsNumeriques.js'
 import { FaMoneyBill, FaShield } from 'react-icons/fa6';
 import { CI, FR } from 'country-flag-icons/react/3x2';
 // On passe uniquement par les fonctions du fichier Firebase partage,
 // sans appeler firebase/database ou firebase/storage directement.
-import { connexionAdmin, deconnexionAdmin, creerDemandePartenaire, telephoneDejaPartenaire, ecouterToutesExpeditions, estDepartAffiche, prochaineDateDepart, libelleFrequence, lireDateExpedition } from '../firebase/firebase';
+import { connexionAdmin, deconnexionAdmin, envoyerReinitialisationMotDePasse, creerDemandePartenaire, telephoneDejaPartenaire, ecouterToutesExpeditions, estDepartAffiche, prochaineDateDepart, libelleFrequence, lireDateExpedition } from '../firebase/firebase';
+
+// images du bandeau de l'accueil : chacune reste 3 secondes entierement visible,
+// puis le fondu vers la suivante dure DUREE_FONDU_MS (a garder egal a la
+// transition .fond_diapo du CSS)
+const IMAGES_FOND = [arrierePlan1, arrierePlan2, arrierePlan3, arrierePlan4];
+const DUREE_AFFICHAGE_MS = 3000;
+const DUREE_FONDU_MS = 1200;
+const DELAI_DIAPORAMA_MS = DUREE_AFFICHAGE_MS + DUREE_FONDU_MS;
 
 // formulaire "contacter l'expediteur" d'un depart
 const ETAT_INITIAL_CONTACT = { nom: '', prenom: '', quantite: '', telephone: '', nature: '' };
-
-// "+225 07 08 09 10 11" -> "2250708091011" pour les liens WhatsApp
-function numeroWhatsApp(telephone) {
-    return String(telephone || '').replace(/\D/g, '').replace(/^00/, '');
-}
 
 // filtres vides du formulaire "Trouvez un depart"
 const RECHERCHE_VIDE = { paysDepart: '', villeDepart: '', paysArrivee: '', date: '' };
@@ -58,6 +66,19 @@ function traduireErreurConnexion(code) {
     };
     return messages[code] || 'Une erreur est survenue, réessayez.';
 }
+
+// messages d'erreur de l'envoi du lien de reinitialisation du mot de passe
+function traduireErreurOubli(code) {
+    const messages = {
+        'auth/invalid-email': 'Adresse email invalide.',
+        'auth/too-many-requests': 'Trop de demandes. Réessayez dans quelques minutes.',
+        'auth/network-request-failed': 'Problème de connexion internet.',
+    };
+    return messages[code] || 'Une erreur est survenue, réessayez.';
+}
+
+// delai avant de pouvoir renvoyer le lien (en secondes)
+const DELAI_RENVOI_S = 30;
 
 // AJOUT : petit composant reutilisable pour une zone de depot de fichier (drag & drop + clic)
 function ZoneDepotFichier({ label, description, accept, fichier, onChange }) {
@@ -161,6 +182,21 @@ function Acceuil(){
     const isDesktop = useMediaQuery({ minWidth: 1025 });
     const isMobileOuTablette = isMobile || isTablette;
 
+    // diaporama du bandeau : une image est affichee seulement une fois chargee
+    // (on voit un fond neutre, jamais de couleur vive, pendant le chargement)
+    const [indexFond, setIndexFond] = useState(0);
+    const [fondsCharges, setFondsCharges] = useState({});
+    useEffect(() => {
+        if (isMobile) return;
+        IMAGES_FOND.forEach((src, i) => {
+            const img = new Image();
+            img.onload = () => setFondsCharges((prec) => ({ ...prec, [i]: true }));
+            img.src = src;
+        });
+        const minuteur = setInterval(() => setIndexFond((i) => (i + 1) % IMAGES_FOND.length), DELAI_DIAPORAMA_MS);
+        return () => clearInterval(minuteur);
+    }, [isMobile]);
+
     // etats du modal "devenir partenaire"
     const [modalPartenaireOuvert, setModalPartenaireOuvert] = useState(false);
     const [formPartenaire, setFormPartenaire] = useState(ETAT_INITIAL_PARTENAIRE);
@@ -202,6 +238,8 @@ function Acceuil(){
     const [recherche, setRecherche] = useState(RECHERCHE_VIDE);
     const majRecherche = (champ) => (e) => setRecherche((p) => ({ ...p, [champ]: e.target.value }));
     const rechercheActive = Object.values(recherche).some(Boolean);
+    // telephone : la suite du formulaire se deroule des qu'on touche "Pays de depart" (et reste ouverte)
+    const [suiteFormulaireOuverte, setSuiteFormulaireOuverte] = useState(false);
 
     // prochains departs : expeditions planifiees a venir, compagnies non suspendues, du plus proche au plus lointain.
     // Avec une date choisie, on prend la prochaine occurrence a partir de cette date.
@@ -225,7 +263,27 @@ function Acceuil(){
     // nombre de cartes qui tiennent sur une ligne, recalcule quand la largeur de la liste change
     const [cartesParLigne, setCartesParLigne] = useState(3);
     const observateurListe = useRef(null);
+    const elListeDeparts = useRef(null);
+    // telephone : carte visible dans le carrousel + a-t-on deja fait defiler (pour cacher l'astuce)
+    const [carteActive, setCarteActive] = useState(0);
+    const [aDefile, setADefile] = useState(false);
+    const surDefilementListe = (e) => {
+        const el = e.currentTarget;
+        const carte = el.firstElementChild;
+        if (!carte) return;
+        const ecart = parseFloat(getComputedStyle(el).columnGap) || 12;
+        setCarteActive(Math.round(el.scrollLeft / (carte.offsetWidth + ecart)));
+        if (el.scrollLeft > 10) setADefile(true);
+    };
+    const allerALaCarte = (i) => {
+        const el = elListeDeparts.current;
+        const carte = el?.firstElementChild;
+        if (!el || !carte) return;
+        const ecart = parseFloat(getComputedStyle(el).columnGap) || 12;
+        el.scrollTo({ left: i * (carte.offsetWidth + ecart), behavior: 'smooth' });
+    };
     const refListeDeparts = useCallback((el) => {
+        elListeDeparts.current = el;
         observateurListe.current?.disconnect();
         if (!el) return;
         observateurListe.current = new ResizeObserver(() => {
@@ -243,6 +301,17 @@ function Acceuil(){
     const [motDePasseVisible, setMotDePasseVisible] = useState(false);
     const [erreurConnexion, setErreurConnexion] = useState('');
     const [connexionEnCours, setConnexionEnCours] = useState(false);
+    // "mot de passe oublie" : meme fenetre, autre ecran
+    const [modeOubli, setModeOubli] = useState(false);
+    const [oubliEnCours, setOubliEnCours] = useState(false);
+    const [oubliEnvoye, setOubliEnvoye] = useState(false);
+    const [erreurOubli, setErreurOubli] = useState('');
+    const [delaiRenvoi, setDelaiRenvoi] = useState(0);
+    useEffect(() => {
+        if (delaiRenvoi <= 0) return;
+        const minuteur = setTimeout(() => setDelaiRenvoi((d) => d - 1), 1000);
+        return () => clearTimeout(minuteur);
+    }, [delaiRenvoi]);
 
     // fait defiler la page en douceur jusqu'a la section demandee et ferme le menu mobile
     const scrollVers = (id) => {
@@ -326,6 +395,43 @@ function Acceuil(){
         setErreurConnexion('');
         setMotDePasseVisible(false);
         setConnexionEnCours(false);
+        setModeOubli(false);
+        setOubliEnCours(false);
+        setOubliEnvoye(false);
+        setErreurOubli('');
+        setDelaiRenvoi(0);
+    };
+
+    // retour de l'ecran "mot de passe oublie" vers la connexion
+    const retourConnexion = () => {
+        setModeOubli(false);
+        setOubliEnvoye(false);
+        setErreurOubli('');
+        setDelaiRenvoi(0);
+    };
+
+    // envoie le lien de reinitialisation. Le message de succes ne dit pas si le compte existe
+    // (pour ne pas reveler quelles adresses sont inscrites).
+    const envoyerOubli = async (e) => {
+        e?.preventDefault();
+        setErreurOubli('');
+        setOubliEnCours(true);
+        try {
+            await envoyerReinitialisationMotDePasse(formConnexion.email.trim());
+            setOubliEnvoye(true);
+            setDelaiRenvoi(DELAI_RENVOI_S);
+        } catch (err) {
+            if (err.code === 'auth/user-not-found') {
+                // meme message qu'un succes : on ne revele pas si l'adresse existe
+                setOubliEnvoye(true);
+                setDelaiRenvoi(DELAI_RENVOI_S);
+            } else {
+                console.error('Erreur mot de passe oublie :', err);
+                setErreurOubli(traduireErreurOubli(err.code));
+            }
+        } finally {
+            setOubliEnCours(false);
+        }
     };
 
     const majChampConnexion = (champ, valeur) => {
@@ -474,6 +580,7 @@ function Acceuil(){
 <p>GVIP Colis est la plateforme qui centralise les départs</p>
 <p>proposés par les transporteurs fiables.</p>
 <p>Comparez, choisissez et expédiez en toute confiance.</p>
+{!isMobile && (
 <div className={styles.description3}>
 
 <div className={styles.info1}>
@@ -507,24 +614,36 @@ function Acceuil(){
 </div>
 
 </div>
+)}
                     </div>
 
                 </div>
+                {!isMobile && (
                 <div className={styles.image_arriere1}>
-                
+                    {IMAGES_FOND.map((src, i) => (
+                        <div
+                            key={src}
+                            className={`${styles.fond_diapo} ${fondsCharges[i] && i === indexFond ? styles.fond_diapo_actif : fondsCharges[i] && i === (indexFond + IMAGES_FOND.length - 1) % IMAGES_FOND.length ? styles.fond_diapo_precedent : ''}`}
+                            style={{ backgroundImage: `url(${src})` }}
+                        />
+                    ))}
                 </div>
+                )}
             </div>
             <div className={styles.trouver_depart_body} id="trouver-depart">
 <p style={{fontSize: isMobile ? 20 : 25}}> <strong>Trouvez un départ</strong></p>
 <div className={styles.formulaire}>
     <div className={styles.champs}>
         <p>Pays de départ</p>
-        <select value={recherche.paysDepart} onChange={majRecherche('paysDepart')}>
+        <select value={recherche.paysDepart} onChange={majRecherche('paysDepart')} onFocus={() => setSuiteFormulaireOuverte(true)} onClick={() => setSuiteFormulaireOuverte(true)}>
         <option value="">Pays de départ</option>
         <option value="Côte d'Ivoire">Côte d'Ivoire</option>
         <option value="France">France</option>
       </select>
 </div>
+{/* sur telephone, le reste du formulaire se deroule quand un champ est rempli (ex. le pays de depart) */}
+<div className={`${styles.suite_formulaire} ${!isMobile || rechercheActive || suiteFormulaireOuverte ? styles.suite_ouverte : ''}`}>
+<div className={styles.suite_formulaire_interieur}>
 <div className={styles.champs}>
       <p>Ville de départ</p>
 
@@ -558,6 +677,8 @@ function Acceuil(){
         min={new Date().toISOString().split('T')[0]}
       />
 </div>
+</div>
+</div>
       
     </div>
 
@@ -565,7 +686,7 @@ function Acceuil(){
             </div>
             <div className={styles.depart_recent_body} id="nos-transport">
                 <div className={styles.depart_recent_entete}>
-                <p style={{fontSize: isMobile ? 20 : 30,fontWeight:800}}>Départs récents</p>
+                <p style={{fontSize: isMobile ? 20 : 30,fontWeight:800}}>Prochains départs</p>
                 {rechercheActive ? (
                 <button type='button' className={styles.lien_voir_tout} onClick={() => setRecherche(RECHERCHE_VIDE)}>
                     Effacer la recherche ({prochainsDeparts.length} résultat{prochainsDeparts.length > 1 ? 's' : ''}) <FaTimes size={12}/>
@@ -583,7 +704,8 @@ function Acceuil(){
                         ? 'Aucun départ ne correspond à votre recherche. Essayez une autre ville ou une autre date.'
                         : 'Aucun départ programmé pour le moment. Revenez bientôt !'}</p>
                 ) : (
-                <div ref={refListeDeparts} className={`${styles.container_des_compagnies} ${listeEnDefilement ? styles.grille_deux_lignes : modeTousDeparts ? styles.cartes_a_la_ligne : ''}`}>
+                <>
+                <div ref={refListeDeparts} onScroll={isMobile ? surDefilementListe : undefined} className={`${styles.container_des_compagnies} ${listeEnDefilement ? styles.grille_deux_lignes : modeTousDeparts ? styles.cartes_a_la_ligne : ''}`}>
                 {departsAffiches.map((d) => (
                 <div key={d.id} className={styles.compagnies}>
                     <div className={`${styles.info_compagnie1} ${d.paysDepart === "Côte d'Ivoire" ? styles.fond_cote_ivoire : ''}`}>
@@ -600,6 +722,7 @@ function Acceuil(){
 <p><DrapeauPays pays={d.paysArrivee} />        {d.paysArrivee || d.villeArrivee}</p>
 
 </div>
+<div className={styles.infos_depart}>
 <div className={styles.reference}>
     <p><FaClock/>     Heure</p>
     <p><FaCalendar/>     Fréquence</p>
@@ -611,6 +734,7 @@ function Acceuil(){
     <p>{libelleFrequence(d)}</p>
     <p>{d.limiteKg ? `${d.limiteKg} KG` : '—'}</p>
     <p>{d.tarifParKilo ? `${formatPrix(d.tarifParKilo)} €/kg` : '—'}</p>
+</div>
 </div>
 
                     </div>
@@ -637,6 +761,29 @@ function Acceuil(){
                     </div>
                 ))}
                 </div>
+                {isMobile && departsAffiches.length > 1 && (
+                <div className={styles.indicateur_defilement}>
+                    {departsAffiches.length <= 7 ? (
+                    <div className={styles.points_defilement}>
+                        {departsAffiches.map((d, i) => (
+                            <button
+                                key={d.id}
+                                type="button"
+                                className={`${styles.point_defilement} ${i === carteActive ? styles.point_defilement_actif : ''}`}
+                                onClick={() => allerALaCarte(i)}
+                                aria-label={`Voir le départ ${i + 1} sur ${departsAffiches.length}`}
+                            />
+                        ))}
+                    </div>
+                    ) : (
+                    <p className={styles.compteur_defilement}>{Math.min(carteActive + 1, departsAffiches.length)} / {departsAffiches.length}</p>
+                    )}
+                    {!aDefile && (
+                    <p className={styles.astuce_defilement}>Glissez pour voir les autres départs <FaArrowRight /></p>
+                    )}
+                </div>
+                )}
+                </>
                 )}
 
             </div>
@@ -808,6 +955,8 @@ Lun - Ven : 9h00 - 18h00</p>
                         <label>Quantité (kg)</label>
                         <input
                             type="number"
+                            inputMode="decimal"
+                            onKeyDown={bloquerSymbolesNombre}
                             required
                             min="0.1"
                             step="0.1"
@@ -819,7 +968,7 @@ Lun - Ven : 9h00 - 18h00</p>
                     </div>
                     <div className={styles.champPartenaire}>
                         <label>Numéro de téléphone</label>
-                        <input type="tel" required value={formContact.telephone} onChange={majChampContact('telephone')} placeholder="+225 07 00 00 00 00" />
+                        <input type="tel" inputMode="tel" required value={formContact.telephone} onChange={(e) => setFormContact((p) => ({ ...p, telephone: filtrerTelephone(e.target.value) }))} placeholder="+225 07 00 00 00 00" />
                     </div>
                     <div className={`${styles.champPartenaire} ${styles.champPleineLargeurPartenaire}`}>
                         <label>Nature du colis</label>
@@ -848,18 +997,6 @@ Lun - Ven : 9h00 - 18h00</p>
                         <a className={styles.boutonSecondairePartenaire} style={{ textDecoration: 'none' }} href={`tel:${departOuvert.telephoneCompagnie.replace(/\s/g, '')}`}>
                             <FaPhoneAlt size={13} /> Appeler
                         </a>
-                        <a
-                            className={styles.boutonPrincipalPartenaire}
-                            style={{ margin: 0, textDecoration: 'none' }}
-                            target="_blank"
-                            rel="noreferrer"
-                            href={`https://wa.me/${numeroWhatsApp(departOuvert.telephoneCompagnie)}?text=${encodeURIComponent(
-                                `Bonjour, je suis ${formContact.prenom} ${formContact.nom}. J'ai vu votre départ ${departOuvert.villeDepart} -> ${departOuvert.villeArrivee} du ${formatDateCarte(departOuvert.prochaine)} sur GVIP Colis. `
-                                + `Je souhaite envoyer ${formContact.quantite} kg (${formContact.nature}). Mon numéro : ${formContact.telephone}.`
-                            )}`}
-                        >
-                            <FaWhatsapp size={15} /> Écrire sur WhatsApp
-                        </a>
                     </div>
                 </>
                 ) : (
@@ -880,7 +1017,7 @@ Lun - Ven : 9h00 - 18h00</p>
         <div className={styles.fenetrePartenaire} onClick={(e) => e.stopPropagation()} style={{ width: 420 }}>
 
             <div className={styles.entetePartenaire}>
-                <p className={styles.titrePartenaire}>Se connecter</p>
+                <p className={styles.titrePartenaire}>{modeOubli ? 'Mot de passe oublié' : 'Se connecter'}</p>
                 <button
                     type="button"
                     className={styles.boutonFermerPartenaire}
@@ -891,6 +1028,94 @@ Lun - Ven : 9h00 - 18h00</p>
                 </button>
             </div>
 
+            {modeOubli ? (
+            <form className={styles.corpsFormulairePartenaire} onSubmit={envoyerOubli}>
+                <div className={styles.contenuEtapePartenaire}>
+                    {oubliEnvoye ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, textAlign: 'center' }}>
+                        <FaCheckCircle size={44} color="rgb(39, 123, 48)" />
+                        <p style={{ margin: 0, fontSize: 14, color: '#374151' }}>
+                            Si un compte existe avec l'adresse <strong>{formConnexion.email.trim()}</strong>,
+                            vous allez recevoir un email avec un lien pour choisir un nouveau mot de passe.
+                        </p>
+                        <p style={{ margin: 0, fontSize: 12.5, color: '#6b7280' }}>
+                            Pensez à regarder dans vos courriers indésirables (spams).
+                        </p>
+                    </div>
+                    ) : (
+                    <>
+                        <p style={{ margin: 0, fontSize: 14, color: '#4b5563' }}>
+                            Entrez l'adresse email de votre compte partenaire. Nous vous enverrons un lien pour choisir un nouveau mot de passe.
+                        </p>
+                        <div className={styles.champPartenaire}>
+                            <label>Email</label>
+                            <div style={{ position: 'relative' }}>
+                                <FaEnvelope
+                                    size={14}
+                                    color="rgba(0,0,0,0.4)"
+                                    style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }}
+                                />
+                                <input
+                                    type="email"
+                                    required
+                                    autoFocus
+                                    value={formConnexion.email}
+                                    onChange={(e) => majChampConnexion('email', e.target.value)}
+                                    placeholder="contact@exemple.com"
+                                    style={{ paddingLeft: 32 }}
+                                />
+                            </div>
+                        </div>
+                    </>
+                    )}
+
+                    {erreurOubli && (
+                        <p style={{ color: '#c0392b', fontSize: 13, margin: 0 }}>{erreurOubli}</p>
+                    )}
+                </div>
+
+                <div className={styles.piedFormulairePartenaire} style={{ flexDirection: 'column', gap: 10 }}>
+                    {oubliEnvoye ? (
+                    <>
+                        <button
+                            type="submit"
+                            className={styles.boutonSecondairePartenaire}
+                            disabled={oubliEnCours || delaiRenvoi > 0}
+                            style={{ width: '100%', justifyContent: 'center' }}
+                        >
+                            {oubliEnCours ? 'Envoi...' : delaiRenvoi > 0 ? `Renvoyer l'email (${delaiRenvoi} s)` : "Renvoyer l'email"}
+                        </button>
+                        <button
+                            type="button"
+                            className={styles.boutonPrincipalPartenaire}
+                            onClick={retourConnexion}
+                            style={{ width: '100%', justifyContent: 'center' }}
+                        >
+                            Retour à la connexion
+                        </button>
+                    </>
+                    ) : (
+                    <>
+                        <button
+                            type="submit"
+                            className={styles.boutonPrincipalPartenaire}
+                            disabled={oubliEnCours}
+                            style={{ width: '100%', justifyContent: 'center' }}
+                        >
+                            {oubliEnCours ? 'Envoi en cours...' : 'Envoyer le lien'}
+                        </button>
+                        <button
+                            type="button"
+                            style={{ background: 'none', border: 'none', color: 'rgb(39, 123, 48)', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                            onClick={retourConnexion}
+                        >
+                            <FaArrowLeft size={11} /> Retour à la connexion
+                        </button>
+                    </>
+                    )}
+                </div>
+            </form>
+            ) : (
             <form className={styles.corpsFormulairePartenaire} onSubmit={envoyerConnexion}>
 
                 <div className={styles.contenuEtapePartenaire}>
@@ -956,7 +1181,7 @@ Lun - Ven : 9h00 - 18h00</p>
                             fontSize: 13, fontWeight: 600, cursor: 'pointer', textAlign: 'right',
                             padding: 0, alignSelf: 'flex-end'
                         }}
-                        onClick={() => console.log('TODO : mot de passe oublie')}
+                        onClick={() => { setModeOubli(true); setErreurOubli(''); }}
                     >
                         Mot de passe oublié ?
                     </button>
@@ -984,6 +1209,7 @@ Lun - Ven : 9h00 - 18h00</p>
                     </p>
                 </div>
             </form>
+            )}
         </div>
     </div>
 )}
@@ -1082,9 +1308,10 @@ Lun - Ven : 9h00 - 18h00</p>
                                 <label>Numéro de téléphone</label>
                                 <input
                                     type="tel"
+                                    inputMode="tel"
                                     required
                                     value={formPartenaire.telephone}
-                                    onChange={(e) => majChampPartenaire('telephone', e.target.value)}
+                                    onChange={(e) => majChampPartenaire('telephone', filtrerTelephone(e.target.value))}
                                     placeholder="+225 07 00 00 00 00"
                                 />
                             </div>

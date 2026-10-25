@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import styles from "./GvipRiskDashboard.module.css";
+import { bloquerNonEntier } from "../utils/champsNumeriques.js";
 
 // Endpoint FastAPI exposé par main.py (/api/referentiel/statut)
 const API_URL =
@@ -788,6 +789,8 @@ export default function GvipRiskDashboard() {
               <input
                 id="gvip-score"
                 type="number"
+                inputMode="numeric"
+                onKeyDown={bloquerNonEntier}
                 min="0"
                 max="100"
                 step="1"

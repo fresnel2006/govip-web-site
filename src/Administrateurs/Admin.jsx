@@ -38,12 +38,14 @@ import {
     modifierDemandePartenaire,
     supprimerExpedition,
     masquerExpeditionsCompagnie,
+    synchroniserTelephonesExpeditions,
     prochaineDateDepart,
     libelleFrequence,
     estDepartAffiche,
 } from '../firebase/firebase.js';
 import logo from '../assets/logo_entreprise.png';
 import styles from './Admin.module.css';
+import { filtrerTelephone, filtrerDecimal } from '../utils/champsNumeriques.js';
 
 // ████████████████████████████████████████████████████████████████████████
 //  OUTILS ET BRIQUES D'INTERFACE
@@ -524,7 +526,7 @@ function ModaleCreationCompagnie({ valeursInitiales, onClose, onCree }) {
                 </div>
                 <div className={styles.champ}>
                     <label htmlFor="c-tel">Téléphone</label>
-                    <input id="c-tel" type="tel" value={form.telephone} onChange={maj('telephone')} />
+                    <input id="c-tel" type="tel" inputMode="tel" value={form.telephone} onChange={(e) => maj('telephone')({ target: { value: filtrerTelephone(e.target.value) } })} />
                 </div>
                 <div className={styles.champ}>
                     <label htmlFor="c-pays">Pays</label>
@@ -620,7 +622,7 @@ function ModaleModification({ compagnie, onClose, notifier }) {
                 </div>
                 <div className={styles.champ}>
                     <label htmlFor="m-tel">Téléphone</label>
-                    <input id="m-tel" type="tel" value={form.telephone} onChange={maj('telephone')} />
+                    <input id="m-tel" type="tel" inputMode="tel" value={form.telephone} onChange={(e) => maj('telephone')({ target: { value: filtrerTelephone(e.target.value) } })} />
                 </div>
                 <div className={styles.champ}>
                     <label htmlFor="m-pays">Pays</label>
@@ -630,7 +632,7 @@ function ModaleModification({ compagnie, onClose, notifier }) {
                 </div>
                 <div className={styles.champ}>
                     <label htmlFor="m-tarif">Tarif par kilo (€)</label>
-                    <input id="m-tarif" inputMode="decimal" value={form.tarifParKilo} onChange={maj('tarifParKilo')} />
+                    <input id="m-tarif" inputMode="decimal" value={form.tarifParKilo} onChange={(e) => maj('tarifParKilo')({ target: { value: filtrerDecimal(e.target.value) } })} />
                 </div>
                 <div className={`${styles.champ} ${styles.champ_large}`}>
                     <label htmlFor="m-adresse">Adresse</label>
@@ -1734,6 +1736,14 @@ function Admin() {
         ];
         return () => arrets.forEach((arreter) => arreter());
     }, [acces]);
+
+    // ── Le numéro d'une compagnie est recopié dans ses départs (affiché sur l'accueil) ──
+    useEffect(() => {
+        if (acces !== 'autorise' || compagnies.length === 0 || expeditions.length === 0) return;
+        synchroniserTelephonesExpeditions(compagnies, expeditions).catch((err) =>
+            console.error('Erreur synchronisation téléphones :', err)
+        );
+    }, [acces, compagnies, expeditions]);
 
     // ── Navigation (la section active est gardée dans l'URL : #compagnies, …) ──
     const [section, setSection] = useState(sectionDepuisUrl);
