@@ -51,6 +51,13 @@
       ".write": true
     },
     "telephonesPartenaires": {
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$cle": {
+        ".read": true
+      }
+    },
+    "emailsPartenaires": {
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
       "$cle": {
         ".read": true
       }

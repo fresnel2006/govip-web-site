@@ -39,6 +39,7 @@ import {
     supprimerExpedition,
     masquerExpeditionsCompagnie,
     synchroniserTelephonesExpeditions,
+    synchroniserIndexPartenaires,
     prochaineDateDepart,
     libelleFrequence,
     estDepartAffiche,
@@ -1744,6 +1745,19 @@ function Admin() {
             console.error('Erreur synchronisation téléphones :', err)
         );
     }, [acces, compagnies, expeditions]);
+
+    // ── Index publics des emails / numéros des partenaires (contrôle du formulaire « devenir partenaire ») ──
+    const signatureIndex = useRef('');
+    useEffect(() => {
+        if (acces !== 'autorise' || chargementCompagnies) return;
+        const signature = JSON.stringify(compagnies.map((c) => [c.email, c.telephone]).sort());
+        if (signature === signatureIndex.current) return;
+        signatureIndex.current = signature;
+        synchroniserIndexPartenaires(compagnies).catch((err) => {
+            signatureIndex.current = '';
+            console.error('Erreur synchronisation des index partenaires :', err);
+        });
+    }, [acces, compagnies, chargementCompagnies]);
 
     // ── Navigation (la section active est gardée dans l'URL : #compagnies, …) ──
     const [section, setSection] = useState(sectionDepuisUrl);

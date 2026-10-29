@@ -205,7 +205,7 @@
 }
 
 .acceuil_body {
-    height: 400px;
+    height: 440px;
     display: flex;
     position: relative;
 }
@@ -213,7 +213,7 @@
 /* section accueil (hero) */
 .acceuil_body .description {
     height: 100%;
-    width: 60%;
+    width: 48%;
     background-color: rgba(255, 255, 255, 0.816);
     display: flex;
     flex-direction: column;
@@ -223,7 +223,7 @@
 
 .acceuil_body .image_arriere1 {
     height: 100%;
-    width: 40%;
+    width: 52%;
     position: relative;
     overflow: hidden;
 }
@@ -234,11 +234,32 @@
 .fond_diapo {
     position: absolute;
     inset: 0;
-    background-size: cover;
-    background-position: center;
+    display: flex;
+    justify-content: flex-end;
     opacity: 0;
     z-index: 0;
     transition: opacity 1.2s ease-in-out;
+}
+
+.fond_diapo_cadre {
+    height: 100%;
+    max-width: 100%;
+    display: flex;
+}
+
+.fond_diapo_img {
+    display: block;
+    height: 100%;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+}
+
+/* fondu : le bord gauche de l'image se dissout dans la page (images 2, 3 et 4 ;
+   l'image 1 a deja son fondu blanc dans le fichier) */
+.fond_diapo_fondu {
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.35) 7%, #000 24%);
+    mask-image: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.35) 7%, #000 24%);
 }
 
 .fond_diapo_precedent {
@@ -249,23 +270,6 @@
 .fond_diapo_actif {
     opacity: 1;
     z-index: 2;
-}
-
-/* degrade blanc : l'image se fond dans le texte a sa gauche */
-.acceuil_body .image_arriere1::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 3;
-    pointer-events: none;
-    background: linear-gradient(
-        to right,
-        #ffffff 0%,
-        rgba(255, 255, 255, 0.9) 10%,
-        rgba(255, 255, 255, 0.55) 28%,
-        rgba(255, 255, 255, 0.15) 48%,
-        rgba(255, 255, 255, 0) 65%
-    );
 }
 
 .image_arriere1 img {
@@ -797,18 +801,13 @@
     }
 
     .acceuil_body .image_arriere1 {
-        height: 260px;
+        height: clamp(260px, 55vw, 420px);
         order: -1;
     }
 
-    /* image au-dessus du texte : le degrade blanc est en bas */
-    .acceuil_body .image_arriere1::after {
-        background: linear-gradient(
-            to bottom,
-            rgba(255, 255, 255, 0) 55%,
-            rgba(255, 255, 255, 0.7) 85%,
-            #ffffff 100%
-        );
+    /* tablette : l'image est au-dessus du texte, on la centre */
+    .fond_diapo {
+        justify-content: center;
     }
 
     .description1 {
@@ -890,12 +889,44 @@
         gap: 20px;
     }
 
-    /* espace entre le header et le texte d'accroche */
+    /* telephone : le texte d'accroche est ecrit sur l'image (comme sur ordinateur).
+       Un voile blanc, plus fort a gauche, garde le texte lisible et laisse voir l'avion a droite. */
     .acceuil_body .description {
-        padding-left: 0;
-        padding-top: 32px;
-        background-color: transparent;
+        margin-top: 14px;
+        padding: 30px 20px;
+        min-height: 250px;
+        border-radius: 16px;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
         text-align: left;
+        background-color: transparent;
+        background-image:
+            linear-gradient(100deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.72) 55%, rgba(255, 255, 255, 0.25) 100%),
+            url("../assets/arriere_plan1.png");
+        background-size: cover;
+        background-position: right center;
+    }
+
+    /* texte sur l'image : un halo blanc le garde net sur la photo */
+    .description1 {
+        line-height: 1.2;
+        text-shadow: 0 0 14px rgba(255, 255, 255, 0.95);
+    }
+
+    .description2 {
+        margin-top: 12px;
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.95);
+    }
+
+    /* les 3 phrases forment un seul paragraphe qui s'ecoule normalement */
+    .description2 > p {
+        display: inline;
+        line-height: 1.55;
+        color: #1f2937;
+    }
+
+    .description2 > p::after {
+        content: " ";
     }
 
     .description1 {
@@ -1792,6 +1823,219 @@
 
 @media (prefers-reduced-motion: reduce) {
     .astuce_defilement svg {
+        animation: none;
+    }
+}
+
+
+/* =========================================================
+   TEXTE QUI ACCOMPAGNE CHAQUE IMAGE DU BANDEAU (diaporama)
+   L'ancien texte s'efface vite, le nouveau apparait ensuite : jamais deux textes superposes.
+   ========================================================= */
+.diapos_texte {
+    display: grid;
+    width: 100%;
+}
+
+.texte_diapo {
+    grid-area: 1 / 1;
+    align-self: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.4s ease, visibility 0s linear 0.4s;
+}
+
+.texte_diapo_actif {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.6s ease 0.45s, visibility 0s linear 0.45s;
+}
+
+.diapo_titre {
+    font-size: 40px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.diapo_sous_titre {
+    margin-top: 12px;
+    font-size: 17px;
+    font-weight: 600;
+}
+
+/* petit paragraphe sous le sous-titre, comme le texte de la premiere image */
+.diapo_paragraphe {
+    max-width: 480px;
+    margin-top: 8px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #374151;
+}
+
+/* les 3 points : memes cartes que les 3 encadres de la premiere image, cote a cote */
+.diapo_cartes {
+    margin-top: 22px;
+}
+
+.diapo_cartes .info1 {
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: flex-start;
+}
+
+.diapo_cartes .info1 svg {
+    flex-shrink: 0;
+}
+
+@media (max-width: 1180px) {
+    .diapo_titre {
+        font-size: 32px;
+    }
+}
+
+
+/* =========================================================
+   FORMULAIRE "TROUVEZ UN DEPART" (telephone) : bouton pour replier / deplier
+   ========================================================= */
+.titre_recherche {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.bouton_replier {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 34px;
+    padding: 0 14px;
+    border: 1.5px solid rgb(39, 123, 48);
+    border-radius: 17px;
+    background-color: rgba(39, 123, 48, 0.08);
+    color: rgb(39, 123, 48);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.bouton_replier svg {
+    transition: transform 0.3s ease;
+}
+
+.bouton_replier_ouvert svg {
+    transform: rotate(180deg);
+}
+
+.bouton_replier:active {
+    transform: scale(0.95);
+}
+
+.bouton_replier:focus-visible {
+    outline: 2px solid rgb(39, 123, 48);
+    outline-offset: 2px;
+}
+
+
+/* =========================================================
+   DIAPORAMA : boutons precedent / suivant + points avec barre de progression
+   ========================================================= */
+/* la pastille flotte au-dessus de la page : centree, a cheval sur le bas du bandeau
+   (moitie sur le bandeau, moitie sur le formulaire de recherche) */
+.diapo_controles {
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    transform: translate(-50%, 50%);
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 8px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 999px;
+    background-color: white;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+
+.diapo_fleche {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background-color: rgb(39, 123, 48);
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 3px 8px rgba(39, 123, 48, 0.35);
+    transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+@media (hover: hover) {
+    .diapo_fleche:hover {
+        background-color: rgb(28, 98, 37);
+        transform: scale(1.1);
+        box-shadow: 0 5px 12px rgba(39, 123, 48, 0.45);
+    }
+}
+
+.diapo_fleche:active {
+    transform: scale(0.92);
+}
+
+.diapo_fleche:focus-visible,
+.diapo_nav_point:focus-visible {
+    outline: 2px solid rgb(39, 123, 48);
+    outline-offset: 2px;
+}
+
+.diapo_nav_points {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.diapo_nav_point {
+    position: relative;
+    width: 8px;
+    height: 8px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background-color: rgba(0, 0, 0, 0.22);
+    overflow: hidden;
+    cursor: pointer;
+    transition: width 0.3s ease, background-color 0.2s ease;
+}
+
+.diapo_nav_point:hover {
+    background-color: rgba(39, 123, 48, 0.5);
+}
+
+.diapo_nav_point_actif {
+    width: 34px;
+    background-color: rgba(39, 123, 48, 0.25);
+}
+
+/* barre qui se remplit pendant que l'image est affichee */
+.diapo_progression {
+    position: absolute;
+    inset: 0;
+    background-color: rgb(39, 123, 48);
+    transform-origin: left center;
+    animation: progression_diapo linear forwards;
+}
+
+@keyframes progression_diapo {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .diapo_progression {
         animation: none;
     }
 }

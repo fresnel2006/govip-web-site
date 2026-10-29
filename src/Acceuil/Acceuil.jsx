@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useMediaQuery } from 'react-responsive';
-import { FaArrowRight, FaCalendar, FaClock, FaSearch, FaTag, FaTimes, FaUsers, FaPaperPlane, FaRegCalendarAlt, FaCheckCircle, FaBars, FaInstagram, FaTiktok, FaYoutube, FaWhatsapp, FaBus, FaLock, FaEnvelope, FaEye, FaEyeSlash, FaCloudUploadAlt, FaFileAlt, FaPhoneAlt, FaArrowLeft } from 'react-icons/fa';
+import { FaArrowRight, FaCalendar, FaClock, FaSearch, FaTag, FaTimes, FaUsers, FaPaperPlane, FaRegCalendarAlt, FaCheckCircle, FaBars, FaInstagram, FaTiktok, FaYoutube, FaWhatsapp, FaBus, FaLock, FaEnvelope, FaEye, FaEyeSlash, FaCloudUploadAlt, FaFileAlt, FaPhoneAlt, FaArrowLeft, FaMapMarkerAlt, FaChevronDown, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import styles from '../Acceuil/Acceuil.module.css'
 import logo_entreprise from '../assets/logo_entreprise.png'
 import arrierePlan1 from '../assets/arriere_plan1.png'
@@ -12,13 +12,45 @@ import { FaMoneyBill, FaShield } from 'react-icons/fa6';
 import { CI, FR } from 'country-flag-icons/react/3x2';
 // On passe uniquement par les fonctions du fichier Firebase partage,
 // sans appeler firebase/database ou firebase/storage directement.
-import { connexionAdmin, deconnexionAdmin, envoyerReinitialisationMotDePasse, creerDemandePartenaire, telephoneDejaPartenaire, ecouterToutesExpeditions, estDepartAffiche, prochaineDateDepart, libelleFrequence, lireDateExpedition } from '../firebase/firebase';
+import { connexionAdmin, deconnexionAdmin, envoyerReinitialisationMotDePasse, creerDemandePartenaire, telephoneDejaPartenaire, emailDejaPartenaire, ecouterToutesExpeditions, estDepartAffiche, prochaineDateDepart, libelleFrequence, lireDateExpedition } from '../firebase/firebase';
 
-// images du bandeau de l'accueil : chacune reste 3 secondes entierement visible,
-// puis le fondu vers la suivante dure DUREE_FONDU_MS (a garder egal a la
-// transition .fond_diapo du CSS)
+// images du bandeau de l'accueil : chacune reste 10 secondes entierement visible
+// (le temps de lire le texte qu'elle contient), puis le fondu vers la suivante dure
+// DUREE_FONDU_MS (a garder egal a la transition .fond_diapo du CSS)
 const IMAGES_FOND = [arrierePlan1, arrierePlan2, arrierePlan3, arrierePlan4];
-const DUREE_AFFICHAGE_MS = 3000;
+const DUREE_AFFICHAGE_MS = 10000;
+const DIAPOS_TEXTE = [
+    {
+        titre: ['Transporteurs', 'vérifiés'],
+        sousTitre: 'Des partenaires de confiance.',
+        paragraphe: "Chaque compagnie est vérifiée avant de pouvoir publier ses départs. Vous envoyez vos colis entre la France et la Côte d'Ivoire avec des transporteurs fiables.",
+        points: [
+            { icone: FaCheckCircle, titre: 'Vérification des transporteurs' },
+            { icone: FaCheckCircle, titre: 'Suivi et traçabilité des envois' },
+            { icone: FaCheckCircle, titre: 'Livraison en toute sécurité' },
+        ],
+    },
+    {
+        titre: ['Départs', 'réguliers'],
+        sousTitre: 'Chaque jour, chaque semaine.',
+        paragraphe: "Les transporteurs publient leurs départs à des dates précises : départ unique, chaque semaine ou chaque mois. Retrouvez facilement le prochain départ qui correspond à votre trajet.",
+        points: [
+            { icone: FaCalendar, titre: 'Départs programmés', detail: 'Selon vos besoins' },
+            { icone: FaMapMarkerAlt, titre: 'Large réseau', detail: "En France et à l'international" },
+            { icone: FaClock, titre: 'Suivi en temps réel', detail: "De l'enlèvement à la livraison" },
+        ],
+    },
+    {
+        titre: ['Tarifs', 'transparents'],
+        sousTitre: 'Comparez et choisissez.',
+        paragraphe: "Chaque départ affiche son tarif au kilo et sa limite de poids avant même de contacter le transporteur. Comparez les offres et choisissez celle qui vous convient.",
+        points: [
+            { icone: FaSearch, titre: 'Comparez les transporteurs', detail: 'Des prix clairs, des services fiables' },
+            { icone: FaCalendar, titre: 'Choisissez votre départ', detail: 'Celui qui vous convient' },
+            { icone: FaPhoneAlt, titre: 'Contactez le transporteur', detail: 'Votre choix en toute confiance' },
+        ],
+    },
+];
 const DUREE_FONDU_MS = 1200;
 const DELAI_DIAPORAMA_MS = DUREE_AFFICHAGE_MS + DUREE_FONDU_MS;
 
@@ -185,7 +217,23 @@ function Acceuil(){
     // diaporama du bandeau : une image est affichee seulement une fois chargee
     // (on voit un fond neutre, jamais de couleur vive, pendant le chargement)
     const [indexFond, setIndexFond] = useState(0);
+    // image qui s'efface pendant le fondu (reste dessous le temps du fondu, puis disparait)
+    const [indexPrecedent, setIndexPrecedent] = useState(null);
+    const indexFondCourant = useRef(0);
     const [fondsCharges, setFondsCharges] = useState({});
+    // passe a l'image (et au texte) numero `cible`
+    const allerALaDiapo = useCallback((cible) => {
+        const precedent = indexFondCourant.current;
+        if (cible === precedent) return;
+        indexFondCourant.current = cible;
+        setIndexPrecedent(precedent);
+        setIndexFond(cible);
+        setTimeout(() => setIndexPrecedent(null), DUREE_FONDU_MS);
+    }, []);
+    const diapoPrecedente = () => allerALaDiapo((indexFond - 1 + IMAGES_FOND.length) % IMAGES_FOND.length);
+    const diapoSuivante = () => allerALaDiapo((indexFond + 1) % IMAGES_FOND.length);
+
+    // prechargement des images
     useEffect(() => {
         if (isMobile) return;
         IMAGES_FOND.forEach((src, i) => {
@@ -193,9 +241,15 @@ function Acceuil(){
             img.onload = () => setFondsCharges((prec) => ({ ...prec, [i]: true }));
             img.src = src;
         });
-        const minuteur = setInterval(() => setIndexFond((i) => (i + 1) % IMAGES_FOND.length), DELAI_DIAPORAMA_MS);
-        return () => clearInterval(minuteur);
     }, [isMobile]);
+
+    // defilement automatique : le compte a rebours repart de zero a chaque changement d'image,
+    // y compris quand le visiteur utilise les boutons
+    useEffect(() => {
+        if (isMobile) return;
+        const minuteur = setTimeout(() => allerALaDiapo((indexFond + 1) % IMAGES_FOND.length), DELAI_DIAPORAMA_MS);
+        return () => clearTimeout(minuteur);
+    }, [isMobile, indexFond, allerALaDiapo]);
 
     // etats du modal "devenir partenaire"
     const [modalPartenaireOuvert, setModalPartenaireOuvert] = useState(false);
@@ -360,6 +414,11 @@ function Acceuil(){
         setEnvoiEnCours(true);
 
         try {
+            // un email = un seul partenaire
+            if (await emailDejaPartenaire(formPartenaire.email)) {
+                setErreurPartenaire('Cette adresse email est déjà utilisée par un partenaire GVIP. Si c\'est la vôtre, connectez-vous à votre espace partenaire.');
+                return;
+            }
             // un numero = un seul partenaire
             if (await telephoneDejaPartenaire(formPartenaire.telephone)) {
                 setErreurPartenaire('Ce numéro de téléphone est déjà utilisé par un partenaire GVIP. Si c\'est le vôtre, connectez-vous à votre espace partenaire.');
@@ -572,6 +631,8 @@ function Acceuil(){
 
             <div className={styles.acceuil_body} id="acceuil">
                 <div className={styles.description}>
+                  <div className={styles.diapos_texte}>
+                    <div className={`${styles.texte_diapo} ${isMobile || indexFond === 0 ? styles.texte_diapo_actif : ''}`}>
                     <div className={styles.description1}>
 <p>Trouvez le meilleur<br />départ pour <span className={styles.ecriture_verte}>vos colis</span></p>
 
@@ -617,21 +678,88 @@ function Acceuil(){
 )}
                     </div>
 
+                    </div>
+                    {!isMobile && DIAPOS_TEXTE.map((d, k) => (
+                        <div
+                            key={d.titre[0]}
+                            className={`${styles.texte_diapo} ${indexFond === k + 1 ? styles.texte_diapo_actif : ''}`}
+                            aria-hidden={indexFond !== k + 1}
+                        >
+                            <p className={styles.diapo_titre}>{d.titre[0]}<br /><span className={styles.ecriture_verte}>{d.titre[1]}</span></p>
+                            <p className={styles.diapo_sous_titre}>{d.sousTitre}</p>
+                            <p className={styles.diapo_paragraphe}>{d.paragraphe}</p>
+                            <div className={`${styles.description3} ${styles.diapo_cartes}`}>
+                                {d.points.map((pt) => {
+                                    const Icone = pt.icone;
+                                    return (
+                                        <div key={pt.titre} className={styles.info1}>
+                                            <div className={styles.icone}>
+                                                <Icone size={30} color="green" />
+                                            </div>
+                                            <div className={styles.mini_description}>
+                                                <p style={{ color: 'green' }}><strong>{pt.titre}</strong></p>
+                                                {pt.detail && <p style={{ fontWeight: 700, fontSize: 13 }}>{pt.detail}</p>}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ))}
+                  </div>
                 </div>
                 {!isMobile && (
                 <div className={styles.image_arriere1}>
                     {IMAGES_FOND.map((src, i) => (
-                        <div
-                            key={src}
-                            className={`${styles.fond_diapo} ${fondsCharges[i] && i === indexFond ? styles.fond_diapo_actif : fondsCharges[i] && i === (indexFond + IMAGES_FOND.length - 1) % IMAGES_FOND.length ? styles.fond_diapo_precedent : ''}`}
-                            style={{ backgroundImage: `url(${src})` }}
-                        />
+                        <div key={src} className={`${styles.fond_diapo} ${fondsCharges[i] && i === indexFond ? styles.fond_diapo_actif : fondsCharges[i] && i === indexPrecedent ? styles.fond_diapo_precedent : ''}`}>
+                            <div className={`${styles.fond_diapo_cadre} ${i > 0 ? styles.fond_diapo_fondu : ''}`}>
+                                <img src={src} alt="" className={styles.fond_diapo_img} />
+                            </div>
+                        </div>
                     ))}
+                </div>
+                )}
+                {!isMobile && (
+                <div className={styles.diapo_controles}>
+                    <button type="button" className={styles.diapo_fleche} onClick={diapoPrecedente} aria-label="Image précédente">
+                        <FaChevronLeft size={13} />
+                    </button>
+                    <div className={styles.diapo_nav_points}>
+                        {IMAGES_FOND.map((src, i) => (
+                            <button
+                                key={src}
+                                type="button"
+                                className={`${styles.diapo_nav_point} ${i === indexFond ? styles.diapo_nav_point_actif : ''}`}
+                                onClick={() => allerALaDiapo(i)}
+                                aria-label={`Aller à l'image ${i + 1} sur ${IMAGES_FOND.length}`}
+                                aria-current={i === indexFond}
+                            >
+                                {i === indexFond && (
+                                    <span key={indexFond} className={styles.diapo_progression} style={{ animationDuration: `${DELAI_DIAPORAMA_MS}ms` }} />
+                                )}
+                            </button>
+                        ))}
+                    </div>
+                    <button type="button" className={styles.diapo_fleche} onClick={diapoSuivante} aria-label="Image suivante">
+                        <FaChevronRight size={13} />
+                    </button>
                 </div>
                 )}
             </div>
             <div className={styles.trouver_depart_body} id="trouver-depart">
+<div className={styles.titre_recherche}>
 <p style={{fontSize: isMobile ? 20 : 25}}> <strong>Trouvez un départ</strong></p>
+{isMobile && (
+    <button
+        type="button"
+        className={`${styles.bouton_replier} ${suiteFormulaireOuverte ? styles.bouton_replier_ouvert : ''}`}
+        onClick={() => setSuiteFormulaireOuverte((ouvert) => !ouvert)}
+        aria-expanded={suiteFormulaireOuverte}
+    >
+        {suiteFormulaireOuverte ? 'Replier' : 'Déplier'} <FaChevronDown size={12} />
+    </button>
+)}
+</div>
 <div className={styles.formulaire}>
     <div className={styles.champs}>
         <p>Pays de départ</p>
@@ -642,7 +770,7 @@ function Acceuil(){
       </select>
 </div>
 {/* sur telephone, le reste du formulaire se deroule quand un champ est rempli (ex. le pays de depart) */}
-<div className={`${styles.suite_formulaire} ${!isMobile || rechercheActive || suiteFormulaireOuverte ? styles.suite_ouverte : ''}`}>
+<div className={`${styles.suite_formulaire} ${!isMobile || suiteFormulaireOuverte ? styles.suite_ouverte : ''}`}>
 <div className={styles.suite_formulaire_interieur}>
 <div className={styles.champs}>
       <p>Ville de départ</p>

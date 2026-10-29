@@ -323,6 +323,52 @@ export async function telephoneDejaPartenaire(telephone) {
 }
 
 /**
+ * Clé d'un email dans l'index "emailsPartenaires" : en minuscules, sans espaces, et sans les
+ * caractères interdits dans une clé Firebase (le point devient une virgule).
+ */
+export function cleEmail(email) {
+    const texte = String(email || '').trim().toLowerCase();
+    if (!texte) return null;
+    return texte.replace(/\./g, ',').replace(/[$#\[\]/]/g, '_');
+}
+
+/**
+ * Vrai si une compagnie partenaire utilise déjà cet email (lecture publique d'une seule clé).
+ * Si la lecture échoue (règles pas encore déployées), on ne bloque pas la demande.
+ */
+export async function emailDejaPartenaire(email) {
+    const cle = cleEmail(email);
+    if (!cle) return false;
+    try {
+        return (await get(ref(db, `emailsPartenaires/${cle}`))).exists();
+    } catch (err) {
+        console.warn('Vérification de l\'email impossible :', err);
+        return false;
+    }
+}
+
+/**
+ * Remplit les index publics "emailsPartenaires" et "telephonesPartenaires" à partir de la
+ * liste des compagnies (ajoute les manquants, retire ceux de compagnies disparues).
+ * Réservé à l'admin (règles de la base). Sert à vérifier, depuis le formulaire public
+ * « devenir partenaire », qu'un email ou un numéro n'est pas déjà celui d'un partenaire.
+ */
+export async function synchroniserIndexPartenaires(compagnies) {
+    const emails = {};
+    const telephones = {};
+    compagnies.forEach((c) => {
+        const cleMail = cleEmail(c.email);
+        if (cleMail) emails[cleMail] = true;
+        const cleTel = cleTelephone(c.telephone);
+        if (cleTel) telephones[cleTel] = true;
+    });
+    await Promise.all([
+        set(ref(db, 'emailsPartenaires'), Object.keys(emails).length ? emails : null),
+        set(ref(db, 'telephonesPartenaires'), Object.keys(telephones).length ? telephones : null),
+    ]);
+}
+
+/**
  * Vrai si deux numéros désignent la même ligne : on compare les 9 derniers chiffres,
  * ce qui ignore les espaces et l'indicatif ("+33 7 58 14 55 46" = "07 58 14 55 46").
  */
